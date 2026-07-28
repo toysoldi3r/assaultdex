@@ -297,3 +297,39 @@ Started only after Phase 1 passed all checks (spec: one phase at a time).
 
 Validation: `pnpm typecheck && pnpm lint && pnpm test` (41 tests) `&& pnpm build`
 all pass. Phases 3–10 are **not** started.
+
+---
+
+## Phase 3 — type, speed, damage, field-state, and legal-action engines (implemented)
+
+Deepens the Phase 1 provisional engines into fuller mechanics, still flagged
+provisional and unverified for Champions.
+
+- **Field state.** `FieldState` (whole-field: weather, terrain, Trick Room) and a
+  new per-side `SideConditions` (Tailwind, Reflect, Light Screen, Aurora Veil) on
+  each `SideState`. `mechanics/field.ts` provides grounding and weather/terrain
+  multipliers.
+- **Damage engine.** Adds weather (Fire/Water under sun/rain), terrain
+  (grounded-user ×1.3 boosts; Misty halves Dragon), screens (1/3 reduction in
+  doubles, ignored on crit), and optional critical hits (ignore relevant stat
+  stages, ×1.5). Returns a full `modifiers` breakdown for transparency; every
+  applied modifier is surfaced in ChoiceDex.
+- **Move targeting.** Moves carry a `target` (`normal` / `all-adjacent-foes` /
+  `all-adjacent` / `self` / `ally`). The spread modifier is derived from the
+  target, and the legal-action engine is target-aware: single-target moves
+  enumerate targets, spread moves make one action that hits all foes, and
+  self/ally moves target the user's side.
+- **Speed engine.** Adds Tailwind (×2) via side conditions, alongside existing
+  priority, paralysis, stat stages, and Trick Room.
+- **New assumptions** (`weather`, `terrain`, `screens`, `grounding`, `tailwind`)
+  are registered and attached to results.
+- **UI.** ChoiceDex gains weather/terrain/Trick Room/Tailwind controls, a field
+  summary, "→ both foes" for spread moves, and a per-hit modifier list.
+
+Items and abilities are deliberately **not** given concrete effects yet: their
+Champions behaviour is unverified and Phase 3's title does not include them. The
+engine architecture (per-side conditions, modifier pipeline, targeting) is the
+extension point for them later.
+
+Validation: `pnpm typecheck && pnpm lint && pnpm test` (49 tests) `&& pnpm build`
+all pass. Phases 4–10 are **not** started.

@@ -1,20 +1,31 @@
 // Damage calculation. Provisional (ASSUMPTIONS.damageFormula): documented
-// mainline formula with the 16-value 85–100% roll spread and the doubles
-// spread-move 0.75 modifier, used as a placeholder until Champions mechanics
-// are confirmed.
+// mainline formula with the 16-value 85–100% roll spread, the doubles
+// spread-move 0.75 modifier, weather/terrain/screens, and optional critical
+// hits. Used as a placeholder until Champions mechanics are confirmed.
 //
 // Never returns a single "guaranteed" number: always the full roll spread plus
-// KO/survival probabilities (spec).
+// KO/survival probabilities (spec). Every applied modifier is returned for
+// transparency.
 
-import type { Combatant, FieldState } from "../types/battle";
-import type { MoveFixture } from "../types/pokemon";
+import type { Combatant, FieldState, SideConditions } from "../types/battle";
+import { isSpreadTarget, type MoveFixture } from "../types/pokemon";
 import type { AssumptionId } from "./assumptions";
+import { isGrounded, terrainMultiplier, weatherMultiplier } from "./field";
 import { stageMultiplier } from "./speed";
 import { typeEffectiveness, type EffectivenessResult } from "./typeEffectiveness";
 
 export interface DamageOptions {
-  /** True if the move hits both opposing Pokémon (doubles spread modifier). */
+  /** Force the spread modifier. Defaults to whether the move is a spread move. */
   spread?: boolean;
+  /** Defender's side conditions (for screens). */
+  defenderConditions?: SideConditions;
+  /** Treat this as a critical hit. */
+  crit?: boolean;
+}
+
+export interface DamageModifier {
+  name: string;
+  multiplier: number;
 }
 
 export interface DamageResult {
@@ -26,15 +37,13 @@ export interface DamageResult {
   minPercent: number;
   maxPercent: number;
   expectedPercent: number;
-  /** Damage-only probability the defender is KO'd by one hit. */
   ohkoProbability: number;
-  /** Damage-only probability two hits KO (assuming both connect). */
   twoHitKoProbability: number;
-  /** Damage-only probability the defender survives one hit. */
   survivalProbability: number;
-  /** OHKO probability adjusted for move accuracy. */
   accuracyAdjustedOhko: number;
   effectiveness: EffectivenessResult;
+  /** Every multiplicative modifier applied (for transparency). */
+  modifiers: DamageModifier[];
   assumptions: AssumptionId[];
 }
 
@@ -42,9 +51,9 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-/** Zero-damage result (status moves / immunities), still fully shaped. */
 function zeroResult(
   effectiveness: EffectivenessResult,
+  modifiers: DamageModifier[],
   assumptions: AssumptionId[],
 ): DamageResult {
   return {
@@ -60,6 +69,7 @@ function zeroResult(
     survivalProbability: 1,
     accuracyAdjustedOhko: 0,
     effectiveness,
+    modifiers,
     assumptions,
   };
 }
@@ -71,26 +81,39 @@ export function calculateDamage(
   field: FieldState,
   options: DamageOptions = {},
 ): DamageResult {
-  const assumptions: AssumptionId[] = ["damageFormula", "statFormula", "moveData"];
+  const assumptions = new Set<AssumptionId>([
+    "damageFormula",
+    "statFormula",
+    "moveData",
+  ]);
   const effectiveness = typeEffectiveness(move.type, defender.types);
+  const modifiers: DamageModifier[] = [
+    { name: "type effectiveness", multiplier: effectiveness.multiplier },
+  ];
 
   if (move.category === "status" || move.power === null) {
-    return zeroResult(effectiveness, assumptions);
+    return zeroResult(effectiveness, modifiers, [...assumptions]);
   }
   if (effectiveness.multiplier === 0) {
-    return zeroResult(effectiveness, assumptions);
+    return zeroResult(effectiveness, modifiers, [...assumptions]);
   }
 
+  const crit = options.crit ?? false;
   const isPhysical = move.category === "physical";
   const attackStat = isPhysical ? attacker.stats.atk : attacker.stats.spa;
-  const attackStage = isPhysical ? attacker.stages.atk : attacker.stages.spa;
   const defenseStat = isPhysical ? defender.stats.def : defender.stats.spd;
-  const defenseStage = isPhysical ? defender.stages.def : defender.stages.spd;
+  let attackStage = isPhysical ? attacker.stages.atk : attacker.stages.spa;
+  let defenseStage = isPhysical ? defender.stages.def : defender.stages.spd;
+
+  // Critical hits ignore the defender's positive and the attacker's negative
+  // stat stages.
+  if (crit) {
+    attackStage = Math.max(0, attackStage);
+    defenseStage = Math.min(0, defenseStage);
+  }
 
   let attack = attackStat * stageMultiplier(attackStage);
   const defense = defenseStat * stageMultiplier(defenseStage);
-
-  // Burn halves physical attack (provisional mainline behaviour).
   if (isPhysical && attacker.status === "burn") {
     attack *= 0.5;
   }
@@ -103,9 +126,54 @@ export function calculateDamage(
       ) / 50,
     ) + 2;
 
+  // ---- Multiplicative modifiers ------------------------------------------
   const stab = attacker.types.includes(move.type) ? 1.5 : 1;
-  const spread = options.spread ? 0.75 : 1;
-  const modifier = stab * effectiveness.multiplier * spread;
+  if (stab !== 1) modifiers.push({ name: "STAB", multiplier: stab });
+
+  const weather = weatherMultiplier(move.type, field.weather);
+  if (weather !== 1) {
+    modifiers.push({ name: `weather (${field.weather})`, multiplier: weather });
+    assumptions.add("weather");
+  }
+
+  const attackerGrounded = isGrounded(attacker.types);
+  const defenderGrounded = isGrounded(defender.types);
+  const terrain = terrainMultiplier(
+    move.type,
+    field.terrain,
+    attackerGrounded,
+    defenderGrounded,
+  );
+  if (terrain !== 1) {
+    modifiers.push({ name: `terrain (${field.terrain})`, multiplier: terrain });
+    assumptions.add("terrain");
+    assumptions.add("grounding");
+  }
+
+  const spread = options.spread ?? isSpreadTarget(move.target);
+  const spreadMod = spread ? 0.75 : 1;
+  if (spreadMod !== 1) modifiers.push({ name: "spread", multiplier: spreadMod });
+
+  // Screens (ignored on a crit).
+  let screen = 1;
+  const cond = options.defenderConditions;
+  if (!crit && cond) {
+    const active =
+      (isPhysical && cond.reflect) ||
+      (!isPhysical && cond.lightScreen) ||
+      cond.auroraVeil;
+    if (active) {
+      screen = 2 / 3; // doubles reduction
+      modifiers.push({ name: "screen", multiplier: screen });
+      assumptions.add("screens");
+    }
+  }
+
+  const critMod = crit ? 1.5 : 1;
+  if (critMod !== 1) modifiers.push({ name: "critical hit", multiplier: critMod });
+
+  const modifier =
+    stab * effectiveness.multiplier * weather * terrain * spreadMod * screen * critMod;
 
   const rolls: number[] = [];
   for (let roll = 85; roll <= 100; roll++) {
@@ -124,7 +192,6 @@ export function calculateDamage(
   const ohkoRolls = rolls.filter((d) => d >= currentHp).length;
   const ohkoProbability = ohkoRolls / rolls.length;
 
-  // Two independent rolls (assuming both hits connect).
   let twoHitKo = 0;
   for (const r1 of rolls) {
     for (const r2 of rolls) {
@@ -148,6 +215,7 @@ export function calculateDamage(
     survivalProbability: round2(1 - ohkoProbability),
     accuracyAdjustedOhko: round2(ohkoProbability * accFrac),
     effectiveness,
-    assumptions,
+    modifiers,
+    assumptions: [...assumptions],
   };
 }

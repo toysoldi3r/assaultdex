@@ -47,17 +47,36 @@ export interface Combatant {
   tier: InformationTier;
 }
 
-/** Field/side conditions relevant to a single turn (Phase 1: minimal). */
+export type Weather = "none" | "sun" | "rain" | "sand" | "snow";
+export type Terrain = "none" | "electric" | "grassy" | "misty" | "psychic";
+
+/** Whole-field conditions (affect both sides). */
 export interface FieldState {
-  weather: "none" | "sun" | "rain" | "sand" | "snow";
-  terrain: "none" | "electric" | "grassy" | "misty" | "psychic";
+  weather: Weather;
+  terrain: Terrain;
   trickRoom: boolean;
 }
 
-/** One side of the field in doubles: two active slots + bench. */
+/** Conditions that apply to a single side of the field. */
+export interface SideConditions {
+  tailwind: boolean;
+  reflect: boolean;
+  lightScreen: boolean;
+  auroraVeil: boolean;
+}
+
+export const NO_SIDE_CONDITIONS: SideConditions = {
+  tailwind: false,
+  reflect: false,
+  lightScreen: false,
+  auroraVeil: false,
+};
+
+/** One side of the field in doubles: two active slots + bench + conditions. */
 export interface SideState {
   active: [Combatant | null, Combatant | null];
   bench: Combatant[];
+  conditions: SideConditions;
 }
 
 /** The complete, editable battle state for a single position. */

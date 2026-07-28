@@ -50,8 +50,42 @@ export const ASSUMPTIONS = {
   moveData: {
     id: "moveData",
     description:
-      "Move power/accuracy/priority come from fixtures, not a confirmed provider feed.",
+      "Move power/accuracy/priority/target come from fixtures, not a confirmed provider feed.",
     source: "fixture",
+    verified: false,
+  },
+  weather: {
+    id: "weather",
+    description:
+      "Sun boosts Fire ×1.5 and weakens Water ×0.5; Rain the reverse. Mainline-derived, unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  terrain: {
+    id: "terrain",
+    description:
+      "Electric/Grassy/Psychic Terrain boost their type ×1.3 for grounded users; Misty halves Dragon vs grounded targets. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  screens: {
+    id: "screens",
+    description:
+      "Reflect/Light Screen/Aurora Veil reduce damage of the matching category by 1/3 in doubles. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  grounding: {
+    id: "grounding",
+    description:
+      "A Pokémon is treated as grounded unless it is Flying-type. Item/ability grounding effects are not modeled. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  tailwind: {
+    id: "tailwind",
+    description: "Tailwind doubles a side's Speed. Unverified for Champions.",
+    source: "mainline-derived",
     verified: false,
   },
 } as const satisfies Record<string, Assumption>;

@@ -51,3 +51,31 @@ describe("legalCombinations", () => {
     expect(combos).toHaveLength(2);
   });
 });
+
+describe("target-aware actions", () => {
+  it("spread moves make one action; self moves target the user", () => {
+    const u1 = combatant({
+      name: "U1",
+      types: ["ground"],
+      base: stats(),
+      moves: [
+        move({ name: "Quake", type: "ground", target: "all-adjacent-foes" }),
+        move({ name: "Protect", category: "status", power: null, accuracy: null, target: "self" }),
+      ],
+    });
+    const u2 = combatant({ name: "U2", types: ["normal"], base: stats(), moves: [move({ name: "Tackle" })] });
+    const o1 = combatant({ name: "O1", types: ["fire"], base: stats(), moves: [move({ name: "Ember" })] });
+    const o2 = combatant({ name: "O2", types: ["water"], base: stats(), moves: [move({ name: "Splash" })] });
+    const state = battleState([u1, u2], [o1, o2]);
+
+    const actions = slotActions(state, "user", 0);
+    // Quake → 1 spread action; Protect → 1 self action.
+    expect(actions).toHaveLength(2);
+
+    const spread = actions.find((a) => a.kind === "move" && a.moveName === "Quake");
+    expect(spread).toMatchObject({ spread: true, targetSlot: null });
+
+    const self = actions.find((a) => a.kind === "move" && a.moveName === "Protect");
+    expect(self).toMatchObject({ targetSide: "user", targetSlot: 0, spread: false });
+  });
+});

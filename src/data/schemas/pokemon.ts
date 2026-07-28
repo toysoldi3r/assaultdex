@@ -9,6 +9,14 @@ export const pokemonTypeSchema = z.enum(POKEMON_TYPES);
 
 export const moveCategorySchema = z.enum(["physical", "special", "status"]);
 
+export const moveTargetSchema = z.enum([
+  "normal",
+  "all-adjacent-foes",
+  "all-adjacent",
+  "self",
+  "ally",
+]);
+
 export const rawMoveSchema = z.object({
   name: z.string().min(1),
   type: pokemonTypeSchema,
@@ -16,6 +24,7 @@ export const rawMoveSchema = z.object({
   power: z.number().int().min(0).max(300).nullable(),
   accuracy: z.number().min(0).max(100).nullable(),
   priority: z.number().int().min(-7).max(7),
+  target: moveTargetSchema.default("normal"),
 });
 
 export const rawBaseStatsSchema = z.object({

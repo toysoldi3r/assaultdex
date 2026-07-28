@@ -1,9 +1,10 @@
-// Legal-action generation for doubles. Phase 1 covers moves (with targets) and
-// switches for both active user Pokémon, plus enumeration of the opponent's
-// legal actions from known moves. Champions-specific actions (e.g. any
-// mechanic gimmick) are deferred and not fabricated.
+// Legal-action generation for doubles, target-aware (Phase 3). Uses each move's
+// target semantics: single-target moves enumerate legal targets, spread moves
+// produce one action that hits all relevant Pokémon, and self/ally moves target
+// the user's own side. Also generates opponent legal actions from known moves.
 
 import type { BattleState, Combatant, SideState } from "../types/battle";
+import { isSpreadTarget } from "../types/pokemon";
 
 export type SlotIndex = 0 | 1;
 export type Side = "user" | "opponent";
@@ -13,8 +14,11 @@ export interface MoveAction {
   side: Side;
   slot: SlotIndex;
   moveName: string;
+  /** Side of the primary target. For spread moves this is the foe side. */
   targetSide: Side;
-  targetSlot: SlotIndex;
+  /** Target slot, or null for spread moves (hits all relevant Pokémon). */
+  targetSlot: SlotIndex | null;
+  spread: boolean;
 }
 
 export interface SwitchAction {
@@ -25,8 +29,6 @@ export interface SwitchAction {
 }
 
 export type Action = MoveAction | SwitchAction;
-
-/** One legal action per active slot on a side. */
 export type ActionCombination = Action[];
 
 function activeCombatants(
@@ -43,7 +45,6 @@ function opposing(side: Side): Side {
   return side === "user" ? "opponent" : "user";
 }
 
-/** All legal actions for a single active slot. */
 export function slotActions(
   state: BattleState,
   side: Side,
@@ -57,29 +58,42 @@ export function slotActions(
   const foe = opposing(side);
   const foeState = foe === "user" ? state.user : state.opponent;
   const foeTargets = activeCombatants(foeState);
+  const allySlot = (slot === 0 ? 1 : 0) as SlotIndex;
+  const allyPresent = Boolean(
+    sideState.active[allySlot] && !sideState.active[allySlot]!.fainted,
+  );
 
   for (const move of combatant.moves) {
-    if (move.category === "status") {
-      // Provisional: status moves default to targeting self's slot.
-      actions.push({
-        kind: "move",
-        side,
-        slot,
-        moveName: move.name,
-        targetSide: side,
-        targetSlot: slot,
-      });
-      continue;
-    }
-    for (const target of foeTargets) {
-      actions.push({
-        kind: "move",
-        side,
-        slot,
-        moveName: move.name,
-        targetSide: foe,
-        targetSlot: target.slot,
-      });
+    const base = { kind: "move" as const, side, slot, moveName: move.name };
+
+    switch (move.target) {
+      case "self":
+        actions.push({ ...base, targetSide: side, targetSlot: slot, spread: false });
+        break;
+      case "ally":
+        actions.push({
+          ...base,
+          targetSide: side,
+          targetSlot: allyPresent ? allySlot : slot,
+          spread: false,
+        });
+        break;
+      case "all-adjacent-foes":
+      case "all-adjacent":
+        actions.push({ ...base, targetSide: foe, targetSlot: null, spread: true });
+        break;
+      case "normal":
+      default:
+        if (foeTargets.length === 0) break;
+        for (const target of foeTargets) {
+          actions.push({
+            ...base,
+            targetSide: foe,
+            targetSlot: target.slot,
+            spread: isSpreadTarget(move.target),
+          });
+        }
+        break;
     }
   }
 
@@ -92,7 +106,6 @@ export function slotActions(
   return actions;
 }
 
-/** Cartesian product of per-slot actions, dropping illegal combinations. */
 export function legalCombinations(
   state: BattleState,
   side: Side,
@@ -123,12 +136,10 @@ export function legalCombinations(
   });
 }
 
-/** The user's legal action combinations. */
 export function userLegalCombinations(state: BattleState): ActionCombination[] {
   return legalCombinations(state, "user");
 }
 
-/** The opponent's legal action combinations from currently known moves. */
 export function opponentLegalCombinations(
   state: BattleState,
 ): ActionCombination[] {

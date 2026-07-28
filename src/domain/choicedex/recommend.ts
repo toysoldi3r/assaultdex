@@ -64,11 +64,24 @@ function activeAt(
   return sideOf(state, side).active[slot];
 }
 
+function sideConditions(state: BattleState, side: "user" | "opponent") {
+  return sideOf(state, side).conditions;
+}
+
+function activeFoes(state: BattleState, foe: "user" | "opponent"): Combatant[] {
+  return sideOf(state, foe).active.filter(
+    (c): c is Combatant => c !== null && !c.fainted,
+  );
+}
+
 function describeAction(state: BattleState, action: Action): string {
   const attacker = activeAt(state, action.side, action.slot);
   const who = attacker?.name ?? `Slot ${action.slot + 1}`;
   if (action.kind === "switch") {
     return `${who}: switch to ${action.switchTo}`;
+  }
+  if (action.spread || action.targetSlot === null) {
+    return `${who}: ${action.moveName} → both foes`;
   }
   const target = activeAt(state, action.targetSide, action.targetSlot);
   return `${who}: ${action.moveName} → ${target?.name ?? "target"}`;
@@ -97,30 +110,50 @@ export function evaluateCombination(
   for (const action of combination) {
     if (action.kind !== "move") continue;
     const attacker = activeAt(state, action.side, action.slot);
-    const target = activeAt(state, action.targetSide, action.targetSlot);
-    if (!attacker || !target) continue;
+    if (!attacker) continue;
     const move = attacker.moves.find((m) => m.name === action.moveName);
     if (!move) continue;
+    // Only offensive moves against the foe side contribute damage factors.
+    if (move.category === "status" || move.power === null) continue;
+    if (action.targetSide === action.side) continue;
 
-    const damage = calculateDamage(attacker, target, move, state.field);
-    damage.assumptions.forEach((a) => assumptions.add(a));
+    const foe = action.targetSide;
+    const targets =
+      action.spread || action.targetSlot === null
+        ? activeFoes(state, foe)
+        : [activeAt(state, foe, action.targetSlot)].filter(
+            (c): c is Combatant => c !== null && !c.fainted,
+          );
 
-    const aSpeed = effectiveSpeed(attacker);
-    const tSpeed = effectiveSpeed(target);
-    aSpeed.assumptions.forEach((a) => assumptions.add(a));
-    const order = moveOrder(
-      { speed: aSpeed.effectiveSpeed, priority: move.priority },
-      { speed: tSpeed.effectiveSpeed, priority: 0 },
-      state.field,
-    );
-
-    actionDamage.push({
-      attacker: attacker.name,
-      moveName: move.name,
-      target: target.name,
-      damage,
-      movesFirst: order.probabilityAFirst >= 0.5,
+    const aSpeed = effectiveSpeed(attacker, {
+      tailwind: sideConditions(state, action.side).tailwind,
     });
+    aSpeed.assumptions.forEach((a) => assumptions.add(a));
+
+    for (const target of targets) {
+      const damage = calculateDamage(attacker, target, move, state.field, {
+        spread: action.spread,
+        defenderConditions: sideConditions(state, foe),
+      });
+      damage.assumptions.forEach((a) => assumptions.add(a));
+
+      const tSpeed = effectiveSpeed(target, {
+        tailwind: sideConditions(state, foe).tailwind,
+      });
+      const order = moveOrder(
+        { speed: aSpeed.effectiveSpeed, priority: move.priority },
+        { speed: tSpeed.effectiveSpeed, priority: 0 },
+        state.field,
+      );
+
+      actionDamage.push({
+        attacker: attacker.name,
+        moveName: move.name,
+        target: target.name,
+        damage,
+        movesFirst: order.probabilityAFirst >= 0.5,
+      });
+    }
   }
 
   // ---- Factors ------------------------------------------------------------

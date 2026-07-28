@@ -5,7 +5,7 @@ import {
   PROFILE_LABELS,
   type ProfileName,
 } from "@/domain/choicedex/scoring";
-import type { Combatant } from "@/domain/types/battle";
+import type { Combatant, Terrain, Weather } from "@/domain/types/battle";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import { buildBattleState } from "./lib";
 
@@ -85,6 +85,13 @@ export default async function ChoiceDexPage({
       opponent: [sp.o1!, sp.o2!],
       userHp: [Number(sp.u1hp ?? 100) / 100, Number(sp.u2hp ?? 100) / 100],
       opponentHp: [Number(sp.o1hp ?? 100) / 100, Number(sp.o2hp ?? 100) / 100],
+      field: {
+        weather: (sp.weather ?? "none") as Weather,
+        terrain: (sp.terrain ?? "none") as Terrain,
+        trickRoom: sp.trickroom === "1",
+      },
+      userConditions: { tailwind: sp.utw === "1" },
+      opponentConditions: { tailwind: sp.otw === "1" },
     });
   }
 
@@ -137,6 +144,51 @@ export default async function ChoiceDexPage({
               </div>
             </Panel>
           </div>
+          <Panel title="Field state" className="mt-4">
+            <div className="flex flex-wrap items-end gap-3 text-sm">
+              <label className="text-xs text-slate-400">
+                Weather
+                <select
+                  name="weather"
+                  defaultValue={sp.weather ?? "none"}
+                  className="mt-0.5 block rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
+                >
+                  {["none", "sun", "rain", "sand", "snow"].map((w) => (
+                    <option key={w} value={w}>
+                      {w}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs text-slate-400">
+                Terrain
+                <select
+                  name="terrain"
+                  defaultValue={sp.terrain ?? "none"}
+                  className="mt-0.5 block rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
+                >
+                  {["none", "electric", "grassy", "misty", "psychic"].map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-1 text-xs text-slate-400">
+                <input type="checkbox" name="trickroom" value="1" defaultChecked={sp.trickroom === "1"} />
+                Trick Room
+              </label>
+              <label className="flex items-center gap-1 text-xs text-slate-400">
+                <input type="checkbox" name="utw" value="1" defaultChecked={sp.utw === "1"} />
+                Your Tailwind
+              </label>
+              <label className="flex items-center gap-1 text-xs text-slate-400">
+                <input type="checkbox" name="otw" value="1" defaultChecked={sp.otw === "1"} />
+                Opp. Tailwind
+              </label>
+            </div>
+          </Panel>
+
           <div className="mt-4 flex items-end gap-3">
             <label className="text-sm">
               <span className="mr-2 text-slate-400">Profile</span>
@@ -173,6 +225,12 @@ export default async function ChoiceDexPage({
 
       {state && (
         <Panel title="Battle state">
+          <p className="mb-3 text-xs text-slate-400">
+            Field: weather {state.field.weather}, terrain {state.field.terrain}
+            {state.field.trickRoom ? ", Trick Room" : ""}
+            {state.user.conditions.tailwind ? ", your Tailwind" : ""}
+            {state.opponent.conditions.tailwind ? ", opp. Tailwind" : ""}
+          </p>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <p className="text-xs uppercase text-slate-500">Your active</p>
@@ -228,16 +286,27 @@ export default async function ChoiceDexPage({
 
                 {rec.damage.length > 0 && (
                   <ul className="mt-2 space-y-1 text-xs text-slate-400">
-                    {rec.damage.map((d, k) => (
-                      <li key={k}>
-                        {d.attacker} → {d.target} ({d.moveName}):{" "}
-                        {d.damage.minPercent}–{d.damage.maxPercent}% (exp{" "}
-                        {d.damage.expectedPercent}%), OHKO{" "}
-                        {(d.damage.ohkoProbability * 100).toFixed(0)}%, 2HKO{" "}
-                        {(d.damage.twoHitKoProbability * 100).toFixed(0)}%,{" "}
-                        {d.movesFirst ? "moves first" : "moves second"}
-                      </li>
-                    ))}
+                    {rec.damage.map((d, k) => {
+                      const mods = d.damage.modifiers.filter(
+                        (m) => m.multiplier !== 1 && m.name !== "type effectiveness",
+                      );
+                      return (
+                        <li key={k}>
+                          {d.attacker} → {d.target} ({d.moveName}):{" "}
+                          {d.damage.minPercent}–{d.damage.maxPercent}% (exp{" "}
+                          {d.damage.expectedPercent}%), OHKO{" "}
+                          {(d.damage.ohkoProbability * 100).toFixed(0)}%, 2HKO{" "}
+                          {(d.damage.twoHitKoProbability * 100).toFixed(0)}%,{" "}
+                          {d.movesFirst ? "moves first" : "moves second"}
+                          {mods.length > 0 && (
+                            <span className="text-slate-500">
+                              {" "}
+                              · {mods.map((m) => `${m.name}×${m.multiplier}`).join(", ")}
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
 

@@ -34,7 +34,22 @@ export type BaseStats = Record<StatKey, number>;
 
 export type MoveCategory = "physical" | "special" | "status";
 
-/** A move as shipped in fixtures. Power/accuracy are provisional. */
+/**
+ * Who a move can target in doubles.
+ * - `normal`: one adjacent Pokémon (choose a foe or ally slot).
+ * - `all-adjacent-foes`: both opposing Pokémon (spread).
+ * - `all-adjacent`: both foes and the ally (spread, e.g. Earthquake).
+ * - `self`: the user's own slot.
+ * - `ally`: the user's partner slot.
+ */
+export type MoveTarget =
+  | "normal"
+  | "all-adjacent-foes"
+  | "all-adjacent"
+  | "self"
+  | "ally";
+
+/** A move as shipped in fixtures. Power/accuracy/target are provisional. */
 export interface MoveFixture {
   name: string;
   type: PokemonType;
@@ -45,6 +60,12 @@ export interface MoveFixture {
   accuracy: number | null;
   /** Turn-order priority bracket. 0 is normal. */
   priority: number;
+  target: MoveTarget;
+}
+
+/** True when a move hits more than one Pokémon (spread modifier applies). */
+export function isSpreadTarget(target: MoveTarget): boolean {
+  return target === "all-adjacent-foes" || target === "all-adjacent";
 }
 
 /** Normalized reference entry produced by a provider adapter. */

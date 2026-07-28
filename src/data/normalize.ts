@@ -24,6 +24,7 @@ function normalizeMove(raw: RawMove): MoveFixture {
     power: raw.power,
     accuracy: raw.accuracy,
     priority: raw.priority,
+    target: raw.target,
   };
 }
 

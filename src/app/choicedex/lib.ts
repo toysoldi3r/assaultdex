@@ -4,8 +4,14 @@ import {
   DEFAULT_EVS,
   DEFAULT_IVS,
 } from "@/domain/battle/build";
-import type { BattleState, Combatant, InformationTier } from "@/domain/types/battle";
-import { DEFAULT_FIELD } from "@/domain/types/battle";
+import type {
+  BattleState,
+  Combatant,
+  FieldState,
+  InformationTier,
+  SideConditions,
+} from "@/domain/types/battle";
+import { DEFAULT_FIELD, NO_SIDE_CONDITIONS } from "@/domain/types/battle";
 import { getPokemonBySlug } from "@/server/repositories/pokemonRepo";
 
 /** Build a level-50 combatant from a reference species. */
@@ -36,6 +42,9 @@ export interface BuildStateInput {
   opponent: [string, string];
   userHp: [number, number];
   opponentHp: [number, number];
+  field?: Partial<FieldState>;
+  userConditions?: Partial<SideConditions>;
+  opponentConditions?: Partial<SideConditions>;
 }
 
 /** Assemble a full two-active-per-side battle state. */
@@ -52,8 +61,16 @@ export async function buildBattleState(
   if (!u1 || !u2 || !o1 || !o2) return null;
   return {
     turn: 1,
-    field: { ...DEFAULT_FIELD },
-    user: { active: [u1, u2], bench: [] },
-    opponent: { active: [o1, o2], bench: [] },
+    field: { ...DEFAULT_FIELD, ...input.field },
+    user: {
+      active: [u1, u2],
+      bench: [],
+      conditions: { ...NO_SIDE_CONDITIONS, ...input.userConditions },
+    },
+    opponent: {
+      active: [o1, o2],
+      bench: [],
+      conditions: { ...NO_SIDE_CONDITIONS, ...input.opponentConditions },
+    },
   };
 }

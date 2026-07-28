@@ -16,16 +16,26 @@ export interface SpeedResult {
   assumptions: AssumptionId[];
 }
 
+export interface SpeedContext {
+  /** The combatant's side has Tailwind up. */
+  tailwind?: boolean;
+}
+
 /** Effective in-battle Speed for a combatant. */
-export function effectiveSpeed(combatant: Combatant): SpeedResult {
+export function effectiveSpeed(
+  combatant: Combatant,
+  ctx: SpeedContext = {},
+): SpeedResult {
+  const assumptions: AssumptionId[] = ["speedOrder", "statFormula"];
   let speed = combatant.stats.spe * stageMultiplier(combatant.stages.spe);
   if (combatant.status === "paralysis") {
     speed *= 0.5; // provisional mainline paralysis modifier
   }
-  return {
-    effectiveSpeed: Math.floor(speed),
-    assumptions: ["speedOrder", "statFormula"],
-  };
+  if (ctx.tailwind) {
+    speed *= 2;
+    assumptions.push("tailwind");
+  }
+  return { effectiveSpeed: Math.floor(speed), assumptions };
 }
 
 export type OrderWinner = "a" | "b" | "tie";

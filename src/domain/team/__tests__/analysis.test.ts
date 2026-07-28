@@ -9,7 +9,7 @@ function stats(spe: number): BaseStats {
 }
 
 function move(name: string, type: PokemonType, priority = 0): MoveFixture {
-  return { name, type, category: "physical", power: 80, accuracy: 100, priority };
+  return { name, type, category: "physical", power: 80, accuracy: 100, priority, target: "normal" };
 }
 
 function member(
