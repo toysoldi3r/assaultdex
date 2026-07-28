@@ -267,4 +267,33 @@ validation command passes:
     never presented as guaranteed.
 
 Validation: `pnpm typecheck && pnpm lint && pnpm test && pnpm build` all pass.
-Later phases (2–10) are **not** started.
+
+---
+
+## Phase 2 — team builder, validation, versions, collections, basic analysis (implemented)
+
+Started only after Phase 1 passed all checks (spec: one phase at a time).
+
+- **Full set editing.** `TeamEditor` (client) edits every member's level, ability,
+  item, nature, up to four moves (from the species' legal move list), and
+  EV/IV spread, then saves an immutable new version. Nothing is saved when the
+  team is illegal.
+- **Legality validation** (`domain/team/validate.ts`, pure): team size, species
+  clause, level range, move count/uniqueness/legality, nature legality, EV caps
+  (≤252/stat, ≤508 total, multiple-of-4 warning), IV range. Surfaced live in the
+  editor and summarised on the team page.
+- **Basic team analysis** (`domain/team/analysis.ts`, pure, provisional): shared
+  defensive weaknesses, offensive coverage gaps, speed tiers, speed-control
+  detection (priority + control moves), and single-Pokémon coverage dependence.
+  Analyses that need metagame/usage data (common leads, cores) are intentionally
+  **not** included — that is Phase 5 and is not fabricated.
+- **Lifecycle:** duplicate, delete, restore an earlier version (appended as a new
+  version — history stays immutable), team notes, JSON export (route handler)
+  and JSON import (validated against the snapshot schema).
+- **Resolver** (`server/teamResolve.ts`) bridges stored snapshots to the pure
+  validate/analysis functions using reference data, keeping the domain layer free
+  of persistence/data-adapter imports.
+- **Migration** `team_notes` adds `Team.notes`.
+
+Validation: `pnpm typecheck && pnpm lint && pnpm test` (41 tests) `&& pnpm build`
+all pass. Phases 3–10 are **not** started.

@@ -2,11 +2,25 @@ import Link from "next/link";
 import { Panel } from "@/components/ui";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import { listCollections, listTeams } from "@/server/repositories/teamRepo";
-import { createCollectionAction, createTeamAction } from "./actions";
+import {
+  createCollectionAction,
+  createTeamAction,
+  importTeamAction,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeamsPage() {
+const IMPORT_MESSAGES: Record<string, string> = {
+  "invalid-json": "Import failed: the pasted text is not valid JSON.",
+  "invalid-shape": "Import failed: JSON does not match the team snapshot shape.",
+};
+
+export default async function TeamsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ import?: string }>;
+}) {
+  const { import: importError } = await searchParams;
   const [pokemon, teams, collections] = await Promise.all([
     listPokemon(),
     listTeams(),
@@ -100,6 +114,30 @@ export default async function TeamsPage() {
           </Panel>
         </div>
       )}
+
+      <Panel title="Import a team">
+        {importError && IMPORT_MESSAGES[importError] && (
+          <p className="mb-2 text-xs text-rose-400">
+            {IMPORT_MESSAGES[importError]}
+          </p>
+        )}
+        <form action={importTeamAction} className="space-y-2">
+          <input
+            name="name"
+            placeholder="Imported team name"
+            className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+          />
+          <textarea
+            name="json"
+            rows={4}
+            placeholder='{"members":[ … ]}  (paste an exported team snapshot)'
+            className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-xs"
+          />
+          <button className="rounded border border-slate-600 px-3 py-1 text-sm hover:border-amber-500">
+            Import
+          </button>
+        </form>
+      </Panel>
 
       <Panel title="Saved teams">
         {teams.length === 0 ? (

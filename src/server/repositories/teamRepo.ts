@@ -19,6 +19,7 @@ export interface TeamVersionView {
 export interface TeamView {
   id: string;
   name: string;
+  notes: string;
   collectionId: string | null;
   collectionName: string | null;
   createdAt: Date;
@@ -104,6 +105,7 @@ export async function listTeams(): Promise<TeamView[]> {
   return teams.map((t) => ({
     id: t.id,
     name: t.name,
+    notes: t.notes,
     collectionId: t.collectionId,
     collectionName: t.collection?.name ?? null,
     createdAt: t.createdAt,
@@ -129,6 +131,7 @@ export async function getTeam(id: string): Promise<TeamView | null> {
   return {
     id: t.id,
     name: t.name,
+    notes: t.notes,
     collectionId: t.collectionId,
     collectionName: t.collection?.name ?? null,
     createdAt: t.createdAt,
@@ -140,4 +143,50 @@ export async function getTeam(id: string): Promise<TeamView | null> {
       snapshot: parseSnapshot(v.snapshot),
     })),
   };
+}
+
+export async function updateTeamNotes(teamId: string, notes: string) {
+  await prisma.team.update({ where: { id: teamId }, data: { notes } });
+}
+
+export async function deleteTeam(teamId: string) {
+  await prisma.team.delete({ where: { id: teamId } });
+}
+
+/** Copy a team (and its latest snapshot) into a new team. */
+export async function duplicateTeam(teamId: string): Promise<string | null> {
+  const source = await getTeam(teamId);
+  if (!source || source.versions.length === 0) return null;
+  const latest = source.versions[source.versions.length - 1]!;
+  const copy = await prisma.team.create({
+    data: {
+      name: `${source.name} (copy)`,
+      notes: source.notes,
+      collectionId: source.collectionId,
+      versions: {
+        create: {
+          versionNumber: 1,
+          label: `Copied from v${latest.versionNumber}`,
+          snapshot: JSON.stringify(latest.snapshot),
+        },
+      },
+    },
+  });
+  return copy.id;
+}
+
+/** Restore an earlier version by appending it as a new latest version. */
+export async function restoreVersion(
+  teamId: string,
+  versionNumber: number,
+): Promise<number | null> {
+  const source = await prisma.teamVersion.findUnique({
+    where: { teamId_versionNumber: { teamId, versionNumber } },
+  });
+  if (!source) return null;
+  return addTeamVersion(
+    teamId,
+    parseSnapshot(source.snapshot),
+    `Restored from v${versionNumber}`,
+  );
 }

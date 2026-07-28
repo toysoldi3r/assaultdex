@@ -1,12 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Panel } from "@/components/ui";
+import { Panel, ProvisionalTag } from "@/components/ui";
+import { TeamEditor, type EditorMember } from "@/components/TeamEditor";
 import { NATURES } from "@/data/fixtures/natures";
 import { diffSnapshots } from "@/domain/team/versionDiff";
+import { getPokemonBySlug } from "@/server/repositories/pokemonRepo";
 import { listCollections, getTeam } from "@/server/repositories/teamRepo";
-import { addVersionAction, assignCollectionAction } from "../actions";
+import { resolveTeam } from "@/server/teamResolve";
+import {
+  assignCollectionAction,
+  deleteTeamAction,
+  duplicateTeamAction,
+  restoreVersionAction,
+  updateNotesAction,
+} from "../actions";
 
 export const dynamic = "force-dynamic";
+
+const NATURE_NAMES = Object.keys(NATURES);
 
 export default async function TeamDetailPage({
   params,
@@ -21,11 +32,28 @@ export default async function TeamDetailPage({
   if (!team) notFound();
 
   const latest = team.versions[team.versions.length - 1]!;
+  const { validation, analysis, missingSpecies } = await resolveTeam(
+    latest.snapshot,
+  );
+
+  // Editor needs each member's reference name + legal moves.
+  const refs = await Promise.all(
+    latest.snapshot.members.map((m) => getPokemonBySlug(m.species)),
+  );
+  const editorMembers: EditorMember[] = latest.snapshot.members.map((set, i) => {
+    const ref = refs[i];
+    return {
+      species: set.species,
+      name: ref?.name ?? set.species,
+      legalMoves: ref ? ref.moves.map((mv) => mv.name) : set.moves,
+      set,
+    };
+  });
+
   const versionByNumber = new Map(team.versions.map((v) => [v.versionNumber, v]));
   const from = a ? versionByNumber.get(Number(a)) : team.versions[0];
   const to = b ? versionByNumber.get(Number(b)) : latest;
-  const diff =
-    from && to ? diffSnapshots(from.snapshot, to.snapshot) : null;
+  const diff = from && to ? diffSnapshots(from.snapshot, to.snapshot) : null;
 
   return (
     <div className="space-y-6">
@@ -33,12 +61,151 @@ export default async function TeamDetailPage({
         ← Teams
       </Link>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{team.name}</h1>
-        <span className="text-xs text-slate-500">
-          {team.collectionName ? `Collection: ${team.collectionName}` : "No collection"}
-        </span>
+        <div className="flex items-center gap-2 text-sm">
+          <a
+            href={`/teams/${team.id}/export`}
+            className="rounded border border-slate-600 px-3 py-1 hover:border-amber-500"
+          >
+            Export JSON
+          </a>
+          <form action={duplicateTeamAction}>
+            <input type="hidden" name="teamId" value={team.id} />
+            <button className="rounded border border-slate-600 px-3 py-1 hover:border-amber-500">
+              Duplicate
+            </button>
+          </form>
+          <form action={deleteTeamAction}>
+            <input type="hidden" name="teamId" value={team.id} />
+            <button className="rounded border border-rose-800 px-3 py-1 text-rose-300 hover:border-rose-500">
+              Delete
+            </button>
+          </form>
+        </div>
       </div>
+
+      {/* Validation of the latest version */}
+      <Panel title="Legality">
+        {missingSpecies.length > 0 && (
+          <p className="mb-2 text-xs text-amber-300">
+            Missing from Pokédex: {missingSpecies.join(", ")}
+          </p>
+        )}
+        {validation.valid ? (
+          <p className="text-sm text-emerald-400">
+            Latest version (v{latest.versionNumber}) is legal.
+          </p>
+        ) : (
+          <div>
+            <p className="text-sm text-rose-400">
+              Latest version has {validation.errors.length} error(s).
+            </p>
+            <ul className="mt-1 list-disc pl-5 text-xs text-rose-400">
+              {validation.errors.map((e, i) => (
+                <li key={i}>
+                  {e.species ? `${e.species}: ` : ""}
+                  {e.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {validation.warnings.length > 0 && (
+          <ul className="mt-1 list-disc pl-5 text-xs text-amber-300">
+            {validation.warnings.map((w, i) => (
+              <li key={i}>
+                {w.species ? `${w.species}: ` : ""}
+                {w.message}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+
+      {/* Basic team analysis */}
+      {analysis && (
+        <Panel title="Team analysis">
+          <div className="mb-3">
+            <ProvisionalTag />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <h3 className="text-xs font-semibold uppercase text-slate-500">
+                Defensive weaknesses
+              </h3>
+              <ul className="mt-1 space-y-0.5 text-xs">
+                {analysis.weaknesses.slice(0, 8).map((w) => (
+                  <li
+                    key={w.type}
+                    className={w.shared ? "text-rose-300" : "text-slate-400"}
+                  >
+                    <span className="capitalize">{w.type}</span> ×
+                    {w.members.length}
+                    {w.shared ? " (shared)" : ""}: {w.members.join(", ")}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase text-slate-500">
+                Offensive coverage gaps
+              </h3>
+              <p className="mt-1 text-xs text-slate-400">
+                {analysis.offensiveGaps.length === 0
+                  ? "No super-effective gaps against single types."
+                  : `No super-effective answer to: ${analysis.offensiveGaps.join(", ")}.`}
+              </p>
+              <h3 className="mt-3 text-xs font-semibold uppercase text-slate-500">
+                Speed tiers
+              </h3>
+              <ul className="mt-1 text-xs text-slate-400">
+                {analysis.speedTiers.map((s) => (
+                  <li key={s.name}>
+                    {s.name}: {s.speed}
+                  </li>
+                ))}
+              </ul>
+              <h3 className="mt-3 text-xs font-semibold uppercase text-slate-500">
+                Speed control
+              </h3>
+              <p className="mt-1 text-xs text-slate-400">
+                {analysis.speedControl.missing
+                  ? "None detected (no priority or speed-control moves)."
+                  : [
+                      analysis.speedControl.hasPriority ? "priority moves" : null,
+                      analysis.speedControl.controlMoves.length
+                        ? `${analysis.speedControl.controlMoves.length} control move(s)`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
+              </p>
+              {analysis.dependence.note && (
+                <p className="mt-2 text-xs text-amber-300">
+                  {analysis.dependence.note}
+                </p>
+              )}
+            </div>
+          </div>
+        </Panel>
+      )}
+
+      <Panel title="Notes">
+        <form action={updateNotesAction} className="space-y-2">
+          <input type="hidden" name="teamId" value={team.id} />
+          <textarea
+            name="notes"
+            defaultValue={team.notes}
+            rows={3}
+            placeholder="Team notes…"
+            className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+          />
+          <button className="rounded border border-slate-600 px-3 py-1 text-sm hover:border-amber-500">
+            Save notes
+          </button>
+        </form>
+      </Panel>
 
       <Panel title="Assign to collection">
         <form action={assignCollectionAction} className="flex gap-2">
@@ -55,10 +222,7 @@ export default async function TeamDetailPage({
               </option>
             ))}
           </select>
-          <button
-            type="submit"
-            className="rounded border border-slate-600 px-3 py-2 text-sm hover:border-amber-500"
-          >
+          <button className="rounded border border-slate-600 px-3 py-2 text-sm hover:border-amber-500">
             Save
           </button>
         </form>
@@ -74,6 +238,15 @@ export default async function TeamDetailPage({
                 {v.snapshot.members.length} members ·{" "}
                 {new Date(v.createdAt).toLocaleString()}
               </span>
+              {v.versionNumber !== latest.versionNumber && (
+                <form action={restoreVersionAction} className="ml-auto">
+                  <input type="hidden" name="teamId" value={team.id} />
+                  <input type="hidden" name="versionNumber" value={v.versionNumber} />
+                  <button className="rounded border border-slate-700 px-2 py-0.5 text-xs hover:border-amber-500">
+                    Restore
+                  </button>
+                </form>
+              )}
             </li>
           ))}
         </ul>
@@ -109,10 +282,7 @@ export default async function TeamDetailPage({
               ))}
             </select>
           </label>
-          <button
-            type="submit"
-            className="rounded border border-slate-600 px-3 py-1 hover:border-amber-500"
-          >
+          <button className="rounded border border-slate-600 px-3 py-1 hover:border-amber-500">
             Compare
           </button>
         </form>
@@ -152,67 +322,12 @@ export default async function TeamDetailPage({
         )}
       </Panel>
 
-      <Panel title="Save a new version">
-        <form action={addVersionAction} className="space-y-3">
-          <input type="hidden" name="teamId" value={team.id} />
-          <input
-            name="label"
-            placeholder="Version label (optional)"
-            className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-          />
-          <div className="space-y-2">
-            {latest.snapshot.members.map((m) => (
-              <div
-                key={m.species}
-                className="grid grid-cols-1 gap-2 rounded border border-slate-800 p-2 sm:grid-cols-4"
-              >
-                <span className="self-center font-semibold capitalize">
-                  {m.species}
-                </span>
-                <label className="text-xs text-slate-400">
-                  Level
-                  <input
-                    type="number"
-                    name={`level_${m.species}`}
-                    defaultValue={m.level}
-                    min={1}
-                    max={100}
-                    className="mt-0.5 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
-                  />
-                </label>
-                <label className="text-xs text-slate-400">
-                  Item
-                  <input
-                    name={`item_${m.species}`}
-                    defaultValue={m.item ?? ""}
-                    placeholder="(none)"
-                    className="mt-0.5 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
-                  />
-                </label>
-                <label className="text-xs text-slate-400">
-                  Nature
-                  <select
-                    name={`nature_${m.species}`}
-                    defaultValue={m.nature}
-                    className="mt-0.5 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
-                  >
-                    {Object.keys(NATURES).map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            ))}
-          </div>
-          <button
-            type="submit"
-            className="rounded bg-amber-500 px-4 py-2 text-sm font-semibold text-black hover:bg-amber-400"
-          >
-            Save new version
-          </button>
-        </form>
+      <Panel title="Edit sets → save as new version">
+        <TeamEditor
+          teamId={team.id}
+          members={editorMembers}
+          natures={NATURE_NAMES}
+        />
       </Panel>
     </div>
   );
