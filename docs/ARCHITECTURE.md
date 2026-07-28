@@ -1,0 +1,270 @@
+# AssaultDex — Architecture & Phase 1 Design
+
+This document answers the eleven "First task" deliverables from
+`ASSAULTDEX_SPEC.md`, then defines the first vertical slice that this
+repository implements. It is written **before** later phases and covers only
+Phase 1.
+
+> **Mechanics status: PROVISIONAL.** Pokémon Champions is not publicly
+> documented. Per `AGENTS.md`, no mechanic, formula, statistic, or provider
+> datum may be invented or assumed from older games. Every mechanic in this
+> slice is therefore marked `provisional` and centralised in
+> `src/domain/mechanics/assumptions.ts`. All fixture data is documented test
+> data, not authoritative provider data. When verified Champions data exists,
+> the provisional flags and fixtures are replaced without touching UI or
+> persistence.
+
+---
+
+## 1. Repository assessment
+
+Starting state of the repository:
+
+| File | Purpose |
+| --- | --- |
+| `ASSAULTDEX_SPEC.md` | Full product specification. |
+| `AGENTS.md` | Agent rules (scope, no-invention, phase discipline). |
+| `README.md` | One-line placeholder. |
+
+Findings:
+
+- **Greenfield.** No existing application code, stack, build tooling, tests,
+  or CI. Nothing to reuse; nothing to preserve. We choose the stack fresh
+  from the spec's "Preferred stack".
+- **No running database.** The container has the `psql` client but no
+  Postgres server. Phase 1 therefore runs on **SQLite through Prisma** so
+  migrations, tests, and the production build all run without an external
+  service. The Prisma schema and repository layer are provider-agnostic; the
+  production target remains PostgreSQL (documented in
+  [Risks](#10-risks-and-unverified-mechanics)).
+- **Mechanics are unverified.** The spec's own game ("Pokémon Champions") has
+  no public mechanics. This is the dominant design constraint: mechanics are
+  isolated, provisional, and individually flagged.
+
+## 2. Architecture
+
+Layered, with a strict dependency direction. Battle logic never imports UI or
+persistence (spec: "Keep battle calculations separate from the UI and
+database").
+
+```
+          ┌───────────────────────────────────────────┐
+   UI      │  src/app  (Next.js App Router, React)      │
+          │  src/components                            │
+          └───────────────┬───────────────────────────┘
+                          │ calls (server actions / RSC)
+          ┌───────────────▼───────────────────────────┐
+ APP/SVC   │  src/server  (repositories, prisma client) │
+          └───────┬───────────────────────┬───────────┘
+                  │                       │
+   DOMAIN ┌───────▼────────┐      DATA ┌──▼──────────────────────┐
+          │ src/domain     │           │ src/data                │
+          │ pure mechanics │           │ provider adapters,      │
+          │ + scoring      │           │ Zod schemas, fixtures,  │
+          │ (no I/O)       │           │ normalization           │
+          └────────────────┘           └─────────────────────────┘
+```
+
+- **`src/domain`** — Pure, deterministic TypeScript. No `fetch`, no Prisma, no
+  React. Type effectiveness, speed, damage, legal-action generation, ChoiceDex
+  scoring and recommendation. This is the most heavily tested layer.
+- **`src/data`** — Server-side provider adapters behind a common interface,
+  Zod validation of all external/fixture input, and normalization to internal
+  domain types. Fixtures live here.
+- **`src/server`** — Persistence. Prisma client and repository functions for
+  teams, versions, and collections. The only layer that talks to the DB.
+- **`src/app` / `src/components`** — Next.js UI and server actions. Depends
+  inward only.
+
+Rules enforced by ESLint `no-restricted-imports`: `src/domain` may not import
+from `app`, `server`, `data`, or `next`.
+
+## 3. Folder structure
+
+```
+assaultdex/
+  docs/ARCHITECTURE.md         # this document
+  prisma/
+    schema.prisma              # SQLite (dev) — provider-agnostic models
+    migrations/                # committed migrations
+    seed.ts                    # seeds Pokémon from fixtures via the adapter
+  src/
+    domain/                    # PURE battle logic (no I/O)
+      types/                   # domain types (Pokemon, Move, BattleState…)
+      mechanics/               # assumptions, typeChart, typeEffectiveness,
+                               #   speed, damage, legalActions
+      choicedex/               # scoring, recommend
+    data/                      # provider adapters + validation + fixtures
+      providers/               # ProviderAdapter interface + fixture adapter
+      schemas/                 # Zod schemas for external/fixture data
+      fixtures/                # documented fixture data (JSON/TS)
+      normalize.ts             # external → domain normalization
+    server/                    # persistence
+      db.ts                    # prisma client singleton
+      repositories/            # pokemonRepo, teamRepo
+    app/                       # Next.js routes
+      pokemon/ , teams/ , choicedex/
+    components/
+    lib/
+  vitest.config.ts, next.config.ts, tsconfig.json, eslint.config.mjs …
+```
+
+## 4. Database overview
+
+Phase 1 persists only what the slice needs: imported Pokémon reference data,
+teams, immutable team versions, and collections. (Battle state in Phase 1 is
+transient and client-driven; it is not persisted yet.)
+
+Models (`prisma/schema.prisma`):
+
+- **Pokemon** — normalized reference row. `provider`, `externalId`,
+  `retrievedAt`, `dataVersion`, `normalizationVersion`, `updateStatus`
+  (spec: provenance columns). `(provider, externalId)` unique so imports are
+  idempotent (spec: "Imports must be repeatable without creating
+  duplicates").
+- **Move / Ability / Item / Nature** (Phase 1 keeps moves inline on the
+  Pokemon fixture; the tables exist for later phases but only Pokemon is
+  populated in the slice).
+- **Collection** — named grouping of teams. Private by default.
+- **Team** — belongs to a collection (optional in Phase 1, no auth yet), has
+  many versions.
+- **TeamVersion** — immutable snapshot: `versionNumber`, `label`, `createdAt`,
+  and the six Pokémon sets stored as validated JSON. Comparing two versions is
+  a pure diff over these snapshots.
+
+Idempotent import is implemented with `upsert` on `(provider, externalId)`.
+
+## 5. Mechanics-engine design
+
+All mechanics live in `src/domain/mechanics` and are pure functions over
+plain data. Each mechanic references a central assumption record:
+
+- **`assumptions.ts`** — `MECHANICS_STATUS = 'provisional'` and an
+  `ASSUMPTIONS` registry: id, description, source (`mainline-derived` /
+  `fixture`), and `verified: false`. Every engine result carries the
+  assumption ids it relied on, so the UI can surface "Assumptions" and never
+  present provisional output as verified.
+- **`typeChart.ts` / `typeEffectiveness.ts`** — 18-type multiplier lookup for
+  single and dual types (0/¼/½/1/2/4). Flagged provisional for Champions.
+- **`speed.ts`** — effective speed from base stat + nature + EV/IV + a
+  provisional item/ability/field hook, plus move-order resolution including
+  priority and speed ties (returns tie probability rather than a fabricated
+  winner).
+- **`damage.ts`** — provisional mainline-style damage: returns the full 16-roll
+  min/max/expected spread, percentages, and OHKO/2HKO/survival probabilities.
+  Never returns a single "guaranteed" number (spec: "Never describe an
+  uncertain result as guaranteed").
+- **`legalActions.ts`** — generates all legal action combinations for the two
+  active user Pokémon (each move × legal target, plus switches) and likely
+  opponent actions from revealed/inferred data.
+
+Determinism: given the same inputs, every function returns identical output —
+required for tests and for reproducible recommendations.
+
+## 6. ChoiceDex scoring design
+
+`src/domain/choicedex`.
+
+- Scoring is **transparent and factor-decomposed** (spec: "Store each factor
+  separately"). `scoreAction` returns a `ScoreBreakdown`: a list of named
+  factors (expected damage, KO probability, survival, speed control, …), each
+  with a raw value, a normalized 0–1 contribution, and the weight applied.
+  The final score is the weighted sum; the breakdown is retained, not just the
+  total.
+- **Profiles** (`Balanced`, `Safest`, `HighestEV`, `MaxDamage`, …) supply
+  weight vectors only. They never change mechanics or probabilities (spec).
+- **`recommend`** ranks complete action combinations and returns, per
+  recommendation: both user actions + targets, damage/KO/survival
+  probabilities, expected resulting position (provisional), main risk,
+  assumptions used, a confidence value, an alternative, and a plain-language
+  explanation.
+- Phase 1 ships a deterministic single-turn evaluation. Simulation/branching
+  (Phases 7–8) are out of scope and not stubbed as if working.
+
+## 7. Opponent-inference design
+
+Full inference is Phase 6. Phase 1 ships only the **interface and data shape**
+so the slice can carry "inferred/unknown" states honestly, without a working
+Bayesian updater:
+
+- `PossibilityDistribution<T>` — prior, current, supporting/contradictory
+  evidence, confidence. A possibility is removed only when confirmed evidence
+  makes it impossible.
+- Phase 1 opponent sets are entered/unknown, tagged with an information tier
+  (`confirmed` / `entered` / `calculated` / `inferred` / `unknown`). No
+  probability updates are performed yet; the types exist so later phases plug
+  in without reshaping the battle state.
+
+## 8. External-provider design
+
+`src/data/providers`. Every provider implements `ProviderAdapter`:
+
+```ts
+interface ProviderAdapter<Raw, Domain> {
+  readonly provider: string;
+  fetchAll(opts): Promise<RawPage<Raw>>;   // pagination
+  validate(raw: unknown): Raw;             // Zod
+  normalize(raw: Raw): Domain;             // → domain type + provenance
+}
+```
+
+Cross-cutting concerns required by the spec (auth, timeouts, pagination, rate
+limits, retries, caching, failure handling, normalization) are defined on the
+adapter contract and helper wrappers. Phase 1 ships **one** adapter:
+`fixturePokemonProvider` — reads documented local fixtures, validates with
+Zod, and normalizes to the domain `Pokemon` type with provenance
+(`provider='fixture'`, `retrievedAt`, `dataVersion`, `normalizationVersion`).
+No live network provider is claimed. Previously imported data survives
+provider outages because it lives in the DB, not fetched per request.
+
+## 9. Testing strategy
+
+- **Vitest** for unit tests, colocated under `__tests__`. Focus on the pure
+  domain layer: type effectiveness (single/dual, immunities), speed & priority
+  ordering + ties, damage spread/percent/KO probabilities, legal-action
+  generation, scoring factor decomposition, and recommendation ranking.
+- **Provisional tests.** Tests that assert values from unverified mechanics are
+  marked provisional (title prefix `[provisional]`) so a mechanics change is
+  expected to update them (spec: "Mark tests based on unverified mechanics as
+  provisional").
+- **Validation tests** for the Zod fixture schema and normalization
+  (idempotent, provenance present).
+- **Regression tests** are added for every calculation bug found later.
+- Commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
+  Playwright is configured for later end-to-end phases but no e2e is claimed
+  as passing in Phase 1.
+
+## 10. Risks and unverified mechanics
+
+| Risk / assumption | Handling |
+| --- | --- |
+| **Champions mechanics unknown.** Type chart, damage, speed, priority are all mainline-derived guesses. | Centralised in `assumptions.ts`, flagged `verified:false`, surfaced in UI, provisional tests. Swap when real data exists. |
+| **Fixture data is not a provider feed.** Base stats/types are public Pokédex values; move power/accuracy provisional. | `provider='fixture'`, clearly labelled; not presented as competitive/usage data. |
+| **SQLite ≠ PostgreSQL.** Migration SQL and some types differ. | Repository layer is provider-agnostic; schema avoids PG-only features in Phase 1. Production swap tracked as a Phase 10 task. |
+| **No auth yet.** Teams are unowned in Phase 1. | Accounts are Phase 10; models leave room for `userId` without reshaping. Collections default private. |
+| **Usage/win-rate stats.** | Out of scope for the slice; not fabricated. Homepage shows only what the slice actually has. |
+
+## 11. Phase 1 acceptance criteria
+
+The first vertical slice is complete when all of the following hold and every
+validation command passes:
+
+1. Pokémon data imports from documented fixtures through the provider adapter,
+   with Zod validation and provenance, idempotently (re-running the seed
+   creates no duplicates).
+2. A user can search Pokémon and open a Pokémon page showing types, base
+   stats, provisional type matchups, and provenance.
+3. A user can create and save a team of up to six Pokémon (validated with Zod).
+4. A user can create a new team version and compare two versions (a diff).
+5. A team can be placed in a collection.
+6. A user can select two active user Pokémon and two active opponent Pokémon.
+7. A basic battle state can be entered (active Pokémon, HP, simple field).
+8. The engine computes type effectiveness, effective speed/order, and a damage
+   spread (min/max/expected, %, OHKO/2HKO/survival).
+9. Legal actions are generated for both active user Pokémon.
+10. ChoiceDex displays ranked recommendations, each with its factor
+    breakdown, probabilities, assumptions, confidence, risk, and explanation —
+    never presented as guaranteed.
+
+Validation: `pnpm typecheck && pnpm lint && pnpm test && pnpm build` all pass.
+Later phases (2–10) are **not** started.
