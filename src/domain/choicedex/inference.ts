@@ -75,21 +75,22 @@ export function confirm<T>(
   isValue: (v: T) => boolean,
   evidence: string,
 ): PossibilityDistribution<T> {
-  let found = false;
+  // If the confirmed value isn't a candidate, leave the distribution intact
+  // rather than eliminating everything (a degenerate all-impossible state).
+  if (!dist.candidates.some((c) => isValue(c.value))) {
+    return dist;
+  }
   for (const c of dist.candidates) {
     if (isValue(c.value)) {
       c.eliminated = false;
       c.current = 1;
-      found = true;
     } else {
       c.eliminated = true;
       c.current = 0;
     }
   }
-  if (found) {
-    dist.supporting.push({ description: evidence, weight: 1 });
-    dist.tier = "confirmed";
-  }
+  dist.supporting.push({ description: evidence, weight: 1 });
+  dist.tier = "confirmed";
   renormalize(dist);
   return dist;
 }

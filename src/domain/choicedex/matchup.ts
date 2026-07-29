@@ -44,7 +44,10 @@ function bestOffense(
       };
     }
   }
-  if (best.move === null) return { move: null, expectedPercent: 0, ohko: 0 };
+  // A move that deals no damage (immune matchup) is not a meaningful "best".
+  if (best.move === null || best.expectedPercent <= 0) {
+    return { move: null, expectedPercent: 0, ohko: 0 };
+  }
   return best;
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { recommend } from "@/domain/choicedex/recommend";
 import {
   PROFILE_LABELS,
@@ -47,6 +47,16 @@ export function Simulator({ pokemon }: { pokemon: PokemonRef[] }) {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<SimResult | null>(null);
   const cancelRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  // Cancel any in-flight run and stop touching state after unmount.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      cancelRef.current = true;
+    };
+  }, []);
 
   const formOf = (): TurnForm => ({
     user: { slots: [emptySlot(sel.u1), emptySlot(sel.u2)], tailwind: false },
@@ -80,10 +90,12 @@ export function Simulator({ pokemon }: { pokemon: PokemonRef[] }) {
       for (let j = 0; j < chunk && i + j < runs; j++) {
         accumulate(acc, simulateBattle(state, userPol, oppPol, rng, 20));
       }
+      if (!mountedRef.current) return;
       setProgress(acc.completed);
       setResult(finalize(acc, cancelRef.current));
       await new Promise((r) => setTimeout(r, 0));
     }
+    if (!mountedRef.current) return;
     setResult(finalize(acc, cancelRef.current));
     setRunning(false);
   }

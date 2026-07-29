@@ -12,7 +12,7 @@ import {
 } from "../mechanics/legalActions";
 import { effectiveSpeed } from "../mechanics/speed";
 import type { BattleState, Combatant } from "../types/battle";
-import { evaluateCombination } from "./recommend";
+import { describeCombination, evaluateCombination } from "./recommend";
 import type { ProfileName } from "./scoring";
 
 export interface ExploreLimits {
@@ -155,6 +155,7 @@ function applyActions(
       const dmg = calculateDamage(exec.attacker, target, exec.move, next.field, {
         spread: exec.move.target !== "normal",
         defenderConditions: sideConditions(next, foe),
+        fast: true, // only min/max damage are used here
       });
       const amount = roll === "low" ? dmg.minDamage : dmg.maxDamage;
       target.currentHp = Math.max(0, target.currentHp - amount);
@@ -218,11 +219,8 @@ export function exploreTurns(
         const nextState = applyActions(current, choice.combo, oppCombo, roll);
         const node: TurnNode = {
           depth,
-          userActions: evaluateCombination(current, choice.combo, profile)
-            .actionLines,
-          opponentActions: oppBest
-            ? evaluateCombination(current, oppCombo, profile).actionLines
-            : [],
+          userActions: describeCombination(current, choice.combo),
+          opponentActions: oppBest ? describeCombination(current, oppCombo) : [],
           rollLabel: roll,
           probability: Math.round(childProb * 1000) / 1000,
           score: choice.score,

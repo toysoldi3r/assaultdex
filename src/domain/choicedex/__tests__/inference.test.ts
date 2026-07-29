@@ -41,4 +41,11 @@ describe("possibility distribution", () => {
     const d = eliminate(createDistribution(["a", "b"]), () => false, "no-op");
     expect(liveCandidates(d)).toHaveLength(2);
   });
+
+  it("confirming a value that is not a candidate leaves the distribution intact", () => {
+    // Regression: previously this eliminated every candidate.
+    const d = confirm(createDistribution(["a", "b", "c"]), (v) => v === "z", "revealed z");
+    expect(liveCandidates(d)).toHaveLength(3);
+    expect(d.tier).toBe("unknown");
+  });
 });

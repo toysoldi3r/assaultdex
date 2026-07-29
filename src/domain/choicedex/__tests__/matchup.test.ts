@@ -36,4 +36,19 @@ describe("matchup matrix", () => {
     const fireVsGrass = m.cells[1]![1]!;
     expect(fireVsGrass.outspeeds).toBe(false);
   });
+
+  it("reports no best move for an immune matchup", () => {
+    // Regression: a 0%-damage (immune) move must not be labelled the best move.
+    const ground = combatant({
+      name: "Ground",
+      types: ["ground"],
+      base: stats({ atk: 150 }),
+      moves: [move({ name: "Quake", type: "ground", power: 100 })],
+    });
+    const flyer = combatant({ name: "Flyer", types: ["flying"], base: stats(), moves: [move({ name: "Gust", type: "flying" })] });
+    const m = buildMatchupMatrix([ground], [flyer], DEFAULT_FIELD);
+    const cell = m.cells[0]![0]!;
+    expect(cell.bestMove).toBeNull();
+    expect(cell.expectedPercent).toBe(0);
+  });
 });

@@ -87,6 +87,14 @@ function describeAction(state: BattleState, action: Action): string {
   return `${who}: ${action.moveName} → ${target?.name ?? "target"}`;
 }
 
+/** Human-readable labels for a combination (cheap — no damage evaluation). */
+export function describeCombination(
+  state: BattleState,
+  combination: ActionCombination,
+): string[] {
+  return combination.map((a) => describeAction(state, a));
+}
+
 function opponentInfoCompleteness(state: BattleState): number {
   const actives = state.opponent.active.filter(
     (c): c is Combatant => c !== null && !c.fainted,

@@ -91,12 +91,12 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
   }
 
   const recordTurn = () => setHistory((h) => [...h, form]);
-  const undo = () =>
-    setHistory((h) => {
-      if (h.length === 0) return h;
-      setForm(h[h.length - 1]!);
-      return h.slice(0, -1);
-    });
+  const undo = () => {
+    if (history.length === 0) return;
+    // Read the current snapshot in the handler; no side effects in the updater.
+    setForm(history[history.length - 1]!);
+    setHistory(history.slice(0, -1));
+  };
   const loadTurn = (i: number) => setForm(history[i]!);
 
   return (

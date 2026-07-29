@@ -52,6 +52,8 @@ export function applyTurn(
     targetSlot: 0 | 1 | null;
     priority: number;
     speed: number;
+    /** Stable random key so speed ties break fairly without an rng-in-sort. */
+    tiebreak: number;
   }
 
   const execs: Exec[] = [];
@@ -74,13 +76,15 @@ export function applyTurn(
         speed: effectiveSpeed(attacker, {
           tailwind: sideConditions(next, action.side).tailwind,
         }).effectiveSpeed,
+        tiebreak: rng(),
       });
     }
   }
 
-  // Priority, then Speed; ties broken randomly.
+  // Priority, then Speed, then a stable random tiebreak. Using a precomputed key
+  // (not rng() inside the comparator) keeps the comparator consistent.
   execs.sort(
-    (a, b) => b.priority - a.priority || b.speed - a.speed || (rng() < 0.5 ? -1 : 1),
+    (a, b) => b.priority - a.priority || b.speed - a.speed || a.tiebreak - b.tiebreak,
   );
 
   for (const exec of execs) {
@@ -98,6 +102,7 @@ export function applyTurn(
       const dmg = calculateDamage(exec.attacker, target, exec.move, next.field, {
         spread: exec.move.target !== "normal",
         defenderConditions: sideConditions(next, foeSide),
+        fast: true, // only the rolls are used here
       });
       if (exec.side === "user") userAttempts++;
 

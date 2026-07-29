@@ -21,6 +21,11 @@ export interface DamageOptions {
   defenderConditions?: SideConditions;
   /** Treat this as a critical hit. */
   crit?: boolean;
+  /**
+   * Skip the O(rolls²) two-hit-KO computation when only the damage rolls are
+   * needed (the simulation/transition hot path). twoHitKoProbability is 0 then.
+   */
+  fast?: boolean;
 }
 
 export interface DamageModifier {
@@ -192,13 +197,16 @@ export function calculateDamage(
   const ohkoRolls = rolls.filter((d) => d >= currentHp).length;
   const ohkoProbability = ohkoRolls / rolls.length;
 
-  let twoHitKo = 0;
-  for (const r1 of rolls) {
-    for (const r2 of rolls) {
-      if (r1 + r2 >= currentHp) twoHitKo++;
+  let twoHitKoProbability = 0;
+  if (!options.fast) {
+    let twoHitKo = 0;
+    for (const r1 of rolls) {
+      for (const r2 of rolls) {
+        if (r1 + r2 >= currentHp) twoHitKo++;
+      }
     }
+    twoHitKoProbability = twoHitKo / (rolls.length * rolls.length);
   }
-  const twoHitKoProbability = twoHitKo / (rolls.length * rolls.length);
 
   const accFrac = move.accuracy === null ? 1 : move.accuracy / 100;
 
