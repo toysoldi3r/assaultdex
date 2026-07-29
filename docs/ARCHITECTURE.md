@@ -333,3 +333,35 @@ extension point for them later.
 
 Validation: `pnpm typecheck && pnpm lint && pnpm test` (49 tests) `&& pnpm build`
 all pass. Phases 4–10 are **not** started.
+
+---
+
+## Phase 4 — lead analysis, interactive battle editor, recommendations (implemented)
+
+Because the domain layer is pure (no I/O), the recommendation engine runs
+**client-side**: ChoiceDex is now interactive, recomputing live as the state
+changes, with no server round-trip per edit.
+
+- **Lead analysis** (`domain/choicedex/leads.ts`, pure, tested): ranks the
+  user's candidate lead pairs against every likely opponent lead pair using the
+  recommendation and speed engines. Transparent factors — damage pressure,
+  defensive position, speed control, KO safety — with best/worst matchup and an
+  explanation. Metagame-driven lead criteria (common opponent strategies) are
+  omitted (Phase 5), not fabricated.
+- **Interactive battle editor** (`components/choicedex/BattleEditor.tsx`,
+  client): edit both sides' species, HP%, status, and stat stages, plus field
+  (weather/terrain/Trick Room) and per-side Tailwind. Recommendations update
+  live. Turn history with **record / undo / return-to-earlier-turn** and
+  per-turn notes (spec: "Support undo, corrections, and returning to earlier
+  turns").
+- **Client build helper** (`lib/choicedexBuild.ts`): turns reference Pokémon +
+  editor form state into a domain `BattleState`; imports only pure domain + the
+  fixture natures, so it is safe in client components.
+- **Shared presentation** (`components/choicedex/Recommendations.tsx`): the
+  ranked-recommendation view (actions, damage rolls, KO/2HKO, factor breakdown,
+  modifiers, risk, assumptions, confidence) reused across editor views.
+- The old GET-form server page and its `lib.ts` builder were replaced by the
+  client editor.
+
+Validation: `pnpm typecheck && pnpm lint && pnpm test` (52 tests) `&& pnpm build`
+all pass. Phases 5–10 are **not** started.
