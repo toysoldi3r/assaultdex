@@ -434,3 +434,29 @@ battle reports) tied to later phases.
 
 Validation: `pnpm typecheck && pnpm lint && pnpm test` (68 tests) `&& pnpm build`
 all pass. Phase 5 is deferred; Phases 8–10 are **not** started.
+
+---
+
+## Phase 8 — simulations and practice opponent (implemented)
+
+Mechanics-driven Monte-Carlo, no statistics.
+
+- **Stochastic transition** (`domain/sim/transition.ts`): resolves a turn with a
+  seeded PRNG (mulberry32) — priority/Speed ordering, accuracy checks, and a
+  random damage roll per hit. Clones the state (originals never mutate).
+- **Policies** (`domain/sim/policy.ts`): `greedyPolicy`, `randomPolicy`, and the
+  practice-opponent `practicePolicy` at four difficulties (basic / standard /
+  competitive / high-variance). Every policy takes only the current state, so
+  the practice opponent **structurally cannot read the user's pending choice**
+  (spec).
+- **Simulation** (`domain/sim/simulate.ts`): `simulateBattle` plays a full game;
+  `runSimulations` (and the chunk-friendly `accumulate`/`finalize`) aggregate win
+  probability with a 95% Wald CI, loss / draw / timeout rates, average KOs,
+  average turns and variance, and outcome counts. Reproducible by seed and
+  cancellable via callback.
+- **UI**: `Simulator` runs rollouts in cancellable chunks with a live progress
+  bar and shows a **fast deterministic recommendation first** (spec); `Practice`
+  is an interactive turn-by-turn mode against the AI at a chosen difficulty.
+
+Validation: `pnpm typecheck && pnpm lint && pnpm test` (75 tests) `&& pnpm build`
+all pass. Phase 5 is deferred; Phases 9–10 are **not** started.

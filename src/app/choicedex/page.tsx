@@ -3,7 +3,9 @@ import { BattleEditor } from "@/components/choicedex/BattleEditor";
 import { LeadAnalyzer } from "@/components/choicedex/LeadAnalyzer";
 import { MatchupMatrix } from "@/components/choicedex/MatchupMatrix";
 import { OpponentInference } from "@/components/choicedex/OpponentInference";
+import { Practice } from "@/components/choicedex/Practice";
 import { Sandbox } from "@/components/choicedex/Sandbox";
+import { Simulator } from "@/components/choicedex/Simulator";
 import { TurnExplorer } from "@/components/choicedex/TurnExplorer";
 import type { PokemonRef } from "@/lib/choicedexBuild";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
@@ -59,6 +61,12 @@ export default async function ChoiceDexPage() {
           </Panel>
           <Panel title="Branching turn explorer">
             <TurnExplorer pokemon={refs} />
+          </Panel>
+          <Panel title="Simulation mode">
+            <Simulator pokemon={refs} />
+          </Panel>
+          <Panel title="Practice opponent">
+            <Practice pokemon={refs} />
           </Panel>
         </>
       )}
