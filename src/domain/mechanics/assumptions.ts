@@ -1,0 +1,104 @@
+// Central registry of PROVISIONAL mechanics assumptions.
+//
+// Pokémon Champions mechanics are not publicly documented. Per AGENTS.md we may
+// not invent or assume mechanics. Everything in the mechanics engine is
+// therefore derived from documented mainline formulas as a *provisional*
+// placeholder and flagged here as unverified. Every engine result carries the
+// ids it relied on so the UI can surface assumptions and never present output
+// as verified.
+
+export const MECHANICS_STATUS = "provisional" as const;
+
+export type AssumptionSource = "mainline-derived" | "fixture";
+
+export interface Assumption {
+  id: string;
+  description: string;
+  source: AssumptionSource;
+  verified: false;
+}
+
+export const ASSUMPTIONS = {
+  typeChart: {
+    id: "typeChart",
+    description:
+      "18-type effectiveness multipliers (0/¼/½/1/2/4) use the mainline chart. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  statFormula: {
+    id: "statFormula",
+    description:
+      "Stats computed with the mainline formula (base, IV, EV, level, nature ±10%). Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  speedOrder: {
+    id: "speedOrder",
+    description:
+      "Move order = priority bracket, then effective Speed; ties are 50/50. Trick Room reverses Speed. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  damageFormula: {
+    id: "damageFormula",
+    description:
+      "Damage uses the mainline formula with the 85–100% roll spread and a spread-move 0.75 modifier in doubles. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  moveData: {
+    id: "moveData",
+    description:
+      "Move power/accuracy/priority/target come from fixtures, not a confirmed provider feed.",
+    source: "fixture",
+    verified: false,
+  },
+  weather: {
+    id: "weather",
+    description:
+      "Sun boosts Fire ×1.5 and weakens Water ×0.5; Rain the reverse. Mainline-derived, unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  terrain: {
+    id: "terrain",
+    description:
+      "Electric/Grassy/Psychic Terrain boost their type ×1.3 for grounded users; Misty halves Dragon vs grounded targets. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  screens: {
+    id: "screens",
+    description:
+      "Reflect/Light Screen/Aurora Veil reduce damage of the matching category by 1/3 in doubles. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  grounding: {
+    id: "grounding",
+    description:
+      "A Pokémon is treated as grounded unless it is Flying-type. Item/ability grounding effects are not modeled. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  tailwind: {
+    id: "tailwind",
+    description: "Tailwind doubles a side's Speed. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  spreadGridPrior: {
+    id: "spreadGridPrior",
+    description:
+      "Opponent spreads are enumerated on a uniform grid (EV steps of 4, nature ±/0, IV 0/31) with equal priors. This is NOT usage-based — competitive-usage priors are deferred until a verified data source exists.",
+    source: "fixture",
+    verified: false,
+  },
+} as const satisfies Record<string, Assumption>;
+
+export type AssumptionId = keyof typeof ASSUMPTIONS;
+
+export function assumptionsFor(ids: readonly AssumptionId[]): Assumption[] {
+  return ids.map((id) => ASSUMPTIONS[id]);
+}

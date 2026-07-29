@@ -1,0 +1,102 @@
+{
+  "data_version": "fixtures-2025.3",
+  "note": "Documented FIXTURE data, not a live provider feed. Every entry is a regular, fully-evolved Pokemon confirmed in the Pokemon Champions roster (no legendaries, mythicals, Ultra Beasts, or Paradox Pokemon, which are excluded from the pool). Base stats and types are public Pokedex values; move power/accuracy/priority/target are provisional for Pokemon Champions (see mechanics/assumptions).",
+  "pokemon": [
+    {
+      "external_id": "incineroar",
+      "name": "Incineroar",
+      "types": ["fire", "dark"],
+      "base_stats": { "hp": 95, "attack": 115, "defense": 90, "special_attack": 80, "special_defense": 90, "speed": 60 },
+      "moves": [
+        { "name": "Fake Out", "type": "normal", "category": "physical", "power": 40, "accuracy": 100, "priority": 3, "target": "normal" },
+        { "name": "Flare Blitz", "type": "fire", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Knock Off", "type": "dark", "category": "physical", "power": 65, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Parting Shot", "type": "dark", "category": "status", "power": null, "accuracy": null, "priority": 0, "target": "normal" }
+      ]
+    },
+    {
+      "external_id": "rillaboom",
+      "name": "Rillaboom",
+      "types": ["grass"],
+      "base_stats": { "hp": 100, "attack": 125, "defense": 90, "special_attack": 60, "special_defense": 70, "speed": 85 },
+      "moves": [
+        { "name": "Wood Hammer", "type": "grass", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Fake Out", "type": "normal", "category": "physical", "power": 40, "accuracy": 100, "priority": 3, "target": "normal" },
+        { "name": "Knock Off", "type": "dark", "category": "physical", "power": 65, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "U-turn", "type": "bug", "category": "physical", "power": 70, "accuracy": 100, "priority": 0, "target": "normal" }
+      ]
+    },
+    {
+      "external_id": "amoonguss",
+      "name": "Amoonguss",
+      "types": ["grass", "poison"],
+      "base_stats": { "hp": 114, "attack": 85, "defense": 70, "special_attack": 85, "special_defense": 80, "speed": 30 },
+      "moves": [
+        { "name": "Spore", "type": "grass", "category": "status", "power": null, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Rage Powder", "type": "bug", "category": "status", "power": null, "accuracy": null, "priority": 2, "target": "self" },
+        { "name": "Pollen Puff", "type": "bug", "category": "special", "power": 90, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Sludge Bomb", "type": "poison", "category": "special", "power": 90, "accuracy": 100, "priority": 0, "target": "normal" }
+      ]
+    },
+    {
+      "external_id": "gholdengo",
+      "name": "Gholdengo",
+      "types": ["steel", "ghost"],
+      "base_stats": { "hp": 87, "attack": 60, "defense": 95, "special_attack": 133, "special_defense": 91, "speed": 84 },
+      "moves": [
+        { "name": "Make It Rain", "type": "steel", "category": "special", "power": 120, "accuracy": 100, "priority": 0, "target": "all-adjacent-foes" },
+        { "name": "Shadow Ball", "type": "ghost", "category": "special", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Nasty Plot", "type": "dark", "category": "status", "power": null, "accuracy": null, "priority": 0, "target": "self" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "garchomp",
+      "name": "Garchomp",
+      "types": ["dragon", "ground"],
+      "base_stats": { "hp": 108, "attack": 130, "defense": 95, "special_attack": 80, "special_defense": 85, "speed": 102 },
+      "moves": [
+        { "name": "Earthquake", "type": "ground", "category": "physical", "power": 100, "accuracy": 100, "priority": 0, "target": "all-adjacent" },
+        { "name": "Dragon Claw", "type": "dragon", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Rock Slide", "type": "rock", "category": "physical", "power": 75, "accuracy": 90, "priority": 0, "target": "all-adjacent-foes" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "dragonite",
+      "name": "Dragonite",
+      "types": ["dragon", "flying"],
+      "base_stats": { "hp": 91, "attack": 134, "defense": 95, "special_attack": 100, "special_defense": 100, "speed": 80 },
+      "moves": [
+        { "name": "Dragon Claw", "type": "dragon", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Extreme Speed", "type": "normal", "category": "physical", "power": 80, "accuracy": 100, "priority": 2, "target": "normal" },
+        { "name": "Earthquake", "type": "ground", "category": "physical", "power": 100, "accuracy": 100, "priority": 0, "target": "all-adjacent" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "tyranitar",
+      "name": "Tyranitar",
+      "types": ["rock", "dark"],
+      "base_stats": { "hp": 100, "attack": 134, "defense": 110, "special_attack": 95, "special_defense": 100, "speed": 61 },
+      "moves": [
+        { "name": "Rock Slide", "type": "rock", "category": "physical", "power": 75, "accuracy": 90, "priority": 0, "target": "all-adjacent-foes" },
+        { "name": "Crunch", "type": "dark", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Earthquake", "type": "ground", "category": "physical", "power": 100, "accuracy": 100, "priority": 0, "target": "all-adjacent" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "corviknight",
+      "name": "Corviknight",
+      "types": ["flying", "steel"],
+      "base_stats": { "hp": 98, "attack": 87, "defense": 105, "special_attack": 53, "special_defense": 85, "speed": 67 },
+      "moves": [
+        { "name": "Brave Bird", "type": "flying", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Iron Head", "type": "steel", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "U-turn", "type": "bug", "category": "physical", "power": 70, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Tailwind", "type": "flying", "category": "status", "power": null, "accuracy": null, "priority": 0, "target": "self" }
+      ]
+    }
+  ]
+}

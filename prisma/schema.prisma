@@ -1,0 +1,107 @@
+// AssaultDex — Prisma schema (Phase 1)
+//
+// Development/CI provider is SQLite so the slice runs with no external DB
+// server. Production target is PostgreSQL (docs/ARCHITECTURE.md). JSON-shaped
+// columns are stored as validated TEXT (Zod at the repository boundary) so the
+// schema stays portable between SQLite and PostgreSQL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Normalized Pokémon reference row imported from a provider adapter.
+/// Provenance columns are required by the spec; (provider, externalId) is
+/// unique so imports are idempotent.
+model Pokemon {
+  id   String @id @default(cuid())
+  slug String @unique
+  name String
+
+  /// JSON string: PokemonType[] (validated by Zod on read/write).
+  types String
+  /// JSON string: BaseStats.
+  baseStats String
+  /// JSON string: MoveFixture[].
+  moves String
+
+  // Provenance (spec: provider, external ID, retrieval time, data version,
+  // normalization version, update status).
+  provider             String
+  externalId           String
+  retrievedAt          DateTime
+  dataVersion          String
+  normalizationVersion String
+  updateStatus         String @default("current")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([name])
+}
+
+/// A named grouping of teams. Private by default (spec).
+model Collection {
+  id        String   @id @default(cuid())
+  name      String
+  isPrivate Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teams Team[]
+}
+
+/// A team. Owned by no user in Phase 1 (accounts are Phase 10).
+model Team {
+  id           String  @id @default(cuid())
+  name         String
+  notes        String  @default("")
+  collectionId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  collection Collection?   @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  versions   TeamVersion[]
+
+  @@index([collectionId])
+}
+
+/// A recorded battle (provisional replay) plus its computed post-battle
+/// summary. Users can delete individual battles or their whole history.
+model BattleRecord {
+  id        String   @id @default(cuid())
+  label     String   @default("")
+  result    String // win | loss | draw | timeout | unknown
+  turns     Int
+  /// JSON string: the provisional Replay.
+  replay    String
+  /// JSON string: BattleSummary (decision quality, mistakes, KO calibration).
+  summary   String
+  source    String   @default("imported") // imported | generated
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// An immutable snapshot of a team's six Pokémon sets. Comparing two versions
+/// is a pure diff over `snapshot`.
+model TeamVersion {
+  id            String   @id @default(cuid())
+  teamId        String
+  versionNumber Int
+  label         String?
+  /// JSON string: TeamSnapshot (validated by Zod).
+  snapshot      String
+  createdAt     DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, versionNumber])
+  @@index([teamId])
+}

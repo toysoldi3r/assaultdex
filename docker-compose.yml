@@ -1,0 +1,39 @@
+# Production topology (the spec's PostgreSQL target).
+#
+# NOTE: the dev/CI build uses SQLite so it runs with no DB server. To use this
+# Compose file you must switch the datasource in prisma/schema.prisma:
+#     datasource db { provider = "postgresql"  url = env("DATABASE_URL") }
+# and (re)generate PostgreSQL migrations. Then, as a release step, run
+#     pnpm exec prisma migrate deploy
+# against the database below before/at container start.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: assaultdex
+      POSTGRES_PASSWORD: assaultdex
+      POSTGRES_DB: assaultdex
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U assaultdex"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://assaultdex:assaultdex@db:5432/assaultdex
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
