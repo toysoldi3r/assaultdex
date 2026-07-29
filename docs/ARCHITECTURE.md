@@ -402,3 +402,35 @@ one deferred input, tied to Phase 5.)
 
 Validation: `pnpm typecheck && pnpm lint && pnpm test` (62 tests) `&& pnpm build`
 all pass. Phase 5 is deferred; Phases 7–10 are **not** started.
+
+---
+
+## Phase 7 — sandbox, matchup matrix, turn explorer (implemented)
+
+All mechanics-driven; no statistics needed.
+
+- **Scenario sandbox** (`domain/choicedex/sandbox.ts`): `cloneState` /
+  `withScenario` copy a state so it can be edited without touching the original
+  (spec: "Do not modify the original battle"); `compareScenarios` diffs the best
+  recommendation (score, expected damage, KO probability) between baseline and
+  variant.
+- **Matchup matrix** (`domain/choicedex/matchup.ts`): for each of the user's
+  Pokémon vs each opponent, the best single-target offense (best move, expected
+  %, OHKO) and the speed relationship. The opponent set is caller-supplied
+  (matrices vs "common" Pokémon/cores are deferred with the statistics phase).
+- **Branching turn explorer** (`domain/choicedex/turnExplorer.ts`): a bounded
+  decision tree of future turns — the user's top action lines (beam search), the
+  opponent's best response, and low/high damage-roll chance branches with
+  per-node probability and expected value. Bounded by depth, beam width,
+  probability threshold, and a node budget; transitions clone the state
+  (originals never mutate).
+- **UI**: `MatchupMatrix`, `Sandbox`, and `TurnExplorer` client components, each
+  a ChoiceDex panel, computing live in-browser.
+
+Tournament preparation (also in the phase title) is partially served here — the
+matchup matrix against a chosen opponent set is the core "matchup plans" tool —
+with the persistence-heavy parts (saved opponent rosters, practice records,
+battle reports) tied to later phases.
+
+Validation: `pnpm typecheck && pnpm lint && pnpm test` (68 tests) `&& pnpm build`
+all pass. Phase 5 is deferred; Phases 8–10 are **not** started.

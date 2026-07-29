@@ -1,7 +1,10 @@
 import { Panel, ProvisionalTag } from "@/components/ui";
 import { BattleEditor } from "@/components/choicedex/BattleEditor";
 import { LeadAnalyzer } from "@/components/choicedex/LeadAnalyzer";
+import { MatchupMatrix } from "@/components/choicedex/MatchupMatrix";
 import { OpponentInference } from "@/components/choicedex/OpponentInference";
+import { Sandbox } from "@/components/choicedex/Sandbox";
+import { TurnExplorer } from "@/components/choicedex/TurnExplorer";
 import type { PokemonRef } from "@/lib/choicedexBuild";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 
@@ -47,6 +50,15 @@ export default async function ChoiceDexPage() {
           </Panel>
           <Panel title="Battle editor">
             <BattleEditor pokemon={refs} />
+          </Panel>
+          <Panel title="Matchup matrix">
+            <MatchupMatrix pokemon={refs} />
+          </Panel>
+          <Panel title="Scenario sandbox">
+            <Sandbox pokemon={refs} />
+          </Panel>
+          <Panel title="Branching turn explorer">
+            <TurnExplorer pokemon={refs} />
           </Panel>
         </>
       )}
