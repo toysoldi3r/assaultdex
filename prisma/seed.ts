@@ -5,9 +5,11 @@ import { importFixturePokemon } from "../src/server/repositories/pokemonRepo";
 import { prisma } from "../src/server/db";
 
 async function main() {
-  const { imported } = await importFixturePokemon();
+  const { imported, removed } = await importFixturePokemon();
   const total = await prisma.pokemon.count();
-  console.log(`Seed complete: upserted ${imported} Pokémon (total rows: ${total}).`);
+  console.log(
+    `Seed complete: upserted ${imported}, removed ${removed} Pokémon (total rows: ${total}).`,
+  );
 }
 
 main()

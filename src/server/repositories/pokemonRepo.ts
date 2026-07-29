@@ -56,12 +56,22 @@ function domainToWrite(p: Pokemon): Prisma.PokemonCreateInput {
   };
 }
 
-/** Import all Pokémon from the fixture provider. Idempotent (no duplicates). */
-export async function importFixturePokemon(): Promise<{ imported: number }> {
+/**
+ * Import all Pokémon from the fixture provider. Idempotent (no duplicates), and
+ * reconciles deletions: because the fixture provider returns the full set in one
+ * page, any fixture-provider rows no longer present in the feed are removed
+ * (e.g. species that turned out not to be in the Champions pool).
+ */
+export async function importFixturePokemon(): Promise<{
+  imported: number;
+  removed: number;
+}> {
   const page = await fixturePokemonProvider.fetchPage();
+  const currentExternalIds: string[] = [];
   let imported = 0;
   for (const raw of page.items) {
     const domain = fixturePokemonProvider.normalize(raw, page.dataVersion);
+    currentExternalIds.push(domain.provenance.externalId);
     const data = domainToWrite(domain);
     await prisma.pokemon.upsert({
       where: {
@@ -85,7 +95,16 @@ export async function importFixturePokemon(): Promise<{ imported: number }> {
     });
     imported++;
   }
-  return { imported };
+
+  // Prune fixture rows that are no longer in the full-snapshot feed.
+  const { count: removed } = await prisma.pokemon.deleteMany({
+    where: {
+      provider: fixturePokemonProvider.provider,
+      externalId: { notIn: currentExternalIds },
+    },
+  });
+
+  return { imported, removed };
 }
 
 export async function listPokemon(): Promise<Pokemon[]> {
