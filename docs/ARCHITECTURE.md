@@ -494,3 +494,53 @@ Needs persistence (battle history) but no usage statistics.
 
 Validation: `pnpm typecheck && pnpm lint && pnpm test` (85 tests) `&& pnpm build`
 all pass. Phase 5 is deferred; Phase 10 is **not** started.
+
+---
+
+## Phase 10 — security, performance, accessibility, deployment, monitoring, legal (implemented)
+
+Hardening rather than new engines.
+
+- **Security.** Baseline security headers on every response (CSP with no external
+  origins, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy`, `Permissions-Policy`, HSTS) via `next.config.ts`. A
+  fixed-window `RateLimiter` (`server/rateLimit.ts`, tested) guards the
+  write-ish battle actions by client IP (Redis-backed for multi-instance is a
+  documented follow-up). All external/user input was already Zod-validated and
+  error surfaces already sanitized (no stack traces).
+- **Accessibility.** Skip-to-content link, a client `Nav` with `aria-current`,
+  semantic landmarks, `lang`, labelled form controls, and `aria-label`s on
+  icon-only stepper buttons.
+- **Monitoring.** `/api/health` internal route returns process + database
+  connectivity (`{status, db, time}`) with `no-store`, leaking no internals.
+- **Deployment.** `output: "standalone"`, a multi-stage `Dockerfile`, a
+  `docker-compose.yml` describing the PostgreSQL production topology (with the
+  one-line datasource switch documented), and `.dockerignore`. Dev/CI stays on
+  SQLite so everything runs without a DB server.
+- **Legal.** `/privacy` and `/terms` pages, linked from the footer, stating the
+  provisional-mechanics and no-warranty position and the data-deletion controls.
+
+Validation: `pnpm typecheck && pnpm lint && pnpm test` (89 tests) `&& pnpm build`
+all pass.
+
+---
+
+## Phase status summary
+
+| Phase | Status |
+| --- | --- |
+| 1 — Foundation, DB, provider adapter, Pokédex | ✅ shipped |
+| 2 — Team builder, validation, versions, collections, analysis | ✅ shipped |
+| 3 — Type/speed/damage/field-state/legal-action engines | ✅ shipped |
+| 4 — ChoiceDex lead analysis, battle editor, recommendations | ✅ shipped |
+| 5 — Usage/win-rate/trend/core/counter statistics | ⏸ deferred (no verified usage feed; must not fabricate) |
+| 6 — Opponent-set inference | ✅ shipped |
+| 7 — Sandbox, matchup matrix, turn explorer | ✅ shipped |
+| 8 — Simulations and practice opponent | ✅ shipped |
+| 9 — Replays, post-battle reports, dashboard, calibration | ✅ shipped |
+| 10 — Security, a11y, deployment, monitoring, legal | ✅ shipped |
+
+Phase 5 remains the one open item, blocked on a verified data source (a permitted
+usage API or a scraper built after the site is complete). Everything it needs —
+the provider-adapter seam and provenance/reliability columns — is already in
+place.

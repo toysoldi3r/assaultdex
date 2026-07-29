@@ -335,6 +335,8 @@ function SideEditor({
                   <span key={k} className="flex items-center gap-0.5">
                     {k}
                     <button
+                      type="button"
+                      aria-label={`Lower ${k} stage`}
                       onClick={() => onStage(sideKey, idx, k, -1)}
                       className="rounded bg-slate-800 px-1 hover:bg-slate-700"
                     >
@@ -344,6 +346,8 @@ function SideEditor({
                       {slot.stages[k] > 0 ? `+${slot.stages[k]}` : slot.stages[k]}
                     </span>
                     <button
+                      type="button"
+                      aria-label={`Raise ${k} stage`}
                       onClick={() => onStage(sideKey, idx, k, 1)}
                       className="rounded bg-slate-800 px-1 hover:bg-slate-700"
                     >

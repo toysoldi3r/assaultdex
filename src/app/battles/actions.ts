@@ -1,18 +1,28 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { parseReplay } from "@/data/replay";
 import { analyzeReplay } from "@/domain/analysis/postBattle";
 import type { Difficulty } from "@/domain/sim/policy";
 import { generateSampleReplay } from "@/server/battleGenerate";
+import { writeLimiter } from "@/server/rateLimit";
 import {
   deleteAllBattles,
   deleteBattle,
   saveBattle,
 } from "@/server/repositories/battleRepo";
 
+/** Rate-limit a write action by client IP; returns true if it should proceed. */
+async function rateLimitOk(): Promise<boolean> {
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  return writeLimiter.check(ip).allowed;
+}
+
 export async function generateBattleAction(formData: FormData): Promise<void> {
+  if (!(await rateLimitOk())) redirect("/battles?err=rate");
   const u1 = String(formData.get("u1") ?? "");
   const u2 = String(formData.get("u2") ?? "");
   const o1 = String(formData.get("o1") ?? "");
@@ -40,6 +50,7 @@ export async function generateBattleAction(formData: FormData): Promise<void> {
 }
 
 export async function importBattleAction(formData: FormData): Promise<void> {
+  if (!(await rateLimitOk())) redirect("/battles?err=rate");
   const label = String(formData.get("label") ?? "").trim() || "Imported battle";
   const text = String(formData.get("json") ?? "");
   let raw: unknown;

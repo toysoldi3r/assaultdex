@@ -16,6 +16,7 @@ const ERR_MESSAGES: Record<string, string> = {
   build: "Could not build the battle — re-run the seed.",
   json: "Import failed: not valid JSON.",
   shape: "Import failed: JSON is not a valid provisional replay.",
+  rate: "Too many requests — please wait a moment and try again.",
 };
 
 export default async function BattlesPage({

@@ -1,20 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Nav } from "@/components/Nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AssaultDex",
   description:
-    "Competitive Pokémon Champions doubles — Pokédex, team builder, and ChoiceDex (Phase 1 vertical slice).",
+    "Competitive Pokémon Champions doubles — Pokédex, team builder, ChoiceDex, and battle analysis.",
 };
-
-const NAV = [
-  { href: "/", label: "Home" },
-  { href: "/pokemon", label: "Pokédex" },
-  { href: "/teams", label: "Teams" },
-  { href: "/choicedex", label: "ChoiceDex" },
-  { href: "/battles", label: "Battles" },
-];
 
 export default function RootLayout({
   children,
@@ -24,29 +17,33 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen">
+        <a
+          href="#content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-amber-500 focus:px-3 focus:py-1 focus:text-black"
+        >
+          Skip to content
+        </a>
         <header className="border-b border-slate-800 bg-slate-900/60">
-          <nav className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
+          <div className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
             <span className="text-lg font-bold tracking-tight text-amber-400">
               AssaultDex
             </span>
-            <div className="flex gap-4 text-sm">
-              {NAV.map((n) => (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  className="text-slate-300 hover:text-white"
-                >
-                  {n.label}
-                </Link>
-              ))}
-            </div>
-          </nav>
+            <Nav />
+          </div>
         </header>
-        <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+        <main id="content" className="mx-auto max-w-5xl px-4 py-8">
+          {children}
+        </main>
         <footer className="mx-auto max-w-5xl px-4 py-8 text-xs text-slate-500">
-          Phase 1 vertical slice. Mechanics are <strong>provisional</strong> and
-          unverified for Pokémon Champions. Fixture data only — not a live
-          provider feed.
+          Mechanics are <strong>provisional</strong> and unverified for Pokémon
+          Champions. Fixture data only — not a live provider feed.{" "}
+          <Link href="/privacy" className="underline hover:text-slate-300">
+            Privacy
+          </Link>{" "}
+          ·{" "}
+          <Link href="/terms" className="underline hover:text-slate-300">
+            Terms
+          </Link>
         </footer>
       </body>
     </html>
