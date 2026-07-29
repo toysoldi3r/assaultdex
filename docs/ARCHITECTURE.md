@@ -460,3 +460,37 @@ Mechanics-driven Monte-Carlo, no statistics.
 
 Validation: `pnpm typecheck && pnpm lint && pnpm test` (75 tests) `&& pnpm build`
 all pass. Phase 5 is deferred; Phases 9–10 are **not** started.
+
+---
+
+## Phase 9 — replays, post-battle reports, dashboard, calibration (implemented)
+
+Needs persistence (battle history) but no usage statistics.
+
+- **Provisional replay format.** No confirmed Champions replay format exists, so
+  `data/schemas/battle.ts` defines a clearly-versioned internal format
+  (`assaultdex-provisional-v1`) validated with Zod, and `data/replay.ts` parses
+  it and reports unsupported/contradictory data (spec: "use an interface and
+  test fixtures rather than claiming full replay support"). It is replaced when a
+  real format is confirmed.
+- **Post-battle analysis** (`domain/analysis/postBattle.ts`): per turn, compares
+  the action actually taken against the engine's recommendation on **expected**
+  value — separating decision quality from the random result and from
+  information learned later (spec). Flags missed KOs, turning points, and
+  high-uncertainty turns; emits KO prediction/outcome pairs for calibration.
+- **Confidence calibration** (`domain/analysis/calibration.ts`): Brier score and
+  reliability buckets (predicted mean vs observed frequency, with sample sizes)
+  from predictions made before the outcome was known.
+- **Personal dashboard** (`domain/analysis/dashboard.ts`): record, win rate over
+  decisive games, average decision quality, mistake totals, and aggregate
+  calibration — with a small-sample flag so conclusions aren't over-drawn.
+- **Persistence** (`BattleRecord` model + `battleRepo`): save/list/get and
+  **delete individual battles or the whole history** (spec: users can delete
+  their battle history and analytics). `battleGenerate.ts` produces a clearly
+  labelled generated sample battle by simulating against the practice AI, so the
+  dashboard has data before a real replay feed exists.
+- **UI**: a new `/battles` route — dashboard, calibration table, generate/import
+  forms, history, delete-all — plus `/battles/[id]` per-turn analysis.
+
+Validation: `pnpm typecheck && pnpm lint && pnpm test` (85 tests) `&& pnpm build`
+all pass. Phase 5 is deferred; Phase 10 is **not** started.

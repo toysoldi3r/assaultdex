@@ -72,6 +72,23 @@ model Team {
   @@index([collectionId])
 }
 
+/// A recorded battle (provisional replay) plus its computed post-battle
+/// summary. Users can delete individual battles or their whole history.
+model BattleRecord {
+  id        String   @id @default(cuid())
+  label     String   @default("")
+  result    String // win | loss | draw | timeout | unknown
+  turns     Int
+  /// JSON string: the provisional Replay.
+  replay    String
+  /// JSON string: BattleSummary (decision quality, mistakes, KO calibration).
+  summary   String
+  source    String   @default("imported") // imported | generated
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 /// An immutable snapshot of a team's six Pokémon sets. Comparing two versions
 /// is a pure diff over `snapshot`.
 model TeamVersion {

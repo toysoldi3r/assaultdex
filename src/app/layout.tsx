@@ -13,6 +13,7 @@ const NAV = [
   { href: "/pokemon", label: "Pokédex" },
   { href: "/teams", label: "Teams" },
   { href: "/choicedex", label: "ChoiceDex" },
+  { href: "/battles", label: "Battles" },
 ];
 
 export default function RootLayout({
