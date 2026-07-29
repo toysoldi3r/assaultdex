@@ -365,3 +365,40 @@ changes, with no server round-trip per edit.
 
 Validation: `pnpm typecheck && pnpm lint && pnpm test` (52 tests) `&& pnpm build`
 all pass. Phases 5–10 are **not** started.
+
+---
+
+## Phase 5 — statistics (DEFERRED)
+
+Usage, win-rate, trend, core, counter, and lead **statistics** require a real
+Pokémon Champions usage feed. None is publicly available, and AGENTS.md forbids
+inventing statistics or provider data. Rather than ship fabricated numbers,
+Phase 5 is **deferred** until a verified source exists (a permitted API, or a
+scraper built once the site is otherwise complete). The provider-adapter
+interface (`data/providers/types.ts`) is the seam a usage adapter will plug into,
+and every planned statistic already has its provenance/reliability columns
+designed. No statistics UI is shipped rather than a fake one.
+
+## Phase 6 — opponent-set inference (implemented)
+
+Evidence-driven inference that needs no usage data. (Usage-based *priors* are the
+one deferred input, tied to Phase 5.)
+
+- **Possibility distributions** (`domain/choicedex/inference.ts`): generic
+  distributions over an unknown property with uniform priors, `confirm` (all
+  other values become impossible), `eliminate` (rule out only on confirmed
+  evidence — a possibility is never dropped otherwise, per spec), renormalization
+  and confidence. Supporting/contradictory evidence and information tier are
+  tracked.
+- **Speed/spread inference** (`domain/choicedex/speedInference.ts`): enumerate an
+  opponent's Speed across a uniform spread grid (EV steps of 4, IV 0/31, nature
+  ±/0) and narrow it with observed move-order evidence (faster/slower/tie than a
+  benchmark). Reports the surviving Speed range, per-nature share, whether
+  max-Speed investment is still possible, how much of the grid was ruled out, and
+  confidence. Priors are explicitly non-usage (`ASSUMPTIONS.spreadGridPrior`).
+- **UI** (`components/choicedex/OpponentInference.tsx`): pick an opponent, add
+  move-order observations, and see the narrowed Speed range, nature likelihood
+  bars, ruled-out count, and assumptions — live.
+
+Validation: `pnpm typecheck && pnpm lint && pnpm test` (62 tests) `&& pnpm build`
+all pass. Phase 5 is deferred; Phases 7–10 are **not** started.

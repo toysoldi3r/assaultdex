@@ -1,6 +1,7 @@
 import { Panel, ProvisionalTag } from "@/components/ui";
 import { BattleEditor } from "@/components/choicedex/BattleEditor";
 import { LeadAnalyzer } from "@/components/choicedex/LeadAnalyzer";
+import { OpponentInference } from "@/components/choicedex/OpponentInference";
 import type { PokemonRef } from "@/lib/choicedexBuild";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 
@@ -40,6 +41,9 @@ export default async function ChoiceDexPage() {
         <>
           <Panel title="Lead analysis">
             <LeadAnalyzer pokemon={refs} />
+          </Panel>
+          <Panel title="Opponent inference">
+            <OpponentInference pokemon={refs} />
           </Panel>
           <Panel title="Battle editor">
             <BattleEditor pokemon={refs} />
