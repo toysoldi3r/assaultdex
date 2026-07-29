@@ -1,0 +1,96 @@
+// AssaultDex — PostgreSQL schema (production/hosting).
+//
+// This is the production variant of prisma/schema.prisma. The models are
+// identical — JSON-shaped columns are stored as validated TEXT so the repository
+// code is unchanged — only the datasource provider differs. Use it for hosting:
+//
+//   DATABASE_URL="postgresql://…"
+//   pnpm prisma generate --schema prisma/schema.postgres.prisma
+//   pnpm prisma db push  --schema prisma/schema.postgres.prisma
+//   pnpm db:seed
+//
+// The default prisma/schema.prisma (SQLite) is kept for local dev / CI.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Pokemon {
+  id   String @id @default(cuid())
+  slug String @unique
+  name String
+
+  types     String
+  baseStats String
+  moves     String
+
+  provider             String
+  externalId           String
+  retrievedAt          DateTime
+  dataVersion          String
+  normalizationVersion String
+  updateStatus         String @default("current")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([name])
+}
+
+model Collection {
+  id        String   @id @default(cuid())
+  name      String
+  isPrivate Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teams Team[]
+}
+
+model Team {
+  id           String  @id @default(cuid())
+  name         String
+  notes        String  @default("")
+  collectionId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  collection Collection?   @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  versions   TeamVersion[]
+
+  @@index([collectionId])
+}
+
+model BattleRecord {
+  id        String   @id @default(cuid())
+  label     String   @default("")
+  result    String
+  turns     Int
+  replay    String
+  summary   String
+  source    String   @default("imported")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model TeamVersion {
+  id            String   @id @default(cuid())
+  teamId        String
+  versionNumber Int
+  label         String?
+  snapshot      String
+  createdAt     DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, versionNumber])
+  @@index([teamId])
+}
