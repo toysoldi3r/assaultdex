@@ -7,6 +7,7 @@
 
 import type { AssumptionId } from "../mechanics/assumptions";
 import { calculateDamage, type DamageResult } from "../mechanics/damage";
+import { describeMoveEffects } from "../mechanics/moveEffects";
 import {
   legalCombinations,
   type Action,
@@ -33,6 +34,8 @@ export interface ActionDamage {
   damage: DamageResult;
   /** Attacker moves before the target this turn. */
   movesFirst: boolean;
+  /** Human-readable move-effect chips (secondaries, self drops, multi-hit, …). */
+  effects: string[];
 }
 
 export interface Recommendation {
@@ -181,6 +184,7 @@ export function evaluateCombination(
         state.field,
       );
 
+      if (move.secondary) assumptions.add("secondaryEffects");
       actionDamage.push({
         attacker: attacker.name,
         moveName: move.name,
@@ -188,6 +192,7 @@ export function evaluateCombination(
         targetHp: target.currentHp,
         damage,
         movesFirst: order.probabilityAFirst >= 0.5,
+        effects: describeMoveEffects(move),
       });
     }
   }

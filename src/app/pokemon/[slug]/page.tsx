@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Panel, ProvisionalTag, TypeBadge } from "@/components/ui";
+import { describeMoveEffects } from "@/domain/mechanics/moveEffects";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { POKEMON_TYPES, STAT_KEYS } from "@/domain/types/pokemon";
 import { getPokemonBySlug } from "@/server/repositories/pokemonRepo";
@@ -135,25 +136,48 @@ export default async function PokemonPage({
               <th className="text-right">Power</th>
               <th className="text-right">Acc.</th>
               <th className="text-right">Prio.</th>
+              <th>Effect</th>
             </tr>
           </thead>
           <tbody>
-            {p.moves.map((m) => (
-              <tr key={m.name} className="border-t border-slate-800">
-                <td className="py-1">{m.name}</td>
-                <td>
-                  <TypeBadge type={m.type} />
-                </td>
-                <td className="capitalize text-slate-400">{m.category}</td>
-                <td className="text-right tabular-nums">{m.power ?? "—"}</td>
-                <td className="text-right tabular-nums">
-                  {m.accuracy === null ? "—" : m.accuracy}
-                </td>
-                <td className="text-right tabular-nums">{m.priority}</td>
-              </tr>
-            ))}
+            {p.moves.map((m) => {
+              const effects = describeMoveEffects(m);
+              return (
+                <tr key={m.name} className="border-t border-slate-800">
+                  <td className="py-1">{m.name}</td>
+                  <td>
+                    <TypeBadge type={m.type} />
+                  </td>
+                  <td className="capitalize text-slate-400">{m.category}</td>
+                  <td className="text-right tabular-nums">{m.power ?? "—"}</td>
+                  <td className="text-right tabular-nums">
+                    {m.accuracy === null ? "—" : m.accuracy}
+                  </td>
+                  <td className="text-right tabular-nums">{m.priority}</td>
+                  <td>
+                    {effects.length > 0 ? (
+                      <span className="flex flex-wrap gap-1">
+                        {effects.map((e) => (
+                          <span
+                            key={e}
+                            className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-300"
+                          >
+                            {e}
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="text-slate-600">—</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
+        <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
+          Effect column is provisional (mainline-derived move data).
+        </p>
       </Panel>
 
       <Panel title="Provenance">

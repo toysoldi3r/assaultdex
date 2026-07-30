@@ -109,6 +109,20 @@ export const ASSUMPTIONS = {
     source: "mainline-derived",
     verified: false,
   },
+  entryEffects: {
+    id: "entryEffects",
+    description:
+      "On-entry abilities (Intimidate −1 Atk to foes; weather setters like Drought/Drizzle; terrain setters like Electric Surge) are auto-applied to the initial state. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  reactiveItems: {
+    id: "reactiveItems",
+    description:
+      "Reactive held items (Sitrus Berry heal at ≤50% HP, Weakness Policy +2 Atk/SpA when hit super-effectively, Focus Sash surviving a KO from full HP) trigger during simulations. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
   spreadGridPrior: {
     id: "spreadGridPrior",
     description:

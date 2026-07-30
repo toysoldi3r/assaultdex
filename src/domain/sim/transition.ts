@@ -117,10 +117,36 @@ export function applyTurn(
       landedAny = true;
 
       const roll = dmg.rolls[Math.floor(rng() * dmg.rolls.length)] ?? 0;
-      target.currentHp = Math.max(0, target.currentHp - roll);
+      const preHp = target.currentHp;
+      let newHp = Math.max(0, preHp - roll);
+      // Focus Sash: survive a would-be KO from full HP with 1 HP (once).
+      if (newHp === 0 && target.item === "Focus Sash" && preHp === target.stats.hp) {
+        newHp = 1;
+        target.item = null;
+      }
+      target.currentHp = newHp;
       if (target.currentHp <= 0 && !target.fainted) {
         target.fainted = true;
         faints++;
+      }
+
+      // Reactive held items (once, on a surviving target).
+      if (!target.fainted) {
+        // Weakness Policy: hit super-effectively → +2 Atk / +2 SpA.
+        if (target.item === "Weakness Policy" && dmg.effectiveness.multiplier > 1) {
+          applyBoosts(target, { atk: 2, spa: 2 });
+          target.item = null;
+        } else if (
+          // Sitrus Berry: heal 25% max HP when at or below half.
+          target.item === "Sitrus Berry" &&
+          target.currentHp <= target.stats.hp / 2
+        ) {
+          target.currentHp = Math.min(
+            target.stats.hp,
+            target.currentHp + Math.floor(target.stats.hp / 4),
+          );
+          target.item = null;
+        }
       }
 
       // Secondary effect (status / flinch / target stat drop), by chance.

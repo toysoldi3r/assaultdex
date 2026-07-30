@@ -48,7 +48,17 @@ Notes:
   provisional for Champions.
 - **Move secondary effects** (status/flinch/stat changes, with their chances)
   come from `@pkmn/dex` and are applied in **simulations**
-  (ASSUMPTIONS.secondaryEffects).
+  (ASSUMPTIONS.secondaryEffects). They are also surfaced in the UI as short
+  effect chips (Pokémon page move table and ChoiceDex recommendation rows) via
+  `mechanics/moveEffects.ts`.
+- **On-entry ability effects** (Intimidate −1 Atk to foes; weather setters like
+  Drought/Drizzle/Sand Stream/Snow Warning; terrain setters like Electric/
+  Grassy/Misty/Psychic Surge) are auto-applied when the initial battle state is
+  built (`mechanics/entry.ts`, ASSUMPTIONS.entryEffects). A manually-selected
+  weather/terrain is never overridden. The ChoiceDex editor lists what fired.
+- **Reactive held items** (Sitrus Berry heal at ≤50% HP, Weakness Policy +2 Atk/
+  SpA when hit super-effectively, Focus Sash surviving a KO from full HP) trigger
+  during **simulations** (`sim/transition.ts`, ASSUMPTIONS.reactiveItems).
 - Data values are **mainline** (via Showdown). If Pokémon Champions rebalanced
   any stat, ability, or movepool, this dataset would differ — that is the same
   provisional caveat that applies to the mechanics engine, and is flagged rather

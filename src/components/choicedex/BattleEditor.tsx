@@ -9,7 +9,7 @@ import {
 } from "@/domain/choicedex/scoring";
 import type { StatusCondition } from "@/domain/types/battle";
 import {
-  buildState,
+  buildStateWithEntry,
   COMMON_ITEMS,
   emptySlot,
   type PokemonRef,
@@ -56,7 +56,12 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
   const [history, setHistory] = useState<TurnForm[]>([]);
   const [profile, setProfile] = useState<ProfileName>("balanced");
 
-  const state = useMemo(() => buildState(form, refBySlug), [form, refBySlug]);
+  const built = useMemo(
+    () => buildStateWithEntry(form, refBySlug),
+    [form, refBySlug],
+  );
+  const state = built?.state ?? null;
+  const entryLog = built?.entryLog ?? [];
   const recommendations = useMemo(
     () => (state ? recommend(state, { profile, limit: 5 }) : []),
     [state, profile],
@@ -182,6 +187,27 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
           </select>
         </label>
       </div>
+
+      {entryLog.length > 0 && (
+        <div className="rounded border border-slate-800 bg-slate-900/40 p-3 text-xs">
+          <p className="mb-1 uppercase tracking-wide text-slate-500">
+            On-entry effects (auto-applied)
+          </p>
+          <ul className="flex flex-wrap gap-1">
+            {entryLog.map((e) => (
+              <li
+                key={e}
+                className="rounded bg-slate-800 px-2 py-0.5 text-slate-300"
+              >
+                {e}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-[10px] text-slate-600">
+            Provisional. Weather/terrain are only auto-set when left on “none”.
+          </p>
+        </div>
+      )}
 
       {!state && (
         <p className="text-sm text-rose-400">
