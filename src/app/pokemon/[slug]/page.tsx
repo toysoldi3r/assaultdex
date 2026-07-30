@@ -90,6 +90,19 @@ export default async function PokemonPage({
         </Panel>
       </div>
 
+      <Panel title="Abilities">
+        <div className="flex flex-wrap gap-2">
+          {p.abilities.map((a) => (
+            <span
+              key={a}
+              className="rounded bg-slate-800 px-2 py-1 text-sm text-slate-200"
+            >
+              {a}
+            </span>
+          ))}
+        </div>
+      </Panel>
+
       <Panel title="Moves (fixture)">
         <table className="w-full text-left text-sm">
           <thead className="text-xs uppercase text-slate-500">

@@ -26,6 +26,8 @@ model Pokemon {
   types String
   /// JSON string: BaseStats.
   baseStats String
+  /// JSON string: string[] of legal ability names.
+  abilities String @default("[]")
   /// JSON string: MoveFixture[].
   moves String
 

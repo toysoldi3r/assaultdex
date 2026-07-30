@@ -28,6 +28,8 @@ export interface ValidatableMember {
   legalMoves: string[];
   /** Known nature names. */
   legalNatures: string[];
+  /** Ability names legal for this species (from reference data). */
+  legalAbilities: string[];
 }
 
 export function validateTeam(members: ValidatableMember[]): ValidationReport {
@@ -97,6 +99,14 @@ export function validateTeam(members: ValidatableMember[]): ValidationReport {
 
     if (m.legalNatures.length > 0 && !m.legalNatures.includes(set.nature)) {
       issue("nature", `Unknown nature “${set.nature}”.`);
+    }
+
+    if (
+      set.ability &&
+      m.legalAbilities.length > 0 &&
+      !m.legalAbilities.includes(set.ability)
+    ) {
+      issue("ability", `“${set.ability}” is not a legal ability for this species.`);
     }
 
     // EVs / IVs.

@@ -1,12 +1,13 @@
 {
-  "data_version": "fixtures-2025.4",
-  "note": "Documented FIXTURE data, not a live provider feed. Every entry is a regular, fully-evolved Pokemon confirmed in the Pokemon Champions roster (no legendaries, mythicals, Ultra Beasts, or Paradox Pokemon, which are excluded from the pool). Base stats and types are public Pokedex values; move power/accuracy/priority/target are provisional for Pokemon Champions (see mechanics/assumptions).",
+  "data_version": "fixtures-2025.5",
+  "note": "Documented FIXTURE data, not a live provider feed. Every entry is a regular, fully-evolved Pokemon confirmed in the Pokemon Champions roster (no legendaries, mythicals, Ultra Beasts, or Paradox Pokemon, which are excluded from the pool). Base stats, types, and abilities are public Pokedex values; move power/accuracy/priority/target are provisional for Pokemon Champions, and the 4-move sets are curated examples rather than full learnsets (see mechanics/assumptions and docs/DATA_VERIFICATION.md).",
   "pokemon": [
     {
       "external_id": "incineroar",
       "name": "Incineroar",
       "types": ["fire", "dark"],
       "base_stats": { "hp": 95, "attack": 115, "defense": 90, "special_attack": 80, "special_defense": 90, "speed": 60 },
+      "abilities": ["Blaze", "Intimidate"],
       "moves": [
         { "name": "Fake Out", "type": "normal", "category": "physical", "power": 40, "accuracy": 100, "priority": 3, "target": "normal" },
         { "name": "Flare Blitz", "type": "fire", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -19,6 +20,7 @@
       "name": "Rillaboom",
       "types": ["grass"],
       "base_stats": { "hp": 100, "attack": 125, "defense": 90, "special_attack": 60, "special_defense": 70, "speed": 85 },
+      "abilities": ["Overgrow", "Grassy Surge"],
       "moves": [
         { "name": "Wood Hammer", "type": "grass", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Fake Out", "type": "normal", "category": "physical", "power": 40, "accuracy": 100, "priority": 3, "target": "normal" },
@@ -31,6 +33,7 @@
       "name": "Amoonguss",
       "types": ["grass", "poison"],
       "base_stats": { "hp": 114, "attack": 85, "defense": 70, "special_attack": 85, "special_defense": 80, "speed": 30 },
+      "abilities": ["Effect Spore", "Regenerator"],
       "moves": [
         { "name": "Spore", "type": "grass", "category": "status", "power": null, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Rage Powder", "type": "bug", "category": "status", "power": null, "accuracy": null, "priority": 2, "target": "self" },
@@ -43,6 +46,7 @@
       "name": "Gholdengo",
       "types": ["steel", "ghost"],
       "base_stats": { "hp": 87, "attack": 60, "defense": 95, "special_attack": 133, "special_defense": 91, "speed": 84 },
+      "abilities": ["Good as Gold"],
       "moves": [
         { "name": "Make It Rain", "type": "steel", "category": "special", "power": 120, "accuracy": 100, "priority": 0, "target": "all-adjacent-foes" },
         { "name": "Shadow Ball", "type": "ghost", "category": "special", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -55,6 +59,7 @@
       "name": "Garchomp",
       "types": ["dragon", "ground"],
       "base_stats": { "hp": 108, "attack": 130, "defense": 95, "special_attack": 80, "special_defense": 85, "speed": 102 },
+      "abilities": ["Sand Veil", "Rough Skin"],
       "moves": [
         { "name": "Earthquake", "type": "ground", "category": "physical", "power": 100, "accuracy": 100, "priority": 0, "target": "all-adjacent" },
         { "name": "Dragon Claw", "type": "dragon", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -67,6 +72,7 @@
       "name": "Dragonite",
       "types": ["dragon", "flying"],
       "base_stats": { "hp": 91, "attack": 134, "defense": 95, "special_attack": 100, "special_defense": 100, "speed": 80 },
+      "abilities": ["Inner Focus", "Multiscale"],
       "moves": [
         { "name": "Dragon Claw", "type": "dragon", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Extreme Speed", "type": "normal", "category": "physical", "power": 80, "accuracy": 100, "priority": 2, "target": "normal" },
@@ -79,6 +85,7 @@
       "name": "Tyranitar",
       "types": ["rock", "dark"],
       "base_stats": { "hp": 100, "attack": 134, "defense": 110, "special_attack": 95, "special_defense": 100, "speed": 61 },
+      "abilities": ["Sand Stream", "Unnerve"],
       "moves": [
         { "name": "Rock Slide", "type": "rock", "category": "physical", "power": 75, "accuracy": 90, "priority": 0, "target": "all-adjacent-foes" },
         { "name": "Crunch", "type": "dark", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -91,6 +98,7 @@
       "name": "Corviknight",
       "types": ["flying", "steel"],
       "base_stats": { "hp": 98, "attack": 87, "defense": 105, "special_attack": 53, "special_defense": 85, "speed": 67 },
+      "abilities": ["Pressure", "Unnerve", "Mirror Armor"],
       "moves": [
         { "name": "Brave Bird", "type": "flying", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Iron Head", "type": "steel", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -103,6 +111,7 @@
       "name": "Kingambit",
       "types": ["dark", "steel"],
       "base_stats": { "hp": 100, "attack": 135, "defense": 120, "special_attack": 60, "special_defense": 85, "speed": 50 },
+      "abilities": ["Defiant", "Supreme Overlord", "Pressure"],
       "moves": [
         { "name": "Sucker Punch", "type": "dark", "category": "physical", "power": 70, "accuracy": 100, "priority": 1, "target": "normal" },
         { "name": "Iron Head", "type": "steel", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -115,6 +124,7 @@
       "name": "Annihilape",
       "types": ["fighting", "ghost"],
       "base_stats": { "hp": 110, "attack": 115, "defense": 80, "special_attack": 50, "special_defense": 90, "speed": 90 },
+      "abilities": ["Vital Spirit", "Inner Focus", "Defiant"],
       "moves": [
         { "name": "Close Combat", "type": "fighting", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Shadow Claw", "type": "ghost", "category": "physical", "power": 70, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -127,6 +137,7 @@
       "name": "Dragapult",
       "types": ["dragon", "ghost"],
       "base_stats": { "hp": 88, "attack": 120, "defense": 75, "special_attack": 100, "special_defense": 75, "speed": 142 },
+      "abilities": ["Clear Body", "Infiltrator", "Cursed Body"],
       "moves": [
         { "name": "Dragon Darts", "type": "dragon", "category": "physical", "power": 50, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Shadow Ball", "type": "ghost", "category": "special", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -139,6 +150,7 @@
       "name": "Grimmsnarl",
       "types": ["dark", "fairy"],
       "base_stats": { "hp": 95, "attack": 120, "defense": 65, "special_attack": 95, "special_defense": 75, "speed": 60 },
+      "abilities": ["Prankster", "Frisk", "Pickpocket"],
       "moves": [
         { "name": "Spirit Break", "type": "fairy", "category": "physical", "power": 75, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Fake Out", "type": "normal", "category": "physical", "power": 40, "accuracy": 100, "priority": 3, "target": "normal" },
@@ -151,6 +163,7 @@
       "name": "Whimsicott",
       "types": ["grass", "fairy"],
       "base_stats": { "hp": 60, "attack": 67, "defense": 85, "special_attack": 77, "special_defense": 75, "speed": 116 },
+      "abilities": ["Prankster", "Infiltrator", "Chlorophyll"],
       "moves": [
         { "name": "Moonblast", "type": "fairy", "category": "special", "power": 95, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Energy Ball", "type": "grass", "category": "special", "power": 90, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -163,6 +176,7 @@
       "name": "Pelipper",
       "types": ["water", "flying"],
       "base_stats": { "hp": 60, "attack": 50, "defense": 100, "special_attack": 95, "special_defense": 70, "speed": 65 },
+      "abilities": ["Keen Eye", "Drizzle", "Rain Dish"],
       "moves": [
         { "name": "Hurricane", "type": "flying", "category": "special", "power": 110, "accuracy": 70, "priority": 0, "target": "normal" },
         { "name": "Weather Ball", "type": "normal", "category": "special", "power": 50, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -175,6 +189,7 @@
       "name": "Milotic",
       "types": ["water"],
       "base_stats": { "hp": 95, "attack": 60, "defense": 79, "special_attack": 100, "special_defense": 125, "speed": 81 },
+      "abilities": ["Marvel Scale", "Competitive", "Cute Charm"],
       "moves": [
         { "name": "Scald", "type": "water", "category": "special", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Ice Beam", "type": "ice", "category": "special", "power": 90, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -187,6 +202,7 @@
       "name": "Glimmora",
       "types": ["rock", "poison"],
       "base_stats": { "hp": 83, "attack": 55, "defense": 90, "special_attack": 130, "special_defense": 81, "speed": 86 },
+      "abilities": ["Toxic Debris", "Corrosion"],
       "moves": [
         { "name": "Power Gem", "type": "rock", "category": "special", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Sludge Bomb", "type": "poison", "category": "special", "power": 90, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -199,6 +215,7 @@
       "name": "Excadrill",
       "types": ["ground", "steel"],
       "base_stats": { "hp": 110, "attack": 135, "defense": 60, "special_attack": 50, "special_defense": 65, "speed": 88 },
+      "abilities": ["Sand Rush", "Sand Force", "Mold Breaker"],
       "moves": [
         { "name": "Earthquake", "type": "ground", "category": "physical", "power": 100, "accuracy": 100, "priority": 0, "target": "all-adjacent" },
         { "name": "Iron Head", "type": "steel", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -211,6 +228,7 @@
       "name": "Toxapex",
       "types": ["poison", "water"],
       "base_stats": { "hp": 50, "attack": 63, "defense": 152, "special_attack": 53, "special_defense": 142, "speed": 35 },
+      "abilities": ["Merciless", "Limber", "Regenerator"],
       "moves": [
         { "name": "Sludge Bomb", "type": "poison", "category": "special", "power": 90, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Surf", "type": "water", "category": "special", "power": 90, "accuracy": 100, "priority": 0, "target": "all-adjacent" },
@@ -223,6 +241,7 @@
       "name": "Garganacl",
       "types": ["rock"],
       "base_stats": { "hp": 100, "attack": 100, "defense": 130, "special_attack": 45, "special_defense": 90, "speed": 35 },
+      "abilities": ["Purifying Salt", "Sturdy", "Clear Body"],
       "moves": [
         { "name": "Salt Cure", "type": "rock", "category": "physical", "power": 40, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Body Press", "type": "fighting", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
@@ -235,10 +254,128 @@
       "name": "Archaludon",
       "types": ["steel", "dragon"],
       "base_stats": { "hp": 90, "attack": 105, "defense": 130, "special_attack": 125, "special_defense": 85, "speed": 85 },
+      "abilities": ["Stamina", "Sturdy"],
       "moves": [
         { "name": "Electro Shot", "type": "electric", "category": "special", "power": 130, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Flash Cannon", "type": "steel", "category": "special", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
         { "name": "Draco Meteor", "type": "dragon", "category": "special", "power": 130, "accuracy": 90, "priority": 0, "target": "normal" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "gyarados",
+      "name": "Gyarados",
+      "types": ["water", "flying"],
+      "base_stats": { "hp": 95, "attack": 125, "defense": 79, "special_attack": 60, "special_defense": 100, "speed": 81 },
+      "abilities": ["Intimidate", "Moxie"],
+      "moves": [
+        { "name": "Waterfall", "type": "water", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Ice Fang", "type": "ice", "category": "physical", "power": 65, "accuracy": 95, "priority": 0, "target": "normal" },
+        { "name": "Dragon Dance", "type": "dragon", "category": "status", "power": null, "accuracy": null, "priority": 0, "target": "self" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "arcanine",
+      "name": "Arcanine",
+      "types": ["fire"],
+      "base_stats": { "hp": 90, "attack": 110, "defense": 80, "special_attack": 100, "special_defense": 80, "speed": 95 },
+      "abilities": ["Intimidate", "Flash Fire", "Justified"],
+      "moves": [
+        { "name": "Flare Blitz", "type": "fire", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Extreme Speed", "type": "normal", "category": "physical", "power": 80, "accuracy": 100, "priority": 2, "target": "normal" },
+        { "name": "Close Combat", "type": "fighting", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "metagross",
+      "name": "Metagross",
+      "types": ["steel", "psychic"],
+      "base_stats": { "hp": 80, "attack": 135, "defense": 130, "special_attack": 95, "special_defense": 90, "speed": 70 },
+      "abilities": ["Clear Body", "Light Metal"],
+      "moves": [
+        { "name": "Meteor Mash", "type": "steel", "category": "physical", "power": 90, "accuracy": 90, "priority": 0, "target": "normal" },
+        { "name": "Zen Headbutt", "type": "psychic", "category": "physical", "power": 80, "accuracy": 90, "priority": 0, "target": "normal" },
+        { "name": "Bullet Punch", "type": "steel", "category": "physical", "power": 40, "accuracy": 100, "priority": 1, "target": "normal" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "talonflame",
+      "name": "Talonflame",
+      "types": ["fire", "flying"],
+      "base_stats": { "hp": 78, "attack": 81, "defense": 71, "special_attack": 74, "special_defense": 69, "speed": 126 },
+      "abilities": ["Flame Body", "Gale Wings"],
+      "moves": [
+        { "name": "Brave Bird", "type": "flying", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Flare Blitz", "type": "fire", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Tailwind", "type": "flying", "category": "status", "power": null, "accuracy": null, "priority": 0, "target": "self" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "hydreigon",
+      "name": "Hydreigon",
+      "types": ["dark", "dragon"],
+      "base_stats": { "hp": 92, "attack": 105, "defense": 90, "special_attack": 125, "special_defense": 90, "speed": 98 },
+      "abilities": ["Levitate"],
+      "moves": [
+        { "name": "Dark Pulse", "type": "dark", "category": "special", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Draco Meteor", "type": "dragon", "category": "special", "power": 130, "accuracy": 90, "priority": 0, "target": "normal" },
+        { "name": "Flamethrower", "type": "fire", "category": "special", "power": 90, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "kommo-o",
+      "name": "Kommo-o",
+      "types": ["dragon", "fighting"],
+      "base_stats": { "hp": 75, "attack": 110, "defense": 125, "special_attack": 100, "special_defense": 105, "speed": 85 },
+      "abilities": ["Bulletproof", "Soundproof", "Overcoat"],
+      "moves": [
+        { "name": "Clanging Scales", "type": "dragon", "category": "special", "power": 110, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Close Combat", "type": "fighting", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Dragon Dance", "type": "dragon", "category": "status", "power": null, "accuracy": null, "priority": 0, "target": "self" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "scizor",
+      "name": "Scizor",
+      "types": ["bug", "steel"],
+      "base_stats": { "hp": 70, "attack": 130, "defense": 100, "special_attack": 55, "special_defense": 80, "speed": 65 },
+      "abilities": ["Swarm", "Technician", "Light Metal"],
+      "moves": [
+        { "name": "Bullet Punch", "type": "steel", "category": "physical", "power": 40, "accuracy": 100, "priority": 1, "target": "normal" },
+        { "name": "U-turn", "type": "bug", "category": "physical", "power": 70, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Swords Dance", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 0, "target": "self" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "meowscarada",
+      "name": "Meowscarada",
+      "types": ["grass", "dark"],
+      "base_stats": { "hp": 76, "attack": 110, "defense": 70, "special_attack": 81, "special_defense": 70, "speed": 123 },
+      "abilities": ["Overgrow", "Protean"],
+      "moves": [
+        { "name": "Flower Trick", "type": "grass", "category": "physical", "power": 70, "accuracy": null, "priority": 0, "target": "normal" },
+        { "name": "Knock Off", "type": "dark", "category": "physical", "power": 65, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "U-turn", "type": "bug", "category": "physical", "power": 70, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
+      ]
+    },
+    {
+      "external_id": "quaquaval",
+      "name": "Quaquaval",
+      "types": ["water", "fighting"],
+      "base_stats": { "hp": 85, "attack": 120, "defense": 80, "special_attack": 85, "special_defense": 75, "speed": 85 },
+      "abilities": ["Torrent", "Moxie"],
+      "moves": [
+        { "name": "Aqua Step", "type": "water", "category": "physical", "power": 80, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Close Combat", "type": "fighting", "category": "physical", "power": 120, "accuracy": 100, "priority": 0, "target": "normal" },
+        { "name": "Aqua Jet", "type": "water", "category": "physical", "power": 40, "accuracy": 100, "priority": 1, "target": "normal" },
         { "name": "Protect", "type": "normal", "category": "status", "power": null, "accuracy": null, "priority": 4, "target": "self" }
       ]
     }

@@ -76,6 +76,8 @@ export interface Pokemon {
   /** One or two types. */
   types: [PokemonType] | [PokemonType, PokemonType];
   baseStats: BaseStats;
+  /** Legal ability names (regular + hidden). */
+  abilities: string[];
   moves: MoveFixture[];
   provenance: Provenance;
 }

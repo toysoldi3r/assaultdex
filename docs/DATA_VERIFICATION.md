@@ -11,13 +11,17 @@ that can reach PokéAPI (see the egress note below).
 | --- | --- | --- |
 | **Base stats** | Verifiable public data | PokéAPI, PokémonDB, Serebii |
 | **Types** | Verifiable public data | PokéAPI, PokémonDB, Serebii |
+| **Abilities** | Verifiable public data | PokéAPI (`abilities[]`), PokémonDB, Serebii |
 | **Pool membership (Champions-legal)** | Verifiable | Champions roster (Game8, Serebii Champions Pokédex, PokéBase-Champions) |
+| **Movepools (which moves a species can learn)** | **Curated, provisional** | The 4-move sets are hand-picked competitive examples using real move names, **not** full learnsets; a learnset source is needed to verify completeness |
 | **Move power / accuracy / priority / target** | **Provisional** | Mainline-derived; unverified for Champions |
 | **Damage / speed / type-effectiveness formulas** | **Provisional** | Mainline-derived; unverified for Champions (see `mechanics/assumptions.ts`) |
 
-Base stats and types below are treated as authoritative and cross-checked. Move
-and mechanic data remain provisional by design and are **not** asserted as
-verified here.
+Base stats, types, and abilities are treated as authoritative and cross-checked.
+Movepools are curated example sets (real moves, not full learnsets) and mechanic
+data remains provisional by design — neither is asserted as fully verified here.
+`scripts/verifyFixtures.ts` checks base stats, types, **and abilities** against
+PokéAPI (ability names are compared case/format-insensitively).
 
 ## Egress note
 
@@ -31,13 +35,13 @@ against multiple public web sources instead.
 
 ## Cross-check results (2026-07)
 
-Fixture base stats and types were compared against public Pokédex sources
-(PokémonDB, Serebii — including Serebii's dedicated Champions Pokédex — and
-PokéBase's Champions pages). The 20 fixtures use canonical public base stats and
-types; **the original eight were manually cross-checked (all match, 0
-conflicts)**, and the twelve additions use canonical Pokédex values from the same
-sources. Run `scripts/verifyFixtures.ts` for the mechanized PokéAPI diff across
-all 20 where egress is allowed.
+Fixture base stats, types, and abilities were compared against public Pokédex
+sources (PokémonDB, Serebii — including Serebii's dedicated Champions Pokédex —
+and PokéBase's Champions pages). The **29** fixtures use canonical public values;
+the original eight were manually cross-checked (all match, 0 conflicts), and the
+later additions use canonical Pokédex values from the same sources. Run
+`scripts/verifyFixtures.ts` for the mechanized PokéAPI diff (stats + types +
+abilities) across all 29 where egress is allowed.
 
 | Species | Types | HP | Atk | Def | SpA | SpD | Spe |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -61,15 +65,35 @@ all 20 where egress is allowed.
 | Toxapex | Poison/Water | 50 | 63 | 152 | 53 | 142 | 35 |
 | Garganacl | Rock | 100 | 100 | 130 | 45 | 90 | 35 |
 | Archaludon | Steel/Dragon | 90 | 105 | 130 | 125 | 85 | 85 |
+| Gyarados | Water/Flying | 95 | 125 | 79 | 60 | 100 | 81 |
+| Arcanine | Fire | 90 | 110 | 80 | 100 | 80 | 95 |
+| Metagross | Steel/Psychic | 80 | 135 | 130 | 95 | 90 | 70 |
+| Talonflame | Fire/Flying | 78 | 81 | 71 | 74 | 69 | 126 |
+| Hydreigon | Dark/Dragon | 92 | 105 | 90 | 125 | 90 | 98 |
+| Kommo-o | Dragon/Fighting | 75 | 110 | 125 | 100 | 105 | 85 |
+| Scizor | Bug/Steel | 70 | 130 | 100 | 55 | 80 | 65 |
+| Meowscarada | Grass/Dark | 76 | 110 | 70 | 81 | 70 | 123 |
+| Quaquaval | Water/Fighting | 85 | 120 | 80 | 85 | 75 | 85 |
 
 ### Pool-legality check
 
-All 20 are regular, fully-evolved species with **no** legendary, mythical,
-Ultra Beast, or Paradox status, matching the Pokémon Champions pool rules. The
-additions' presence in the Champions pool was confirmed against the roster
+All 29 are regular, fully-evolved species with **no** legendary, mythical,
+Ultra Beast, or Paradox status, matching the Pokémon Champions pool rules. Each
+addition's presence in the Champions pool was confirmed against the roster
 sources below (Game8, Pikalytics Champions, and PokéBase/Pokémon-Zone Champions
-pages). (Removed in a prior change for violating the pool rules: Chien-Pao,
-Flutter Mane, Landorus-Therian, Urshifu-Rapid-Strike.)
+pages). (Removed earlier for violating the pool rules: Chien-Pao, Flutter Mane,
+Landorus-Therian, Urshifu-Rapid-Strike.)
+
+### Conflicts / exclusions noted
+
+- **Skeledirge** — **excluded (conflicting reports).** Meowscarada and Quaquaval
+  (its Paldea-starter siblings) are confirmed in the pool, but community reports
+  conflict on whether Skeledirge is present ("Gen 9 starter trio missing one").
+  Rather than add a species whose legality is disputed, it is left out until
+  first-party confirmation. Re-evaluate when the official roster is unambiguous.
+- **Salamence** — **not added.** Mega Salamence is reported absent from Champions
+  and base Salamence's pool status was unclear in the sources checked; omitted
+  pending confirmation.
 
 ## Known assumptions / potential future conflicts
 

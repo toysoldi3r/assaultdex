@@ -9,6 +9,7 @@ export interface EditorMember {
   species: string;
   name: string;
   legalMoves: string[];
+  abilities: string[];
   set: PokemonSet;
 }
 
@@ -104,11 +105,17 @@ export function TeamEditor({
                 </label>
                 <label className="text-xs text-slate-400">
                   Ability
-                  <input
+                  <select
                     name={`ability_${i}`}
-                    defaultValue={m.set.ability ?? ""}
+                    defaultValue={m.set.ability ?? m.abilities[0] ?? ""}
                     className="mt-0.5 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
-                  />
+                  >
+                    {m.abilities.map((a) => (
+                      <option key={a} value={a}>
+                        {a}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="text-xs text-slate-400">
                   Item

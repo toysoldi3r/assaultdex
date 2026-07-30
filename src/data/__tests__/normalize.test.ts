@@ -23,6 +23,7 @@ describe("normalizePokemon", () => {
       special_defense: 90,
       speed: 60,
     },
+    abilities: ["Blaze", "Intimidate"],
     moves: [
       { name: "Flare Blitz", type: "fire", category: "physical", power: 120, accuracy: 100, priority: 0 },
     ],
@@ -36,6 +37,7 @@ describe("normalizePokemon", () => {
     });
     expect(p.slug).toBe("incineroar");
     expect(p.baseStats).toEqual({ hp: 95, atk: 115, def: 90, spa: 80, spd: 90, spe: 60 });
+    expect(p.abilities).toEqual(["Blaze", "Intimidate"]);
     expect(p.provenance.provider).toBe("fixture");
     expect(p.provenance.normalizationVersion).toBe(NORMALIZATION_VERSION);
     expect(p.provenance.updateStatus).toBe("current");
