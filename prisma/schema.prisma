@@ -28,7 +28,9 @@ model Pokemon {
   baseStats String
   /// JSON string: string[] of legal ability names.
   abilities String @default("[]")
-  /// JSON string: MoveFixture[].
+  /// JSON string: string[] of the full legal movepool (move names).
+  movepool String @default("[]")
+  /// JSON string: MoveFixture[] (curated playable subset with data).
   moves String
 
   // Provenance (spec: provider, external ID, retrieval time, data version,

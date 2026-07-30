@@ -78,6 +78,9 @@ export interface Pokemon {
   baseStats: BaseStats;
   /** Legal ability names (regular + hidden). */
   abilities: string[];
+  /** All legal move names the species can learn (the full movepool). */
+  movepool: string[];
+  /** Curated playable subset of moves with full battle data. */
   moves: MoveFixture[];
   provenance: Provenance;
 }

@@ -103,7 +103,29 @@ export default async function PokemonPage({
         </div>
       </Panel>
 
-      <Panel title="Moves (fixture)">
+      <Panel title="Full movepool">
+        <p className="mb-2 text-xs text-slate-500">
+          {p.movepool.length} legal moves. The playable set below is a curated
+          subset with battle data.
+        </p>
+        <details>
+          <summary className="cursor-pointer text-sm text-amber-400">
+            Show all {p.movepool.length}
+          </summary>
+          <div className="mt-2 flex flex-wrap gap-1">
+            {p.movepool.map((m) => (
+              <span
+                key={m}
+                className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-slate-300"
+              >
+                {m}
+              </span>
+            ))}
+          </div>
+        </details>
+      </Panel>
+
+      <Panel title="Playable moves (curated)">
         <table className="w-full text-left text-sm">
           <thead className="text-xs uppercase text-slate-500">
             <tr>

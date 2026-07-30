@@ -28,6 +28,7 @@ model Pokemon {
   types     String
   baseStats String
   abilities String @default("[]")
+  movepool  String @default("[]")
   moves     String
 
   provider             String

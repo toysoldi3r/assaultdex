@@ -59,6 +59,7 @@ export function normalizePokemon(
       spe: raw.base_stats.speed,
     },
     abilities: [...raw.abilities],
+    movepool: [...raw.movepool],
     moves: raw.moves.map(normalizeMove),
     provenance,
   };

@@ -42,6 +42,7 @@ export const rawPokemonSchema = z.object({
   types: z.array(pokemonTypeSchema).min(1).max(2),
   base_stats: rawBaseStatsSchema,
   abilities: z.array(z.string().min(1)).min(1),
+  movepool: z.array(z.string().min(1)).default([]),
   moves: z.array(rawMoveSchema).min(1),
 });
 

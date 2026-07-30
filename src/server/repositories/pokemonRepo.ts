@@ -13,6 +13,7 @@ interface PokemonRow {
   types: string;
   baseStats: string;
   abilities: string;
+  movepool: string;
   moves: string;
   provider: string;
   externalId: string;
@@ -30,6 +31,7 @@ function rowToDomain(row: PokemonRow): Pokemon {
     types: JSON.parse(row.types) as Pokemon["types"],
     baseStats: JSON.parse(row.baseStats) as Pokemon["baseStats"],
     abilities: JSON.parse(row.abilities || "[]") as string[],
+    movepool: JSON.parse(row.movepool || "[]") as string[],
     moves: JSON.parse(row.moves) as Pokemon["moves"],
     provenance: {
       provider: row.provider,
@@ -49,6 +51,7 @@ function domainToWrite(p: Pokemon): Prisma.PokemonCreateInput {
     types: JSON.stringify(p.types),
     baseStats: JSON.stringify(p.baseStats),
     abilities: JSON.stringify(p.abilities),
+    movepool: JSON.stringify(p.movepool),
     moves: JSON.stringify(p.moves),
     provider: p.provenance.provider,
     externalId: p.provenance.externalId,
@@ -90,6 +93,7 @@ export async function importFixturePokemon(): Promise<{
         types: data.types,
         baseStats: data.baseStats,
         abilities: data.abilities,
+        movepool: data.movepool,
         moves: data.moves,
         retrievedAt: data.retrievedAt,
         dataVersion: data.dataVersion,

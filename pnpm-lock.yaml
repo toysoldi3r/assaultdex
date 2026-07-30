@@ -27,6 +27,9 @@ importers:
       '@eslint/eslintrc':
         specifier: 3.2.0
         version: 3.2.0
+      '@pkmn/dex':
+        specifier: ^0.10.11
+        version: 0.10.11
       '@types/node':
         specifier: 22.10.7
         version: 22.10.7
@@ -650,6 +653,15 @@ packages:
   '@nolyfill/is-core-module@1.0.39':
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
+
+  '@pkmn/dex-types@0.10.11':
+    resolution: {integrity: sha512-6hvvi/iHCdBbUGK7RmWPCKuZGujEC+1elvxcLK2BpL/j7Q0roSuC33xrodDsyg2EuyJ5szGunzRtFztyrtb7aQ==}
+
+  '@pkmn/dex@0.10.11':
+    resolution: {integrity: sha512-htR2Etf3WCiu4k4ukmyYD94do97sTm9LfmxJ8tg2uuPGJsZ98ZZGlJFUZNltfXU0pO61ItiU6obRXTw05qipDQ==}
+
+  '@pkmn/types@4.0.0':
+    resolution: {integrity: sha512-gR2s/pxJYEegek1TtsYCQupNR3d5hMlcJFsiD+2LyfKr4tc+gETTql47tWLX5mFSbPcbXh7f4+7txlMIDoZx/g==}
 
   '@prisma/client@6.3.1':
     resolution: {integrity: sha512-ARAJaPs+eBkemdky/XU3cvGRl+mIPHCN2lCXsl5Vlb0E2gV+R6IN7aCI8CisRGszEZondwIsW9Iz8EJkTdykyA==}
@@ -2923,6 +2935,16 @@ snapshots:
       fastq: 1.20.1
 
   '@nolyfill/is-core-module@1.0.39': {}
+
+  '@pkmn/dex-types@0.10.11':
+    dependencies:
+      '@pkmn/types': 4.0.0
+
+  '@pkmn/dex@0.10.11':
+    dependencies:
+      '@pkmn/dex-types': 0.10.11
+
+  '@pkmn/types@4.0.0': {}
 
   '@prisma/client@6.3.1(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3)':
     optionalDependencies:

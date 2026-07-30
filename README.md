@@ -3,12 +3,12 @@
 Decision support for competitive **Pokémon Champions doubles**: a Pokédex, team
 builder, the **ChoiceDex** battle assistant, and battle analysis.
 
-> **Mechanics are provisional.** Pokémon Champions mechanics are not publicly
-> documented, so every formula (type chart, speed, damage, field effects) is a
-> mainline-derived placeholder flagged as unverified in
-> `src/domain/mechanics/assumptions.ts` and surfaced in the UI. Pokémon data is
-> documented **fixture** data, not a live provider feed. See
-> `docs/ARCHITECTURE.md`.
+> **Data & mechanics.** The Pokédex is the full **Pokémon Champions pool (213
+> species/forms)**, generated from the authoritative roster + `@pkmn/dex`
+> (Pokémon Showdown data) — see `docs/DATA_VERIFICATION.md`. Champions battle
+> mechanics are not publicly documented, so every formula (type chart, speed,
+> damage, field effects) is a mainline-derived placeholder flagged as unverified
+> in `src/domain/mechanics/assumptions.ts` and surfaced in the UI.
 
 ## Features
 

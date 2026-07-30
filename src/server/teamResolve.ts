@@ -45,7 +45,9 @@ export async function resolveTeam(
       });
       return;
     }
-    const legalMoves = ref.moves.map((mv) => mv.name);
+    // Legality checks against the full movepool; the editor dropdown offers the
+    // curated playable subset (moves with battle data).
+    const legalMoves = ref.movepool.length ? ref.movepool : ref.moves.map((mv) => mv.name);
     validatable.push({
       set,
       legalMoves,
