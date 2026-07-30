@@ -52,6 +52,25 @@ export type MoveTarget =
 /** Combat stat stages (all stats except HP). */
 export type StageStatKey = Exclude<StatKey, "hp">;
 
+/** Status a move's secondary effect can inflict. */
+export type MoveStatusEffect =
+  | "burn"
+  | "paralysis"
+  | "poison"
+  | "toxic"
+  | "sleep"
+  | "freeze";
+
+/** A move's secondary effect (applied to the target on hit, by chance). */
+export interface MoveSecondary {
+  /** 0–100. */
+  chance: number;
+  status?: MoveStatusEffect;
+  flinch?: boolean;
+  /** Stat-stage changes applied to the target. */
+  boosts?: Partial<Record<StageStatKey, number>>;
+}
+
 /** A move as shipped in fixtures. Power/accuracy/target are provisional. */
 export interface MoveFixture {
   name: string;
@@ -72,6 +91,12 @@ export interface MoveFixture {
   useTargetOffense?: boolean;
   /** Number of hits for multi-hit moves (default 1). */
   hits?: number;
+  /** Relevant Showdown flags (contact, punch, sound, bullet, bite, pulse, slicing). */
+  flags?: string[];
+  /** Secondary effect applied to the target on hit, by chance. */
+  secondary?: MoveSecondary;
+  /** Stat-stage changes applied to the user after using the move (Close Combat). */
+  selfBoosts?: Partial<Record<StageStatKey, number>>;
 }
 
 /** True when a move hits more than one Pokémon (spread modifier applies). */

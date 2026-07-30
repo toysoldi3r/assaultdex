@@ -10,6 +10,7 @@ import {
 import type { StatusCondition } from "@/domain/types/battle";
 import {
   buildState,
+  COMMON_ITEMS,
   emptySlot,
   type PokemonRef,
   type SideForm,
@@ -41,6 +42,7 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
     [pokemon],
   );
   const options = pokemon.map((p) => ({ slug: p.slug, name: p.name }));
+  const abilitiesFor = (species: string) => refBySlug.get(species)?.abilities ?? [];
   const d = (i: number) => options[i % options.length]?.slug ?? "";
 
   const [form, setForm] = useState<TurnForm>({
@@ -108,6 +110,7 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
           form={form}
           options={options}
           onSlot={patchSlot}
+          abilitiesFor={abilitiesFor}
           onStage={setStage}
           onTailwind={(v) =>
             setForm((f) => ({ ...f, user: { ...f.user, tailwind: v } }))
@@ -119,6 +122,7 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
           form={form}
           options={options}
           onSlot={patchSlot}
+          abilitiesFor={abilitiesFor}
           onStage={setStage}
           onTailwind={(v) =>
             setForm((f) => ({ ...f, opponent: { ...f.opponent, tailwind: v } }))
@@ -253,6 +257,7 @@ function SideEditor({
   onSlot,
   onStage,
   onTailwind,
+  abilitiesFor,
 }: {
   title: string;
   sideKey: "user" | "opponent";
@@ -266,6 +271,7 @@ function SideEditor({
     delta: number,
   ) => void;
   onTailwind: (v: boolean) => void;
+  abilitiesFor: (species: string) => string[];
 }) {
   const sideForm = form[sideKey];
   return (
@@ -326,6 +332,32 @@ function SideEditor({
                   {STATUSES.map((s) => (
                     <option key={s} value={s}>
                       {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                <select
+                  value={slot.ability || abilitiesFor(slot.species)[0] || ""}
+                  onChange={(e) => onSlot(sideKey, idx, { ability: e.target.value })}
+                  aria-label="Ability"
+                  className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
+                >
+                  {abilitiesFor(slot.species).map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={slot.item}
+                  onChange={(e) => onSlot(sideKey, idx, { item: e.target.value })}
+                  aria-label="Item"
+                  className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
+                >
+                  {COMMON_ITEMS.map((it) => (
+                    <option key={it} value={it}>
+                      {it}
                     </option>
                   ))}
                 </select>

@@ -18,6 +18,21 @@ export const moveTargetSchema = z.enum([
 ]);
 
 const stageStatSchema = z.enum(["atk", "def", "spa", "spd", "spe"]);
+const boostsSchema = z.record(stageStatSchema, z.number().int().min(-6).max(6));
+const moveStatusSchema = z.enum([
+  "burn",
+  "paralysis",
+  "poison",
+  "toxic",
+  "sleep",
+  "freeze",
+]);
+const secondarySchema = z.object({
+  chance: z.number().min(0).max(100),
+  status: moveStatusSchema.optional(),
+  flinch: z.boolean().optional(),
+  boosts: boostsSchema.optional(),
+});
 
 export const rawMoveSchema = z.object({
   name: z.string().min(1),
@@ -31,6 +46,9 @@ export const rawMoveSchema = z.object({
   overrideDefensiveStat: z.enum(["def", "spd"]).optional(),
   useTargetOffense: z.boolean().optional(),
   hits: z.number().int().min(1).max(10).optional(),
+  flags: z.array(z.string()).optional(),
+  secondary: secondarySchema.optional(),
+  selfBoosts: boostsSchema.optional(),
 });
 
 export const rawBaseStatsSchema = z.object({

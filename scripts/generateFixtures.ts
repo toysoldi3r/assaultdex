@@ -88,6 +88,24 @@ const UTILITY_ORDER = [
   "Encore",
 ];
 
+const STATUS_MAP: Record<string, string> = {
+  brn: "burn",
+  par: "paralysis",
+  psn: "poison",
+  tox: "toxic",
+  slp: "sleep",
+  frz: "freeze",
+};
+const RELEVANT_FLAGS = new Set([
+  "contact",
+  "punch",
+  "sound",
+  "bullet",
+  "bite",
+  "pulse",
+  "slicing",
+]);
+
 interface OutMove {
   name: string;
   type: string;
@@ -100,6 +118,14 @@ interface OutMove {
   overrideDefensiveStat?: string;
   useTargetOffense?: boolean;
   hits?: number;
+  flags?: string[];
+  secondary?: {
+    chance: number;
+    status?: string;
+    flinch?: boolean;
+    boosts?: Record<string, number>;
+  };
+  selfBoosts?: Record<string, number>;
 }
 
 function toOutMove(m: ReturnType<typeof Dex.moves.get>): OutMove {
@@ -108,6 +134,14 @@ function toOutMove(m: ReturnType<typeof Dex.moves.get>): OutMove {
     overrideDefensiveStat?: string;
     overrideOffensivePokemon?: string;
     multihit?: number | [number, number];
+    flags?: Record<string, unknown>;
+    secondary?: {
+      chance?: number;
+      status?: string;
+      volatileStatus?: string;
+      boosts?: Record<string, number>;
+    } | null;
+    self?: { boosts?: Record<string, number> } | null;
   };
   const isStatus = m.category === "Status" || !m.basePower;
   const out: OutMove = {
@@ -132,6 +166,27 @@ function toOutMove(m: ReturnType<typeof Dex.moves.get>): OutMove {
       : mm.multihit;
     if (h > 1) out.hits = h;
   }
+  const flags = Object.keys(mm.flags ?? {}).filter((f) => RELEVANT_FLAGS.has(f));
+  if (flags.length > 0) out.flags = flags;
+  const stageOnly = (b?: Record<string, number>): Record<string, number> | undefined => {
+    if (!b) return undefined;
+    const keep: Record<string, number> = {};
+    for (const k of ["atk", "def", "spa", "spd", "spe"]) {
+      if (typeof b[k] === "number") keep[k] = b[k];
+    }
+    return Object.keys(keep).length > 0 ? keep : undefined;
+  };
+  const sec = mm.secondary;
+  if (sec && sec.chance) {
+    const secondary: OutMove["secondary"] = { chance: sec.chance };
+    if (sec.status && STATUS_MAP[sec.status]) secondary.status = STATUS_MAP[sec.status];
+    if (sec.volatileStatus === "flinch") secondary.flinch = true;
+    const b = stageOnly(sec.boosts);
+    if (b) secondary.boosts = b;
+    if (secondary.status || secondary.flinch || secondary.boosts) out.secondary = secondary;
+  }
+  const self = stageOnly(mm.self?.boosts);
+  if (self) out.selfBoosts = self;
   return out;
 }
 

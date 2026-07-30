@@ -75,6 +75,7 @@ export function applyTurn(
         priority: move.priority,
         speed: effectiveSpeed(attacker, {
           tailwind: sideConditions(next, action.side).tailwind,
+          field: next.field,
         }).effectiveSpeed,
         tiebreak: rng(),
       });
@@ -87,8 +88,11 @@ export function applyTurn(
     (a, b) => b.priority - a.priority || b.speed - a.speed || a.tiebreak - b.tiebreak,
   );
 
+  const flinched = new Set<Combatant>();
+
   for (const exec of execs) {
     if (exec.attacker.fainted) continue;
+    if (flinched.has(exec.attacker)) continue; // flinched: loses its action
     const foeSide = exec.side === "user" ? "opponent" : "user";
     const foeActive = (foeSide === "user" ? next.user : next.opponent).active;
     const targets = exec.spread
@@ -97,6 +101,7 @@ export function applyTurn(
           (c): c is Combatant => c !== null && !c.fainted,
         );
 
+    let landedAny = false;
     for (const target of targets) {
       if (target.fainted) continue;
       const dmg = calculateDamage(exec.attacker, target, exec.move, next.field, {
@@ -109,6 +114,7 @@ export function applyTurn(
       const accFrac = exec.move.accuracy === null ? 1 : exec.move.accuracy / 100;
       if (rng() >= accFrac) continue; // missed
       if (exec.side === "user") userLanded++;
+      landedAny = true;
 
       const roll = dmg.rolls[Math.floor(rng() * dmg.rolls.length)] ?? 0;
       target.currentHp = Math.max(0, target.currentHp - roll);
@@ -116,11 +122,38 @@ export function applyTurn(
         target.fainted = true;
         faints++;
       }
+
+      // Secondary effect (status / flinch / target stat drop), by chance.
+      const sec = exec.move.secondary;
+      if (sec && !target.fainted && rng() < sec.chance / 100) {
+        if (sec.status && target.status === "none") target.status = sec.status;
+        if (sec.flinch) flinched.add(target);
+        if (sec.boosts) applyBoosts(target, sec.boosts);
+      }
+    }
+
+    // Self stat changes (Close Combat −Def/−SpD, Draco Meteor −SpA) apply once.
+    if (landedAny && exec.move.selfBoosts) {
+      applyBoosts(exec.attacker, exec.move.selfBoosts);
     }
   }
 
   next.turn += 1;
   return { state: next, faints, userLanded, userAttempts };
+}
+
+/** Apply stat-stage changes to a combatant, clamped to ±6. */
+function applyBoosts(
+  combatant: Combatant,
+  boosts: Partial<Record<keyof Combatant["stages"], number>>,
+): void {
+  for (const [key, delta] of Object.entries(boosts) as [
+    keyof Combatant["stages"],
+    number,
+  ][]) {
+    const next = Math.max(-6, Math.min(6, combatant.stages[key] + delta));
+    combatant.stages[key] = next;
+  }
 }
 
 export function activeCount(state: BattleState, side: "user" | "opponent"): number {

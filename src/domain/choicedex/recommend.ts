@@ -160,6 +160,7 @@ export function evaluateCombination(
 
     const aSpeed = effectiveSpeed(attacker, {
       tailwind: sideConditions(state, action.side).tailwind,
+      field: state.field,
     });
     aSpeed.assumptions.forEach((a) => assumptions.add(a));
 
@@ -172,6 +173,7 @@ export function evaluateCombination(
 
       const tSpeed = effectiveSpeed(target, {
         tailwind: sideConditions(state, foe).tailwind,
+        field: state.field,
       });
       const order = moveOrder(
         { speed: aSpeed.effectiveSpeed, priority: move.priority },

@@ -30,6 +30,9 @@ function normalizeMove(raw: RawMove): MoveFixture {
   if (raw.overrideDefensiveStat) move.overrideDefensiveStat = raw.overrideDefensiveStat;
   if (raw.useTargetOffense) move.useTargetOffense = true;
   if (raw.hits && raw.hits > 1) move.hits = raw.hits;
+  if (raw.flags && raw.flags.length > 0) move.flags = [...raw.flags];
+  if (raw.secondary) move.secondary = { ...raw.secondary };
+  if (raw.selfBoosts) move.selfBoosts = { ...raw.selfBoosts };
   return move;
 }
 

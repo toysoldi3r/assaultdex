@@ -88,6 +88,27 @@ export const ASSUMPTIONS = {
     source: "mainline-derived",
     verified: false,
   },
+  abilityEffects: {
+    id: "abilityEffects",
+    description:
+      "Ability effects (offensive/defensive multipliers, type immunities, speed) use documented mainline behaviour. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  itemEffects: {
+    id: "itemEffects",
+    description:
+      "Held-item effects (Choice items, Life Orb, Assault Vest, type boosters, …) use documented mainline behaviour. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  secondaryEffects: {
+    id: "secondaryEffects",
+    description:
+      "Move secondary effects (status/flinch/stat changes) use documented chances from move data and are applied only in simulations. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
   spreadGridPrior: {
     id: "spreadGridPrior",
     description:

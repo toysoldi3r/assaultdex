@@ -10,7 +10,15 @@
 import type { Combatant, FieldState, SideConditions } from "../types/battle";
 import { isSpreadTarget, type MoveFixture } from "../types/pokemon";
 import type { AssumptionId } from "./assumptions";
+import {
+  abilityDefense,
+  abilityImmune,
+  abilityOffense,
+  abilityUngrounds,
+  type AbilityContext,
+} from "./abilities";
 import { isGrounded, terrainMultiplier, weatherMultiplier } from "./field";
+import { itemDefense, itemOffense } from "./items";
 import { stageMultiplier } from "./speed";
 import { typeEffectiveness, type EffectivenessResult } from "./typeEffectiveness";
 
@@ -106,6 +114,26 @@ export function calculateDamage(
   const crit = options.crit ?? false;
   const isPhysical = move.category === "physical";
 
+  // Ability/item context (provisional Champions behaviour).
+  const abilityCtx: AbilityContext = {
+    attacker,
+    defender,
+    move,
+    moveType: move.type,
+    field,
+    effectiveness: effectiveness.multiplier,
+    isPhysical,
+    attackerHpFraction: attacker.currentHp / Math.max(1, attacker.stats.hp),
+    defenderAtFullHp: defender.currentHp >= defender.stats.hp,
+  };
+
+  // Ability-based immunity (Levitate vs Ground, Flash Fire vs Fire, …).
+  if (abilityImmune(abilityCtx)) {
+    modifiers.push({ name: `immune (${defender.ability})`, multiplier: 0 });
+    assumptions.add("abilityEffects");
+    return zeroResult(effectiveness, modifiers, [...assumptions]);
+  }
+
   // Stat selection with move overrides:
   // - overrideOffensiveStat: Body Press uses Defense as the attacking stat.
   // - useTargetOffense: Foul Play uses the target's (defender's) attacking stat.
@@ -126,8 +154,8 @@ export function calculateDamage(
 
   let attack = offSource.stats[offKey] * stageMultiplier(attackStage);
   const defense = defender.stats[defKey] * stageMultiplier(defenseStage);
-  // Burn halves a burned attacker's physical damage regardless of stat source.
-  if (isPhysical && attacker.status === "burn") {
+  // Burn halves a burned attacker's physical damage — unless Guts ignores it.
+  if (isPhysical && attacker.status === "burn" && attacker.ability !== "Guts") {
     attack *= 0.5;
   }
 
@@ -149,8 +177,8 @@ export function calculateDamage(
     assumptions.add("weather");
   }
 
-  const attackerGrounded = isGrounded(attacker.types);
-  const defenderGrounded = isGrounded(defender.types);
+  const attackerGrounded = isGrounded(attacker.types) && !abilityUngrounds(attacker.ability);
+  const defenderGrounded = isGrounded(defender.types) && !abilityUngrounds(defender.ability);
   const terrain = terrainMultiplier(
     move.type,
     field.terrain,
@@ -185,13 +213,53 @@ export function calculateDamage(
   const critMod = crit ? 1.5 : 1;
   if (critMod !== 1) modifiers.push({ name: "critical hit", multiplier: critMod });
 
+  // Ability and item multipliers (offense from attacker, defense from defender).
+  const itemCtx = {
+    attacker,
+    defender,
+    move,
+    moveType: move.type,
+    isPhysical,
+    effectiveness: effectiveness.multiplier,
+  };
+  const abOff = abilityOffense(abilityCtx);
+  const abDef = abilityDefense(abilityCtx);
+  const itOff = itemOffense(itemCtx);
+  const itDef = itemDefense(itemCtx);
+  if (abOff !== 1) {
+    modifiers.push({ name: `${attacker.ability} (atk)`, multiplier: abOff });
+    assumptions.add("abilityEffects");
+  }
+  if (abDef !== 1) {
+    modifiers.push({ name: `${defender.ability} (def)`, multiplier: abDef });
+    assumptions.add("abilityEffects");
+  }
+  if (itOff !== 1) {
+    modifiers.push({ name: `${attacker.item} (atk)`, multiplier: itOff });
+    assumptions.add("itemEffects");
+  }
+  if (itDef !== 1) {
+    modifiers.push({ name: `${defender.item} (def)`, multiplier: itDef });
+    assumptions.add("itemEffects");
+  }
+
   // Multi-hit moves (Dragon Darts ×2, Population Bomb, …). Provisional: each hit
   // deals the same rolled damage; total = per-hit × number of hits.
   const hits = move.hits && move.hits > 1 ? move.hits : 1;
   if (hits > 1) modifiers.push({ name: `${hits} hits`, multiplier: hits });
 
   const modifier =
-    stab * effectiveness.multiplier * weather * terrain * spreadMod * screen * critMod;
+    stab *
+    effectiveness.multiplier *
+    weather *
+    terrain *
+    spreadMod *
+    screen *
+    critMod *
+    abOff *
+    abDef *
+    itOff *
+    itDef;
 
   const rolls: number[] = [];
   for (let roll = 85; roll <= 100; roll++) {

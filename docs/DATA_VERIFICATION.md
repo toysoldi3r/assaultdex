@@ -36,6 +36,19 @@ Notes:
   (Psyshock/Secret Sword → physical Defense), and multi-hit moves (Dragon Darts
   ×2, Population Bomb ×10). These follow documented mainline rules and remain
   provisional for Champions like the rest of the damage math.
+- **Abilities and items** are modeled as data-driven multipliers/immunities in
+  the damage and speed engines: e.g. Adaptability, Technician, Guts, Huge Power,
+  type/low-HP boosters, Tough Claws/Iron Fist (via move flags); Thick Fat,
+  Multiscale, Ice Scales, Filter, Fur Coat; immunities (Levitate, Flash Fire,
+  Water/Volt Absorb, Sap Sipper, Bulletproof); speed abilities (Chlorophyll,
+  Swift Swim, …); and items (Choice Band/Specs/Scarf, Life Orb, Assault Vest,
+  Muscle Band/Wise Glasses, Expert Belt, type boosters). Move flags/secondaries
+  come from `@pkmn/dex`; the ability/item *effect values* are hand-coded
+  documented mainline behaviour (ASSUMPTIONS.abilityEffects / itemEffects),
+  provisional for Champions.
+- **Move secondary effects** (status/flinch/stat changes, with their chances)
+  come from `@pkmn/dex` and are applied in **simulations**
+  (ASSUMPTIONS.secondaryEffects).
 - Data values are **mainline** (via Showdown). If Pokémon Champions rebalanced
   any stat, ability, or movepool, this dataset would differ — that is the same
   provisional caveat that applies to the mechanics engine, and is flagged rather

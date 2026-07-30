@@ -17,7 +17,7 @@ import type { Pokemon } from "@/domain/types/pokemon";
 
 export type PokemonRef = Pick<
   Pokemon,
-  "slug" | "name" | "types" | "baseStats" | "moves"
+  "slug" | "name" | "types" | "baseStats" | "abilities" | "moves"
 >;
 
 export interface SlotForm {
@@ -25,7 +25,24 @@ export interface SlotForm {
   hpPct: number;
   status: StatusCondition;
   stages: StageStats;
+  /** Ability name; "" means use the species' first ability. */
+  ability: string;
+  /** Item name; "None" means no item. */
+  item: string;
 }
+
+/** Items with a modeled effect, offered in the editor. */
+export const COMMON_ITEMS = [
+  "None",
+  "Choice Band",
+  "Choice Specs",
+  "Choice Scarf",
+  "Life Orb",
+  "Assault Vest",
+  "Muscle Band",
+  "Wise Glasses",
+  "Expert Belt",
+] as const;
 
 export interface SideForm {
   slots: [SlotForm, SlotForm];
@@ -47,6 +64,8 @@ export function emptySlot(species: string): SlotForm {
     hpPct: 100,
     status: "none",
     stages: { ...NEUTRAL_STAGES },
+    ability: "",
+    item: "None",
   };
 }
 
@@ -54,6 +73,11 @@ export function combatantFromRef(
   ref: PokemonRef,
   slot: SlotForm,
 ): Combatant {
+  const ability =
+    slot.ability && ref.abilities.includes(slot.ability)
+      ? slot.ability
+      : (ref.abilities[0] ?? null);
+  const item = slot.item && slot.item !== "None" ? slot.item : null;
   const c = buildCombatant({
     species: ref.slug,
     name: ref.name,
@@ -66,6 +90,8 @@ export function combatantFromRef(
     nature: natureByName("Serious"),
     hpFraction: slot.hpPct / 100,
     status: slot.status,
+    ability,
+    item,
     tier: "entered",
   });
   return { ...c, stages: { ...slot.stages } };
