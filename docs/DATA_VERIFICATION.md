@@ -30,6 +30,12 @@ Notes:
   high-power damaging moves + key utility, ≤10) with full battle data; the
   `movepool` array is the **complete** legal move list used for team-legality
   validation and display.
+- **Special move mechanics** are data-driven from `@pkmn/dex` and honoured by the
+  damage engine: offensive-stat overrides (Body Press → Defense), target-stat
+  moves (Foul Play → the target's Attack), defensive-stat overrides
+  (Psyshock/Secret Sword → physical Defense), and multi-hit moves (Dragon Darts
+  ×2, Population Bomb ×10). These follow documented mainline rules and remain
+  provisional for Champions like the rest of the damage math.
 - Data values are **mainline** (via Showdown). If Pokémon Champions rebalanced
   any stat, ability, or movepool, this dataset would differ — that is the same
   provisional caveat that applies to the mechanics engine, and is flagged rather

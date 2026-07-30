@@ -49,6 +49,9 @@ export type MoveTarget =
   | "self"
   | "ally";
 
+/** Combat stat stages (all stats except HP). */
+export type StageStatKey = Exclude<StatKey, "hp">;
+
 /** A move as shipped in fixtures. Power/accuracy/target are provisional. */
 export interface MoveFixture {
   name: string;
@@ -61,6 +64,14 @@ export interface MoveFixture {
   /** Turn-order priority bracket. 0 is normal. */
   priority: number;
   target: MoveTarget;
+  /** Attacking stat override (e.g. Body Press uses Defense). Default by category. */
+  overrideOffensiveStat?: StageStatKey;
+  /** Defending stat override (e.g. Psyshock hits physical Defense). Default by category. */
+  overrideDefensiveStat?: Extract<StageStatKey, "def" | "spd">;
+  /** Use the TARGET's offensive stat instead of the user's (Foul Play). */
+  useTargetOffense?: boolean;
+  /** Number of hits for multi-hit moves (default 1). */
+  hits?: number;
 }
 
 /** True when a move hits more than one Pokémon (spread modifier applies). */

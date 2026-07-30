@@ -1006,7 +1006,8 @@
           "power": 80,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "overrideDefensiveStat": "def"
         },
         {
           "name": "Zen Headbutt",
@@ -1239,7 +1240,8 @@
           "power": 80,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "overrideDefensiveStat": "def"
         },
         {
           "name": "Protect",
@@ -1557,6 +1559,16 @@
           "target": "normal"
         },
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -1589,15 +1601,6 @@
           "category": "physical",
           "power": 60,
           "accuracy": 95,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Rock Throw",
-          "type": "rock",
-          "category": "physical",
-          "power": 50,
-          "accuracy": 90,
           "priority": 0,
           "target": "normal"
         },
@@ -1727,6 +1730,16 @@
           "target": "normal"
         },
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -1749,15 +1762,6 @@
           "type": "poison",
           "category": "special",
           "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Power Gem",
-          "type": "rock",
-          "category": "special",
-          "power": 80,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -1928,6 +1932,16 @@
           "target": "normal"
         },
         {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Energy Ball",
           "type": "grass",
           "category": "special",
@@ -1941,15 +1955,6 @@
           "type": "ghost",
           "category": "physical",
           "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Seed Bomb",
-          "type": "grass",
-          "category": "physical",
-          "power": 80,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -2150,19 +2155,20 @@
           "target": "normal"
         },
         {
+          "name": "Pin Missile",
+          "type": "bug",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Bug Buzz",
           "type": "bug",
           "category": "special",
           "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Lunge",
-          "type": "bug",
-          "category": "physical",
-          "power": 80,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -2366,7 +2372,8 @@
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Heat Wave",
@@ -2540,13 +2547,14 @@
           "target": "normal"
         },
         {
-          "name": "Energy Ball",
+          "name": "Bullet Seed",
           "type": "grass",
-          "category": "special",
-          "power": 90,
+          "category": "physical",
+          "power": 25,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 4
         },
         {
           "name": "Protect",
@@ -2683,7 +2691,8 @@
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Kowtow Cleave",
@@ -2832,6 +2841,16 @@
       ],
       "moves": [
         {
+          "name": "Population Bomb",
+          "type": "normal",
+          "category": "physical",
+          "power": 20,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 10
+        },
+        {
           "name": "Giga Impact",
           "type": "normal",
           "category": "physical",
@@ -2873,15 +2892,6 @@
           "category": "physical",
           "power": 90,
           "accuracy": 85,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Tera Blast",
-          "type": "normal",
-          "category": "special",
-          "power": 80,
-          "accuracy": 100,
           "priority": 0,
           "target": "normal"
         },
@@ -3045,13 +3055,24 @@
           "target": "normal"
         },
         {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Foul Play",
           "type": "dark",
           "category": "physical",
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Energy Ball",
@@ -3061,15 +3082,6 @@
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
-        },
-        {
-          "name": "Petal Blizzard",
-          "type": "grass",
-          "category": "physical",
-          "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "all-adjacent"
         },
         {
           "name": "Protect",
@@ -4134,17 +4146,18 @@
           "target": "normal"
         },
         {
-          "name": "Energy Ball",
+          "name": "Bullet Seed",
           "type": "grass",
-          "category": "special",
-          "power": 90,
+          "category": "physical",
+          "power": 25,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 4
         },
         {
-          "name": "Flamethrower",
-          "type": "fire",
+          "name": "Energy Ball",
+          "type": "grass",
           "category": "special",
           "power": 90,
           "accuracy": 100,
@@ -5315,7 +5328,8 @@
           "power": 80,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "overrideOffensiveStat": "def"
         },
         {
           "name": "Protect",
@@ -5476,7 +5490,8 @@
           "power": 80,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "overrideOffensiveStat": "def"
         },
         {
           "name": "Protect",
@@ -5604,7 +5619,8 @@
           "power": 80,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "overrideOffensiveStat": "def"
         },
         {
           "name": "Double Kick",
@@ -5613,7 +5629,8 @@
           "power": 30,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 2
         },
         {
           "name": "Giga Impact",
@@ -5992,6 +6009,16 @@
       ],
       "moves": [
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -6007,7 +6034,8 @@
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Crunch",
@@ -6032,15 +6060,6 @@
           "type": "rock",
           "category": "special",
           "power": 80,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Lash Out",
-          "type": "dark",
-          "category": "physical",
-          "power": 75,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -6210,7 +6229,8 @@
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Crunch",
@@ -6829,13 +6849,14 @@
           "target": "normal"
         },
         {
-          "name": "Energy Ball",
+          "name": "Bullet Seed",
           "type": "grass",
-          "category": "special",
-          "power": 90,
+          "category": "physical",
+          "power": 25,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 4
         },
         {
           "name": "Protect",
@@ -7032,13 +7053,14 @@
           "target": "normal"
         },
         {
-          "name": "Hyper Voice",
-          "type": "normal",
-          "category": "special",
-          "power": 90,
-          "accuracy": 100,
+          "name": "Scale Shot",
+          "type": "dragon",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
           "priority": 0,
-          "target": "all-adjacent-foes"
+          "target": "normal",
+          "hits": 4
         },
         {
           "name": "Protect",
@@ -7617,6 +7639,16 @@
       ],
       "moves": [
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -7659,15 +7691,6 @@
           "power": 40,
           "accuracy": 100,
           "priority": 1,
-          "target": "normal"
-        },
-        {
-          "name": "Rock Blast",
-          "type": "rock",
-          "category": "physical",
-          "power": 25,
-          "accuracy": 90,
-          "priority": 0,
           "target": "normal"
         },
         {
@@ -7807,6 +7830,16 @@
       ],
       "moves": [
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -7849,15 +7882,6 @@
           "power": 40,
           "accuracy": 100,
           "priority": 1,
-          "target": "normal"
-        },
-        {
-          "name": "Rock Blast",
-          "type": "rock",
-          "category": "physical",
-          "power": 25,
-          "accuracy": 90,
-          "priority": 0,
           "target": "normal"
         },
         {
@@ -8010,6 +8034,16 @@
       ],
       "moves": [
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -8041,15 +8075,6 @@
           "type": "rock",
           "category": "physical",
           "power": 50,
-          "accuracy": 90,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Rock Blast",
-          "type": "rock",
-          "category": "physical",
-          "power": 25,
           "accuracy": 90,
           "priority": 0,
           "target": "normal"
@@ -9815,6 +9840,16 @@
           "target": "normal"
         },
         {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Energy Ball",
           "type": "grass",
           "category": "special",
@@ -9822,15 +9857,6 @@
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
-        },
-        {
-          "name": "Petal Blizzard",
-          "type": "grass",
-          "category": "physical",
-          "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "all-adjacent"
         },
         {
           "name": "Protect",
@@ -10156,19 +10182,20 @@
           "target": "normal"
         },
         {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Energy Ball",
           "type": "grass",
           "category": "special",
           "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Dragon Pulse",
-          "type": "dragon",
-          "category": "special",
-          "power": 85,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -10343,13 +10370,14 @@
           "target": "normal"
         },
         {
-          "name": "Flash Cannon",
-          "type": "steel",
-          "category": "special",
-          "power": 80,
-          "accuracy": 100,
+          "name": "Dual Wingbeat",
+          "type": "flying",
+          "category": "physical",
+          "power": 40,
+          "accuracy": 90,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 2
         },
         {
           "name": "Protect",
@@ -10501,6 +10529,16 @@
           "target": "normal"
         },
         {
+          "name": "Dragon Darts",
+          "type": "dragon",
+          "category": "physical",
+          "power": 50,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 2
+        },
+        {
           "name": "Dragon Rush",
           "type": "dragon",
           "category": "physical",
@@ -10523,15 +10561,6 @@
           "type": "dragon",
           "category": "special",
           "power": 85,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Dragon Claw",
-          "type": "dragon",
-          "category": "physical",
-          "power": 80,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -10686,20 +10715,21 @@
           "target": "normal"
         },
         {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Dragon Rush",
           "type": "dragon",
           "category": "physical",
           "power": 100,
           "accuracy": 75,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Energy Ball",
-          "type": "grass",
-          "category": "special",
-          "power": 90,
-          "accuracy": 100,
           "priority": 0,
           "target": "normal"
         },
@@ -11033,7 +11063,8 @@
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Thunderbolt",
@@ -12186,7 +12217,8 @@
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Dark Pulse",
@@ -12462,13 +12494,14 @@
           "target": "normal"
         },
         {
-          "name": "Stone Edge",
+          "name": "Rock Blast",
           "type": "rock",
           "category": "physical",
-          "power": 100,
-          "accuracy": 80,
+          "power": 25,
+          "accuracy": 90,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 4
         },
         {
           "name": "Protect",
@@ -13474,6 +13507,16 @@
           "target": "all-adjacent-foes"
         },
         {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Ice Beam",
           "type": "ice",
           "category": "special",
@@ -13507,15 +13550,6 @@
           "power": 65,
           "accuracy": 95,
           "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Avalanche",
-          "type": "ice",
-          "category": "physical",
-          "power": 60,
-          "accuracy": 100,
-          "priority": -4,
           "target": "normal"
         },
         {
@@ -14540,7 +14574,8 @@
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Phantom Force",
@@ -15324,6 +15359,16 @@
       ],
       "moves": [
         {
+          "name": "Pin Missile",
+          "type": "bug",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Sludge Wave",
           "type": "poison",
           "category": "special",
@@ -15362,15 +15407,6 @@
         {
           "name": "Lunge",
           "type": "bug",
-          "category": "physical",
-          "power": 80,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Poison Jab",
-          "type": "poison",
           "category": "physical",
           "power": 80,
           "accuracy": 100,
@@ -16000,13 +16036,14 @@
           "target": "normal"
         },
         {
-          "name": "Energy Ball",
+          "name": "Bullet Seed",
           "type": "grass",
-          "category": "special",
-          "power": 90,
+          "category": "physical",
+          "power": 25,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 4
         },
         {
           "name": "Protect",
@@ -16522,6 +16559,26 @@
           "target": "all-adjacent-foes"
         },
         {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -16535,24 +16592,6 @@
           "type": "ice",
           "category": "special",
           "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Rock Slide",
-          "type": "rock",
-          "category": "physical",
-          "power": 75,
-          "accuracy": 90,
-          "priority": 0,
-          "target": "all-adjacent-foes"
-        },
-        {
-          "name": "Freeze-Dry",
-          "type": "ice",
-          "category": "special",
-          "power": 70,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -16701,6 +16740,16 @@
           "target": "all-adjacent-foes"
         },
         {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Ice Beam",
           "type": "ice",
           "category": "special",
@@ -16734,15 +16783,6 @@
           "power": 65,
           "accuracy": 95,
           "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Avalanche",
-          "type": "ice",
-          "category": "physical",
-          "power": 60,
-          "accuracy": 100,
-          "priority": -4,
           "target": "normal"
         },
         {
@@ -18291,6 +18331,16 @@
           "target": "normal"
         },
         {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Energy Ball",
           "type": "grass",
           "category": "special",
@@ -18304,15 +18354,6 @@
           "type": "ghost",
           "category": "physical",
           "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Seed Bomb",
-          "type": "grass",
-          "category": "physical",
-          "power": 80,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -18483,6 +18524,16 @@
           "target": "normal"
         },
         {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Energy Ball",
           "type": "grass",
           "category": "special",
@@ -18496,15 +18547,6 @@
           "type": "ghost",
           "category": "physical",
           "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Seed Bomb",
-          "type": "grass",
-          "category": "physical",
-          "power": 80,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -18675,6 +18717,16 @@
           "target": "normal"
         },
         {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Energy Ball",
           "type": "grass",
           "category": "special",
@@ -18688,15 +18740,6 @@
           "type": "ghost",
           "category": "physical",
           "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Seed Bomb",
-          "type": "grass",
-          "category": "physical",
-          "power": 80,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -19701,7 +19744,8 @@
           "power": 80,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "overrideDefensiveStat": "def"
         },
         {
           "name": "Protect",
@@ -19886,7 +19930,8 @@
           "power": 80,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "overrideDefensiveStat": "def"
         },
         {
           "name": "Zen Headbutt",
@@ -20332,7 +20377,8 @@
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Protect",
@@ -21272,22 +21318,24 @@
           "target": "normal"
         },
         {
-          "name": "Stone Edge",
+          "name": "Rock Blast",
           "type": "rock",
           "category": "physical",
-          "power": 100,
-          "accuracy": 80,
+          "power": 25,
+          "accuracy": 90,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 4
         },
         {
-          "name": "Dragon Pulse",
+          "name": "Scale Shot",
           "type": "dragon",
-          "category": "special",
-          "power": 85,
-          "accuracy": 100,
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 4
         },
         {
           "name": "Protect",
@@ -21650,6 +21698,16 @@
           "target": "normal"
         },
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -21666,15 +21724,6 @@
           "accuracy": 95,
           "priority": 0,
           "target": "normal"
-        },
-        {
-          "name": "Rock Slide",
-          "type": "rock",
-          "category": "physical",
-          "power": 75,
-          "accuracy": 90,
-          "priority": 0,
-          "target": "all-adjacent-foes"
         },
         {
           "name": "Protect",
@@ -21945,20 +21994,21 @@
           "target": "normal"
         },
         {
+          "name": "Scale Shot",
+          "type": "dragon",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Fly",
           "type": "flying",
           "category": "physical",
           "power": 90,
           "accuracy": 95,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Dragon Pulse",
-          "type": "dragon",
-          "category": "special",
-          "power": 85,
-          "accuracy": 100,
           "priority": 0,
           "target": "normal"
         },
@@ -24129,13 +24179,14 @@
           "target": "normal"
         },
         {
-          "name": "Energy Ball",
+          "name": "Bullet Seed",
           "type": "grass",
-          "category": "special",
-          "power": 90,
+          "category": "physical",
+          "power": 25,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 4
         },
         {
           "name": "Protect",
@@ -24328,22 +24379,24 @@
           "target": "all-adjacent-foes"
         },
         {
-          "name": "Energy Ball",
+          "name": "Bullet Seed",
           "type": "grass",
-          "category": "special",
-          "power": 90,
+          "category": "physical",
+          "power": 25,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 4
         },
         {
-          "name": "Ice Beam",
+          "name": "Icicle Spear",
           "type": "ice",
-          "category": "special",
-          "power": 90,
+          "category": "physical",
+          "power": 25,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 4
         },
         {
           "name": "Protect",
@@ -24506,6 +24559,16 @@
           "target": "normal"
         },
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -24513,15 +24576,6 @@
           "accuracy": 80,
           "priority": 0,
           "target": "normal"
-        },
-        {
-          "name": "Heat Wave",
-          "type": "fire",
-          "category": "special",
-          "power": 95,
-          "accuracy": 90,
-          "priority": 0,
-          "target": "all-adjacent-foes"
         },
         {
           "name": "Protect",
@@ -24654,6 +24708,16 @@
           "target": "all-adjacent-foes"
         },
         {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Mountain Gale",
           "type": "ice",
           "category": "physical",
@@ -24663,29 +24727,21 @@
           "target": "normal"
         },
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
           "power": 100,
           "accuracy": 80,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Ice Beam",
-          "type": "ice",
-          "category": "special",
-          "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Ice Spinner",
-          "type": "ice",
-          "category": "physical",
-          "power": 80,
-          "accuracy": 100,
           "priority": 0,
           "target": "normal"
         },
@@ -25571,6 +25627,16 @@
           "target": "normal"
         },
         {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Ice Beam",
           "type": "ice",
           "category": "special",
@@ -25593,15 +25659,6 @@
           "type": "ghost",
           "category": "special",
           "power": 80,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Ice Punch",
-          "type": "ice",
-          "category": "physical",
-          "power": 75,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -26057,19 +26114,20 @@
           "target": "all-adjacent"
         },
         {
+          "name": "Scale Shot",
+          "type": "dragon",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Earth Power",
           "type": "ground",
           "category": "special",
           "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Dragon Pulse",
-          "type": "dragon",
-          "category": "special",
-          "power": 85,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -26230,6 +26288,16 @@
           "target": "all-adjacent-foes"
         },
         {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Ice Beam",
           "type": "ice",
           "category": "special",
@@ -26263,15 +26331,6 @@
           "power": 60,
           "accuracy": 100,
           "priority": -4,
-          "target": "normal"
-        },
-        {
-          "name": "Frost Breath",
-          "type": "ice",
-          "category": "special",
-          "power": 60,
-          "accuracy": 90,
-          "priority": 0,
           "target": "normal"
         },
         {
@@ -26483,13 +26542,14 @@
           "target": "normal"
         },
         {
-          "name": "Aerial Ace",
+          "name": "Dual Wingbeat",
           "type": "flying",
           "category": "physical",
-          "power": 60,
-          "accuracy": null,
+          "power": 40,
+          "accuracy": 90,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "hits": 2
         },
         {
           "name": "Protect",
@@ -27178,6 +27238,16 @@
       ],
       "moves": [
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -27221,15 +27291,6 @@
           "accuracy": 90,
           "priority": 0,
           "target": "all-adjacent-foes"
-        },
-        {
-          "name": "Skitter Smack",
-          "type": "bug",
-          "category": "physical",
-          "power": 70,
-          "accuracy": 90,
-          "priority": 0,
-          "target": "normal"
         },
         {
           "name": "Protect",
@@ -27407,6 +27468,16 @@
           "target": "normal"
         },
         {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Energy Ball",
           "type": "grass",
           "category": "special",
@@ -27420,15 +27491,6 @@
           "type": "grass",
           "category": "physical",
           "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Seed Bomb",
-          "type": "grass",
-          "category": "physical",
-          "power": 80,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -28232,6 +28294,16 @@
           "target": "all-adjacent"
         },
         {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "High Horsepower",
           "type": "ground",
           "category": "physical",
@@ -28255,15 +28327,6 @@
           "category": "special",
           "power": 90,
           "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Icicle Crash",
-          "type": "ice",
-          "category": "physical",
-          "power": 85,
-          "accuracy": 90,
           "priority": 0,
           "target": "normal"
         },
@@ -28480,6 +28543,16 @@
           "target": "all-adjacent"
         },
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -28494,15 +28567,6 @@
           "category": "physical",
           "power": 95,
           "accuracy": 95,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Earth Power",
-          "type": "ground",
-          "category": "special",
-          "power": 90,
-          "accuracy": 100,
           "priority": 0,
           "target": "normal"
         },
@@ -28673,6 +28737,16 @@
           "target": "normal"
         },
         {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Energy Ball",
           "type": "grass",
           "category": "special",
@@ -28680,15 +28754,6 @@
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
-        },
-        {
-          "name": "Petal Blizzard",
-          "type": "grass",
-          "category": "physical",
-          "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "all-adjacent"
         },
         {
           "name": "Protect",
@@ -29546,7 +29611,8 @@
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Phantom Force",
@@ -29785,13 +29851,14 @@
           "target": "normal"
         },
         {
-          "name": "Earthquake",
-          "type": "ground",
+          "name": "Bullet Seed",
+          "type": "grass",
           "category": "physical",
-          "power": 100,
+          "power": 25,
           "accuracy": 100,
           "priority": 0,
-          "target": "all-adjacent"
+          "target": "normal",
+          "hits": 4
         },
         {
           "name": "Protect",
@@ -30378,13 +30445,24 @@
           "target": "all-adjacent-foes"
         },
         {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Foul Play",
           "type": "dark",
           "category": "physical",
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Ice Beam",
@@ -30407,15 +30485,6 @@
         {
           "name": "Ice Spinner",
           "type": "ice",
-          "category": "physical",
-          "power": 80,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Throat Chop",
-          "type": "dark",
           "category": "physical",
           "power": 80,
           "accuracy": 100,
@@ -31177,6 +31246,16 @@
           "target": "all-adjacent-foes"
         },
         {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Ice Beam",
           "type": "ice",
           "category": "special",
@@ -31210,15 +31289,6 @@
           "power": 65,
           "accuracy": 95,
           "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Avalanche",
-          "type": "ice",
-          "category": "physical",
-          "power": 60,
-          "accuracy": 100,
-          "priority": -4,
           "target": "normal"
         },
         {
@@ -32170,20 +32240,21 @@
           "target": "all-adjacent"
         },
         {
+          "name": "Dual Wingbeat",
+          "type": "flying",
+          "category": "physical",
+          "power": 40,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 2
+        },
+        {
           "name": "Air Slash",
           "type": "flying",
           "category": "special",
           "power": 75,
           "accuracy": 95,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Rising Voltage",
-          "type": "electric",
-          "category": "special",
-          "power": 70,
-          "accuracy": 100,
           "priority": 0,
           "target": "normal"
         },
@@ -32949,6 +33020,16 @@
           "target": "normal"
         },
         {
+          "name": "Scale Shot",
+          "type": "dragon",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Dragon Pulse",
           "type": "dragon",
           "category": "special",
@@ -32961,15 +33042,6 @@
           "name": "Crunch",
           "type": "dark",
           "category": "physical",
-          "power": 80,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Dark Pulse",
-          "type": "dark",
-          "category": "special",
           "power": 80,
           "accuracy": 100,
           "priority": 0,
@@ -33160,7 +33232,8 @@
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "High Horsepower",
@@ -33342,7 +33415,8 @@
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Dark Pulse",
@@ -33590,7 +33664,8 @@
           "power": 80,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "overrideDefensiveStat": "def"
         },
         {
           "name": "Zen Headbutt",
@@ -33970,6 +34045,16 @@
           "target": "normal"
         },
         {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Energy Ball",
           "type": "grass",
           "category": "special",
@@ -33986,15 +34071,6 @@
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
-        },
-        {
-          "name": "Petal Blizzard",
-          "type": "grass",
-          "category": "physical",
-          "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "all-adjacent"
         },
         {
           "name": "Protect",
@@ -34298,6 +34374,16 @@
           "target": "all-adjacent-foes"
         },
         {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Ice Beam",
           "type": "ice",
           "category": "special",
@@ -34331,15 +34417,6 @@
           "power": 60,
           "accuracy": 100,
           "priority": -4,
-          "target": "normal"
-        },
-        {
-          "name": "Frost Breath",
-          "type": "ice",
-          "category": "special",
-          "power": 60,
-          "accuracy": 90,
-          "priority": 0,
           "target": "normal"
         },
         {
@@ -34877,7 +34954,8 @@
           "power": 95,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "useTargetOffense": true
         },
         {
           "name": "Night Daze",
@@ -35083,6 +35161,16 @@
           "target": "all-adjacent-foes"
         },
         {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Ice Beam",
           "type": "ice",
           "category": "special",
@@ -35114,15 +35202,6 @@
           "type": "ice",
           "category": "special",
           "power": 70,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Aurora Beam",
-          "type": "ice",
-          "category": "special",
-          "power": 65,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -36913,7 +36992,8 @@
           "power": 80,
           "accuracy": 100,
           "priority": 0,
-          "target": "normal"
+          "target": "normal",
+          "overrideDefensiveStat": "def"
         },
         {
           "name": "Zen Headbutt",
@@ -37466,6 +37546,16 @@
       ],
       "moves": [
         {
+          "name": "Pin Missile",
+          "type": "bug",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Sludge Bomb",
           "type": "poison",
           "category": "special",
@@ -37506,15 +37596,6 @@
           "type": "poison",
           "category": "special",
           "power": 65,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Bug Bite",
-          "type": "bug",
-          "category": "physical",
-          "power": 60,
           "accuracy": 100,
           "priority": 0,
           "target": "normal"
@@ -38589,6 +38670,16 @@
           "target": "normal"
         },
         {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Sludge Wave",
           "type": "poison",
           "category": "special",
@@ -38601,15 +38692,6 @@
           "name": "Energy Ball",
           "type": "grass",
           "category": "special",
-          "power": 90,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Leaf Blade",
-          "type": "grass",
-          "category": "physical",
           "power": 90,
           "accuracy": 100,
           "priority": 0,
@@ -39183,6 +39265,16 @@
           "target": "normal"
         },
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -39195,15 +39287,6 @@
           "name": "Flash Cannon",
           "type": "steel",
           "category": "special",
-          "power": 80,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Iron Head",
-          "type": "steel",
-          "category": "physical",
           "power": 80,
           "accuracy": 100,
           "priority": 0,
@@ -39377,6 +39460,16 @@
           "target": "normal"
         },
         {
+          "name": "Rock Blast",
+          "type": "rock",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Stone Edge",
           "type": "rock",
           "category": "physical",
@@ -39409,15 +39502,6 @@
           "category": "physical",
           "power": 60,
           "accuracy": 95,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Smack Down",
-          "type": "rock",
-          "category": "physical",
-          "power": 50,
-          "accuracy": 100,
           "priority": 0,
           "target": "normal"
         },
@@ -40829,6 +40913,16 @@
           "target": "all-adjacent-foes"
         },
         {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
           "name": "Ice Beam",
           "type": "ice",
           "category": "special",
@@ -40848,15 +40942,6 @@
         },
         {
           "name": "Expanding Force",
-          "type": "psychic",
-          "category": "special",
-          "power": 80,
-          "accuracy": 100,
-          "priority": 0,
-          "target": "normal"
-        },
-        {
-          "name": "Psyshock",
           "type": "psychic",
           "category": "special",
           "power": 80,

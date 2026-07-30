@@ -96,11 +96,21 @@ interface OutMove {
   accuracy: number | null;
   priority: number;
   target: string;
+  overrideOffensiveStat?: string;
+  overrideDefensiveStat?: string;
+  useTargetOffense?: boolean;
+  hits?: number;
 }
 
 function toOutMove(m: ReturnType<typeof Dex.moves.get>): OutMove {
+  const mm = m as unknown as {
+    overrideOffensiveStat?: string;
+    overrideDefensiveStat?: string;
+    overrideOffensivePokemon?: string;
+    multihit?: number | [number, number];
+  };
   const isStatus = m.category === "Status" || !m.basePower;
-  return {
+  const out: OutMove = {
     name: m.name,
     type: m.type.toLowerCase(),
     category: m.category.toLowerCase(),
@@ -109,6 +119,20 @@ function toOutMove(m: ReturnType<typeof Dex.moves.get>): OutMove {
     priority: m.priority,
     target: TARGET_MAP[m.target] ?? "normal",
   };
+  if (mm.overrideOffensiveStat && mm.overrideOffensiveStat !== "atk" && mm.overrideOffensiveStat !== "spa") {
+    out.overrideOffensiveStat = mm.overrideOffensiveStat;
+  }
+  if (mm.overrideDefensiveStat === "def" || mm.overrideDefensiveStat === "spd") {
+    out.overrideDefensiveStat = mm.overrideDefensiveStat;
+  }
+  if (mm.overrideOffensivePokemon === "target") out.useTargetOffense = true;
+  if (mm.multihit) {
+    const h = Array.isArray(mm.multihit)
+      ? Math.round((mm.multihit[0] + mm.multihit[1]) / 2)
+      : mm.multihit;
+    if (h > 1) out.hits = h;
+  }
+  return out;
 }
 
 async function main() {
@@ -147,13 +171,20 @@ async function main() {
       .filter((m) => m.exists);
     const movepool = [...new Set(learnMoves.map((m) => m.name))].sort();
 
+    // Effective power accounts for multi-hit moves (Dragon Darts 50×2, etc.).
+    const effPower = (m: (typeof learnMoves)[number]): number => {
+      const mh = (m as unknown as { multihit?: number | [number, number] }).multihit;
+      const hits = Array.isArray(mh) ? Math.round((mh[0] + mh[1]) / 2) : mh || 1;
+      return m.basePower * (hits > 1 ? hits : 1);
+    };
+
     // Curated playable subset: STAB/high-power damaging + key utility, ≤10.
     const damaging = learnMoves
       .filter((m) => m.category !== "Status" && m.basePower > 0)
       .sort((a, b) => {
         const as = species.types.includes(a.type) ? 1 : 0;
         const bs = species.types.includes(b.type) ? 1 : 0;
-        return bs - as || b.basePower - a.basePower;
+        return bs - as || effPower(b) - effPower(a);
       });
 
     const byName = new Map(learnMoves.map((m) => [String(m.name), m]));

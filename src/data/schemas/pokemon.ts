@@ -17,6 +17,8 @@ export const moveTargetSchema = z.enum([
   "ally",
 ]);
 
+const stageStatSchema = z.enum(["atk", "def", "spa", "spd", "spe"]);
+
 export const rawMoveSchema = z.object({
   name: z.string().min(1),
   type: pokemonTypeSchema,
@@ -25,6 +27,10 @@ export const rawMoveSchema = z.object({
   accuracy: z.number().min(0).max(100).nullable(),
   priority: z.number().int().min(-7).max(7),
   target: moveTargetSchema.default("normal"),
+  overrideOffensiveStat: stageStatSchema.optional(),
+  overrideDefensiveStat: z.enum(["def", "spd"]).optional(),
+  useTargetOffense: z.boolean().optional(),
+  hits: z.number().int().min(1).max(10).optional(),
 });
 
 export const rawBaseStatsSchema = z.object({

@@ -105,10 +105,17 @@ export function calculateDamage(
 
   const crit = options.crit ?? false;
   const isPhysical = move.category === "physical";
-  const attackStat = isPhysical ? attacker.stats.atk : attacker.stats.spa;
-  const defenseStat = isPhysical ? defender.stats.def : defender.stats.spd;
-  let attackStage = isPhysical ? attacker.stages.atk : attacker.stages.spa;
-  let defenseStage = isPhysical ? defender.stages.def : defender.stages.spd;
+
+  // Stat selection with move overrides:
+  // - overrideOffensiveStat: Body Press uses Defense as the attacking stat.
+  // - useTargetOffense: Foul Play uses the target's (defender's) attacking stat.
+  // - overrideDefensiveStat: Psyshock/Secret Sword hit physical Defense.
+  const offKey = move.overrideOffensiveStat ?? (isPhysical ? "atk" : "spa");
+  const defKey = move.overrideDefensiveStat ?? (isPhysical ? "def" : "spd");
+  const offSource = move.useTargetOffense ? defender : attacker;
+
+  let attackStage = offSource.stages[offKey];
+  let defenseStage = defender.stages[defKey];
 
   // Critical hits ignore the defender's positive and the attacker's negative
   // stat stages.
@@ -117,8 +124,9 @@ export function calculateDamage(
     defenseStage = Math.min(0, defenseStage);
   }
 
-  let attack = attackStat * stageMultiplier(attackStage);
-  const defense = defenseStat * stageMultiplier(defenseStage);
+  let attack = offSource.stats[offKey] * stageMultiplier(attackStage);
+  const defense = defender.stats[defKey] * stageMultiplier(defenseStage);
+  // Burn halves a burned attacker's physical damage regardless of stat source.
   if (isPhysical && attacker.status === "burn") {
     attack *= 0.5;
   }
@@ -177,13 +185,18 @@ export function calculateDamage(
   const critMod = crit ? 1.5 : 1;
   if (critMod !== 1) modifiers.push({ name: "critical hit", multiplier: critMod });
 
+  // Multi-hit moves (Dragon Darts ×2, Population Bomb, …). Provisional: each hit
+  // deals the same rolled damage; total = per-hit × number of hits.
+  const hits = move.hits && move.hits > 1 ? move.hits : 1;
+  if (hits > 1) modifiers.push({ name: `${hits} hits`, multiplier: hits });
+
   const modifier =
     stab * effectiveness.multiplier * weather * terrain * spreadMod * screen * critMod;
 
   const rolls: number[] = [];
   for (let roll = 85; roll <= 100; roll++) {
     const rolled = Math.floor((base * roll) / 100);
-    rolls.push(Math.max(0, Math.floor(rolled * modifier)));
+    rolls.push(Math.max(0, Math.floor(rolled * modifier) * hits));
   }
   rolls.sort((a, b) => a - b);
 
