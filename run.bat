@@ -1,8 +1,11 @@
 @echo off
 REM AssaultDex one-click launcher for Windows.
-REM Double-click this file. It installs Node.js (via winget) if missing, enables
-REM pnpm, installs dependencies, sets up the local SQLite database, and starts
-REM the site at http://localhost:3000. Keep the window open; Ctrl+C stops it.
+REM Double-click this file. It installs Node.js (via winget) if missing, installs
+REM the project's dependencies with npm, sets up the local SQLite database, and
+REM starts the site at http://localhost:3000. Keep the window open; Ctrl+C stops.
+REM
+REM npm (bundled with Node) is used instead of pnpm to avoid pnpm v10 refusing to
+REM proceed over optional native build scripts.
 
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
@@ -44,54 +47,43 @@ if errorlevel 1 (
 for /f "delims=" %%v in ('node -v') do set "NODEV=%%v"
 echo Using Node !NODEV!
 
-REM --- 2. Package manager ---------------------------------------------------
-REM Use pnpm THROUGH corepack (ships with Node). No global shim, no admin, no
-REM PATH refresh needed - corepack fetches pnpm into a per-user cache on first
-REM use. Fall back to npm only if corepack is somehow unavailable.
-set "COREPACK_ENABLE_DOWNLOAD_PROMPT=0"
-set "PM_INSTALL=corepack pnpm install"
-set "PM_RUN=corepack pnpm"
-call corepack pnpm --version >nul 2>&1
-if errorlevel 1 (
-  echo corepack/pnpm unavailable - falling back to npm.
-  set "PM_INSTALL=npm install"
-  set "PM_RUN=npm run"
-)
-
-REM --- 3. Environment file --------------------------------------------------
+REM --- 2. Environment file --------------------------------------------------
 if not exist ".env" (
   echo Creating .env
   copy /y ".env.example" ".env" >nul
 )
 
-REM --- 4. Dependencies ------------------------------------------------------
-if not exist "node_modules" (
-  echo Installing dependencies. First time takes a few minutes...
-  REM pnpm v10 exits non-zero on ERR_PNPM_IGNORED_BUILDS (optional native build
-  REM scripts it skips by default). Those aren't needed - prebuilt binaries are
-  REM fetched - so judge success by whether node_modules was created.
-  call %PM_INSTALL%
-  if not exist "node_modules\next" goto :fail
+REM --- 3. Dependencies (npm) ------------------------------------------------
+REM If a previous pnpm install is present (pnpm-lock.yaml, no package-lock.json),
+REM clear it so npm starts clean and the two managers don't collide.
+if exist "pnpm-lock.yaml" if not exist "package-lock.json" if exist "node_modules" (
+  echo Clearing a previous pnpm install...
+  rmdir /s /q node_modules
+)
+if not exist "node_modules\next\package.json" (
+  echo Installing dependencies with npm. First time takes a few minutes...
+  call npm install --no-audit --no-fund
+  if not exist "node_modules\next\package.json" goto :fail
 )
 
-REM --- 5. Database ----------------------------------------------------------
+REM --- 4. Database ----------------------------------------------------------
 if not exist "prisma\dev.db" (
   echo Setting up the database...
-  call %PM_RUN% db:migrate
+  call npm run db:migrate
   if errorlevel 1 goto :fail
   echo Seeding 213 Pokemon...
-  call %PM_RUN% db:seed
+  call npm run db:seed
   if errorlevel 1 goto :fail
 )
 
-REM --- 6. Launch ------------------------------------------------------------
+REM --- 5. Launch ------------------------------------------------------------
 echo.
 echo Starting the site at http://localhost:3000
 echo The first page load compiles on demand and may take ~15s - refresh if blank.
 echo Keep this window open. Press Ctrl+C to stop.
 echo.
 start "" http://localhost:3000
-call %PM_RUN% dev
+call npm run dev
 goto :eof
 
 :fail
