@@ -130,6 +130,13 @@ export const ASSUMPTIONS = {
     source: "mainline-derived",
     verified: false,
   },
+  hazards: {
+    id: "hazards",
+    description:
+      "Entry hazards (Stealth Rock 1/8×type-effectiveness, Spikes 1/8·1/6·1/4, Toxic Spikes poison/toxic, Sticky Web −1 Spe) and Gravity use documented mainline rules; Heavy-Duty Boots grant immunity. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
   statInference: {
     id: "statInference",
     description:

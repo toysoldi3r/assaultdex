@@ -60,6 +60,10 @@ export interface SideForm {
   reflect: boolean;
   lightScreen: boolean;
   auroraVeil: boolean;
+  stealthRock: boolean;
+  spikes: number;
+  toxicSpikes: number;
+  stickyWeb: boolean;
 }
 
 export interface TurnForm {
@@ -68,6 +72,7 @@ export interface TurnForm {
   weather: Weather;
   terrain: Terrain;
   trickRoom: boolean;
+  gravity: boolean;
   note: string;
 }
 
@@ -79,6 +84,10 @@ export function emptySide(slot0: string, slot1: string): SideForm {
     reflect: false,
     lightScreen: false,
     auroraVeil: false,
+    stealthRock: false,
+    spikes: 0,
+    toxicSpikes: 0,
+    stickyWeb: false,
   };
 }
 
@@ -147,7 +156,12 @@ function buildRawState(
 
   return {
     turn: 1,
-    field: { weather: form.weather, terrain: form.terrain, trickRoom: form.trickRoom },
+    field: {
+      weather: form.weather,
+      terrain: form.terrain,
+      trickRoom: form.trickRoom,
+      gravity: form.gravity,
+    },
     user: { active: u.active, bench: [], conditions: sideConditions(form.user) },
     opponent: {
       active: o.active,
@@ -185,5 +199,9 @@ function sideConditions(side: SideForm) {
     reflect: side.reflect,
     lightScreen: side.lightScreen,
     auroraVeil: side.auroraVeil,
+    stealthRock: side.stealthRock,
+    spikes: side.spikes,
+    toxicSpikes: side.toxicSpikes,
+    stickyWeb: side.stickyWeb,
   };
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { TypeBadge } from "@/components/ui";
 import { NATURES, natureByName } from "@/data/fixtures/natures";
 import { calculateDamage } from "@/domain/mechanics/damage";
+import { hazardEntry, hasHazards } from "@/domain/mechanics/hazards";
 import type { Combatant, FieldState, SideConditions } from "@/domain/types/battle";
 import { STAT_KEYS, type MoveFixture, type PokemonType, type StatKey } from "@/domain/types/pokemon";
 import { COMMON_ITEMS } from "@/lib/choicedexBuild";
@@ -15,6 +16,7 @@ const NATURE_NAMES = Object.keys(NATURES).sort();
 
 export interface MonPanelState {
   hpPct: number;
+  status: import("@/domain/types/battle").StatusCondition;
   ability: string;
   item: string;
   itemUsed: boolean;
@@ -49,6 +51,7 @@ export function MonPanel({
   defaultAbility,
   field,
   defenderConditions,
+  ownConditions,
   state,
   onPatch,
   foe,
@@ -64,6 +67,8 @@ export function MonPanel({
   defaultAbility: string;
   field: FieldState;
   defenderConditions: SideConditions;
+  /** This Pokémon's own side conditions (entry hazards it takes on switch-in). */
+  ownConditions: SideConditions;
   state: MonPanelState;
   onPatch: (p: Partial<MonPanelState>) => void;
   foe?: boolean;
@@ -114,6 +119,37 @@ export function MonPanel({
           {COMMON_ITEMS.map((it) => <option key={it} value={it}>{it}</option>)}
         </select>
       </div>
+
+      {/* Entry hazards on this Pokémon's own side */}
+      {hasHazards(ownConditions) && (() => {
+        const entry = hazardEntry(attacker, ownConditions, field);
+        if (entry.notes.length === 0) {
+          return (
+            <p className="mb-2 text-[10px] text-slate-600">On switch-in: immune to hazards.</p>
+          );
+        }
+        return (
+          <div className="mb-2 flex items-center justify-between gap-2 rounded bg-slate-800/40 px-2 py-1 text-[10px] text-amber-300/90">
+            <span>On switch-in: {entry.notes.join(", ")}</span>
+            <button
+              type="button"
+              title="Apply the entry-hazard effects to this Pokémon"
+              onClick={() =>
+                onPatch({
+                  hpPct: Math.max(0, Math.round(state.hpPct - entry.hpFraction * 100)),
+                  ...(entry.status !== "none" ? { status: entry.status } : {}),
+                  ...(entry.speedDrop > 0
+                    ? { stages: { ...state.stages, spe: Math.max(-6, state.stages.spe - entry.speedDrop) } }
+                    : {}),
+                })
+              }
+              className="shrink-0 rounded border border-slate-600 px-1.5 py-0.5 text-slate-300 hover:border-amber-500"
+            >
+              apply
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Moves / damage */}
       <div className="mb-2">

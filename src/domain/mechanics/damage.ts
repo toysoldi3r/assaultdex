@@ -177,8 +177,11 @@ export function calculateDamage(
     assumptions.add("weather");
   }
 
-  const attackerGrounded = isGrounded(attacker.types) && !abilityUngrounds(attacker.ability);
-  const defenderGrounded = isGrounded(defender.types) && !abilityUngrounds(defender.ability);
+  // Gravity grounds every Pokémon (Flying / Levitate included).
+  const attackerGrounded =
+    field.gravity || (isGrounded(attacker.types) && !abilityUngrounds(attacker.ability));
+  const defenderGrounded =
+    field.gravity || (isGrounded(defender.types) && !abilityUngrounds(defender.ability));
   const terrain = terrainMultiplier(
     move.type,
     field.terrain,

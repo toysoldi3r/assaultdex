@@ -64,6 +64,7 @@ export function Simulator({ pokemon }: { pokemon: PokemonRef[] }) {
     weather: "none",
     terrain: "none",
     trickRoom: false,
+    gravity: false,
     note: "",
   });
 
