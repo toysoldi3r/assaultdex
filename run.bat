@@ -67,8 +67,11 @@ if not exist ".env" (
 REM --- 4. Dependencies ------------------------------------------------------
 if not exist "node_modules" (
   echo Installing dependencies. First time takes a few minutes...
+  REM pnpm v10 exits non-zero on ERR_PNPM_IGNORED_BUILDS (optional native build
+  REM scripts it skips by default). Those aren't needed - prebuilt binaries are
+  REM fetched - so judge success by whether node_modules was created.
   call %PM_INSTALL%
-  if errorlevel 1 goto :fail
+  if not exist "node_modules\next" goto :fail
 )
 
 REM --- 5. Database ----------------------------------------------------------
