@@ -22,12 +22,17 @@ export default function Error({
         The page failed to render. If you just set up the project, make sure the
         database is migrated and seeded.
       </p>
-      <button
-        onClick={reset}
-        className="rounded border border-slate-600 px-3 py-1 text-sm hover:border-amber-500"
-      >
-        Try again
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={reset}
+          className="rounded border border-slate-600 px-3 py-1 text-sm hover:border-amber-500"
+        >
+          Try again
+        </button>
+        <a href="/help" className="text-sm text-amber-400 hover:underline">
+          Help &amp; troubleshooting →
+        </a>
+      </div>
     </div>
   );
 }

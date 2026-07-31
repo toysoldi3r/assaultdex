@@ -40,6 +40,10 @@ export default function RootLayout({
         <footer className="mx-auto max-w-5xl px-4 py-8 text-xs text-slate-500">
           Mechanics are <strong>provisional</strong> and unverified for Pokémon
           Champions. Fixture data only — not a live provider feed.{" "}
+          <Link href="/help" className="underline hover:text-slate-300">
+            Help
+          </Link>{" "}
+          ·{" "}
           <Link href="/privacy" className="underline hover:text-slate-300">
             Privacy
           </Link>{" "}

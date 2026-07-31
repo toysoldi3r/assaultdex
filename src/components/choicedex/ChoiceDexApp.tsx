@@ -285,14 +285,15 @@ function SlotPicker({
 // Battle view: game-like layout + live recommendations.
 // ---------------------------------------------------------------------------
 
-interface ActiveState {
-  slug: string | null;
+/** Per-Pokémon battle state, tracked by species slug and persisted across
+ *  switches (HP, status, item, and ability stay with the Pokémon). */
+interface MonState {
   hpPct: number;
   status: StatusCondition;
   ability: string;
   item: string;
 }
-const emptyActive = (): ActiveState => ({ slug: null, hpPct: 100, status: "none", ability: "", item: "None" });
+const emptyMon = (): MonState => ({ hpPct: 100, status: "none", ability: "", item: "None" });
 
 function BattleView({
   bySlug,
@@ -307,53 +308,64 @@ function BattleView({
 }) {
   const refBySlug = bySlug;
   const [round, setRound] = useState(1);
-  const [user, setUser] = useState<[ActiveState, ActiveState]>([
-    { ...emptyActive(), slug: userTeam[0] ?? null },
-    { ...emptyActive(), slug: userTeam[1] ?? null },
+  // Which team member occupies each of the two active spots per side.
+  const [activeUser, setActiveUser] = useState<[string | null, string | null]>([
+    userTeam[0] ?? null,
+    userTeam[1] ?? null,
   ]);
-  const [opp, setOpp] = useState<[ActiveState, ActiveState]>([
-    { ...emptyActive(), slug: oppTeam[0] ?? null },
-    { ...emptyActive(), slug: oppTeam[1] ?? null },
+  const [activeOpp, setActiveOpp] = useState<[string | null, string | null]>([
+    oppTeam[0] ?? null,
+    oppTeam[1] ?? null,
   ]);
+  // Per-Pokémon battle state, keyed by species slug, so HP/status/item/ability
+  // persist across switches — exactly as a Pokémon keeps them in a real battle.
+  const [mon, setMon] = useState<Record<string, MonState>>(() => {
+    const init: Record<string, MonState> = {};
+    for (const s of [...userTeam, ...oppTeam]) init[s] = emptyMon();
+    return init;
+  });
   const [weather, setWeather] = useState<Weather>("none");
   const [terrain, setTerrain] = useState<Terrain>("none");
   const [trickRoom, setTrickRoom] = useState(false);
   const [uCond, setUCond] = useState({ tailwind: false, reflect: false, lightScreen: false, auroraVeil: false });
   const [oCond, setOCond] = useState({ tailwind: false, reflect: false, lightScreen: false, auroraVeil: false });
 
-  const patch = (side: Side, idx: 0 | 1, p: Partial<ActiveState>) => {
-    const setter = side === "user" ? setUser : setOpp;
-    setter((a) => {
-      const next = [...a] as [ActiveState, ActiveState];
-      next[idx] = { ...next[idx], ...p };
+  const monOf = (slug: string | null): MonState => (slug && mon[slug]) || emptyMon();
+  const patchMon = (slug: string | null, p: Partial<MonState>) => {
+    if (!slug) return;
+    setMon((m) => ({ ...m, [slug]: { ...(m[slug] ?? emptyMon()), ...p } }));
+  };
+  const setActive = (side: Side, idx: 0 | 1, slug: string | null) =>
+    (side === "user" ? setActiveUser : setActiveOpp)((a) => {
+      const next = [...a] as [string | null, string | null];
+      next[idx] = slug;
       return next;
     });
+
+  const toSlot = (slug: string): SlotForm => {
+    const s = monOf(slug);
+    return { ...emptySlot(slug), hpPct: s.hpPct, status: s.status, ability: s.ability, item: s.item };
   };
 
-  const toSlot = (a: ActiveState): SlotForm => ({
-    ...emptySlot(a.slug ?? ""),
-    hpPct: a.hpPct,
-    status: a.status,
-    ability: a.ability,
-    item: a.item,
-  });
-
   const built = useMemo(() => {
-    if (!user[0].slug || !user[1].slug || !opp[0].slug || !opp[1].slug) return null;
-    const side = (a: [ActiveState, ActiveState], c: typeof uCond): SideForm => ({
-      slots: [toSlot(a[0]), toSlot(a[1])],
+    const [u0, u1] = activeUser;
+    const [o0, o1] = activeOpp;
+    if (!u0 || !u1 || !o0 || !o1) return null;
+    const side = (slugs: [string, string], c: typeof uCond): SideForm => ({
+      slots: [toSlot(slugs[0]), toSlot(slugs[1])],
       ...c,
     });
     const form: TurnForm = {
-      user: side(user, uCond),
-      opponent: side(opp, oCond),
+      user: side([u0, u1], uCond),
+      opponent: side([o0, o1], oCond),
       weather,
       terrain,
       trickRoom,
       note: "",
     };
     return buildStateWithEntry(form, refBySlug);
-  }, [user, opp, weather, terrain, trickRoom, uCond, oCond, refBySlug]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeUser, activeOpp, mon, weather, terrain, trickRoom, uCond, oCond, refBySlug]);
 
   const recommendations = useMemo(
     () => (built?.state ? recommend(built.state, { limit: 6 }) : []),
@@ -361,7 +373,14 @@ function BattleView({
   );
 
   const abilitiesFor = (slug: string | null) => (slug ? refBySlug.get(slug)?.abilities ?? [] : []);
-  const teamOptions = (team: string[]) => team.map((s) => ({ slug: s, name: refBySlug.get(s)?.name ?? s }));
+  // Legal options for a spot: the side's team minus whoever is in the OTHER spot
+  // (a Pokémon can't be in both active spots at once).
+  const optionsFor = (team: string[], active: [string | null, string | null], idx: 0 | 1) => {
+    const sibling = active[idx === 0 ? 1 : 0];
+    return team
+      .filter((s) => s !== sibling)
+      .map((s) => ({ slug: s, name: refBySlug.get(s)?.name ?? s }));
+  };
 
   return (
     <div className="space-y-4">
@@ -374,29 +393,39 @@ function BattleView({
         {/* Battle screen: opponent top-right, you bottom-left */}
         <div className="relative min-h-[240px] overflow-hidden rounded-lg border border-slate-800 bg-gradient-to-b from-sky-900/30 to-emerald-900/20 p-3">
           <div className="absolute right-3 top-3 flex gap-2">
-            {[0, 1].map((i) => (
-              <ActiveCard
-                key={i}
-                label="Opp"
-                foe
-                state={opp[i as 0 | 1]}
-                options={teamOptions(oppTeam)}
-                abilities={abilitiesFor(opp[i as 0 | 1].slug)}
-                onPatch={(p) => patch("opponent", i as 0 | 1, p)}
-              />
-            ))}
+            {[0, 1].map((i) => {
+              const slug = activeOpp[i as 0 | 1];
+              return (
+                <ActiveCard
+                  key={i}
+                  label="Opp"
+                  foe
+                  slug={slug}
+                  state={monOf(slug)}
+                  options={optionsFor(oppTeam, activeOpp, i as 0 | 1)}
+                  abilities={abilitiesFor(slug)}
+                  onSelect={(s) => setActive("opponent", i as 0 | 1, s)}
+                  onPatch={(p) => patchMon(slug, p)}
+                />
+              );
+            })}
           </div>
           <div className="absolute bottom-3 left-3 flex gap-2">
-            {[0, 1].map((i) => (
-              <ActiveCard
-                key={i}
-                label="You"
-                state={user[i as 0 | 1]}
-                options={teamOptions(userTeam)}
-                abilities={abilitiesFor(user[i as 0 | 1].slug)}
-                onPatch={(p) => patch("user", i as 0 | 1, p)}
-              />
-            ))}
+            {[0, 1].map((i) => {
+              const slug = activeUser[i as 0 | 1];
+              return (
+                <ActiveCard
+                  key={i}
+                  label="You"
+                  slug={slug}
+                  state={monOf(slug)}
+                  options={optionsFor(userTeam, activeUser, i as 0 | 1)}
+                  abilities={abilitiesFor(slug)}
+                  onSelect={(s) => setActive("user", i as 0 | 1, s)}
+                  onPatch={(p) => patchMon(slug, p)}
+                />
+              );
+            })}
           </div>
         </div>
 
@@ -426,8 +455,8 @@ function BattleView({
       {/* Move panels (Showdown-style, below the screen) */}
       <div className="grid gap-3 md:grid-cols-2">
         {[0, 1].map((i) => {
-          const a = user[i as 0 | 1];
-          const ref = a.slug ? refBySlug.get(a.slug) : undefined;
+          const slug = activeUser[i as 0 | 1];
+          const ref = slug ? refBySlug.get(slug) : undefined;
           return (
             <div key={i} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
               <p className="mb-2 text-xs font-semibold uppercase text-slate-500">
@@ -474,24 +503,28 @@ function BattleView({
 function ActiveCard({
   label,
   foe,
+  slug,
   state,
   options,
   abilities,
+  onSelect,
   onPatch,
 }: {
   label: string;
   foe?: boolean;
-  state: ActiveState;
+  slug: string | null;
+  state: MonState;
   options: { slug: string; name: string }[];
   abilities: string[];
-  onPatch: (p: Partial<ActiveState>) => void;
+  onSelect: (slug: string | null) => void;
+  onPatch: (p: Partial<MonState>) => void;
 }) {
   return (
     <div className={`w-36 rounded-lg border p-2 text-xs backdrop-blur ${foe ? "border-rose-800/60 bg-slate-900/70" : "border-emerald-800/60 bg-slate-900/70"}`}>
       <span className="mb-1 block text-[10px] uppercase text-slate-500">{label}</span>
       <select
-        value={state.slug ?? ""}
-        onChange={(e) => onPatch({ slug: e.target.value || null })}
+        value={slug ?? ""}
+        onChange={(e) => onSelect(e.target.value || null)}
         className="mb-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs"
       >
         <option value="">—</option>
@@ -501,6 +534,7 @@ function ActiveCard({
         HP
         <input
           type="range" min={0} max={100} value={state.hpPct}
+          disabled={!slug}
           onChange={(e) => onPatch({ hpPct: Number(e.target.value) })}
           className="w-full"
         />
