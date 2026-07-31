@@ -14,7 +14,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "generate:fixtures": "tsx scripts/generateFixtures.ts",
+    "generate:fixtures": "tsx scripts/generateFixtures.ts && tsx scripts/genDexNumbers.ts",
     "db:generate:pg": "prisma generate --schema prisma/schema.postgres.prisma",
     "db:push:pg": "prisma db push --schema prisma/schema.postgres.prisma",
     "deploy:setup:pg": "prisma generate --schema prisma/schema.postgres.prisma && prisma db push --schema prisma/schema.postgres.prisma && tsx prisma/seed.ts",

@@ -3,13 +3,24 @@ import type { NextConfig } from "next";
 // Pragmatic baseline CSP. Next's App Router injects inline bootstrap/styles, so
 // script/style allow 'unsafe-inline'; a nonce-based strict CSP via middleware is
 // a documented follow-up. No external origins are permitted.
+//
+// In development, Next's Fast Refresh / webpack HMR evaluates code via eval(),
+// which requires 'unsafe-eval'; without it client JS never runs and nothing on
+// the page is interactive. Production builds do not use eval, so the strict
+// policy applies there. `connect-src` also needs ws: in dev for the HMR socket.
+const isDev = process.env.NODE_ENV !== "production";
+const scriptSrc = isDev
+  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+  : "script-src 'self' 'unsafe-inline'";
+const connectSrc = isDev ? "connect-src 'self' ws:" : "connect-src 'self'";
+
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  scriptSrc,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self' data:",
-  "connect-src 'self'",
+  connectSrc,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
