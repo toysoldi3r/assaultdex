@@ -59,6 +59,20 @@ Notes:
 - **Reactive held items** (Sitrus Berry heal at ≤50% HP, Weakness Policy +2 Atk/
   SpA when hit super-effectively, Focus Sash surviving a KO from full HP) trigger
   during **simulations** (`sim/transition.ts`, ASSUMPTIONS.reactiveItems).
+- **End-of-turn residuals and multi-turn durations** (`sim/residual.ts`,
+  ASSUMPTIONS.residualEffects) run each turn in every simulation-stepping tool:
+  sandstorm chip (−1/16, skips Rock/Ground/Steel and immune abilities/Safety
+  Goggles), burn (−1/16), poison (−1/8), **badly-poisoned Toxic ramp** (n/16,
+  incrementing each turn), Leftovers (+1/16), Poison Heal, Magic Guard immunity,
+  and **Perish Song** (faints at 0). Weather, terrain, Trick Room, Reflect,
+  Light Screen, Aurora Veil, and Tailwind carry optional turn counters that count
+  down and expire; an undefined counter persists (unchanged single-turn
+  behaviour). Screens are now settable per side in the battle editor.
+- **Opponent spread inference from a hit** (`choicedex/spreadInference.ts`,
+  ASSUMPTIONS.statInference): given your Pokémon's HP before/after a hit, the
+  tool enumerates the opponent's EV/IV/nature grid and keeps only spreads whose
+  damage rolls are consistent with the observed change — inferring their Atk/SpA
+  (offense) or HP+Def/SpD bulk (defense). Uniform prior, provisional damage math.
 - Data values are **mainline** (via Showdown). If Pokémon Champions rebalanced
   any stat, ability, or movepool, this dataset would differ — that is the same
   provisional caveat that applies to the mechanics engine, and is flagged rather

@@ -17,7 +17,7 @@ import {
 import { makeRng } from "@/domain/sim/transition";
 import {
   buildState,
-  emptySlot,
+  emptySide,
   type PokemonRef,
   type TurnForm,
 } from "@/lib/choicedexBuild";
@@ -59,8 +59,8 @@ export function Simulator({ pokemon }: { pokemon: PokemonRef[] }) {
   }, []);
 
   const formOf = (): TurnForm => ({
-    user: { slots: [emptySlot(sel.u1), emptySlot(sel.u2)], tailwind: false },
-    opponent: { slots: [emptySlot(sel.o1), emptySlot(sel.o2)], tailwind: false },
+    user: emptySide(sel.u1, sel.u2),
+    opponent: emptySide(sel.o1, sel.o2),
     weather: "none",
     terrain: "none",
     trickRoom: false,

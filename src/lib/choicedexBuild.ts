@@ -43,15 +43,19 @@ export const COMMON_ITEMS = [
   "Muscle Band",
   "Wise Glasses",
   "Expert Belt",
-  // Reactive items — trigger during simulations, not in a single-turn calc.
+  // Reactive / residual items — take effect during simulations.
   "Sitrus Berry",
   "Weakness Policy",
   "Focus Sash",
+  "Leftovers",
 ] as const;
 
 export interface SideForm {
   slots: [SlotForm, SlotForm];
   tailwind: boolean;
+  reflect: boolean;
+  lightScreen: boolean;
+  auroraVeil: boolean;
 }
 
 export interface TurnForm {
@@ -61,6 +65,17 @@ export interface TurnForm {
   terrain: Terrain;
   trickRoom: boolean;
   note: string;
+}
+
+/** A fresh side with two slots and no side conditions. */
+export function emptySide(slot0: string, slot1: string): SideForm {
+  return {
+    slots: [emptySlot(slot0), emptySlot(slot1)],
+    tailwind: false,
+    reflect: false,
+    lightScreen: false,
+    auroraVeil: false,
+  };
 }
 
 export function emptySlot(species: string): SlotForm {
@@ -159,8 +174,8 @@ export function buildState(
 function sideConditions(side: SideForm) {
   return {
     tailwind: side.tailwind,
-    reflect: false,
-    lightScreen: false,
-    auroraVeil: false,
+    reflect: side.reflect,
+    lightScreen: side.lightScreen,
+    auroraVeil: side.auroraVeil,
   };
 }

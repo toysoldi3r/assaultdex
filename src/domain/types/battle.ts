@@ -45,16 +45,34 @@ export interface Combatant {
   fainted: boolean;
   /** Trust level of this combatant's set as a whole. */
   tier: InformationTier;
+  /**
+   * Badly-poisoned ramp counter (Toxic). n/16 damage on turn n. Undefined is
+   * treated as 1 on the first tick while status is "toxic".
+   */
+  toxicCounter?: number;
+  /**
+   * Perish Song countdown in turns remaining. null/undefined = not under Perish
+   * Song; when it counts down to 0 at end of turn the Pokémon faints.
+   */
+  perish?: number | null;
 }
 
 export type Weather = "none" | "sun" | "rain" | "sand" | "snow";
 export type Terrain = "none" | "electric" | "grassy" | "misty" | "psychic";
 
-/** Whole-field conditions (affect both sides). */
+/**
+ * Whole-field conditions (affect both sides). The `*Turns` fields are optional
+ * countdowns: when present and > 0 they decrement each end of turn and the
+ * condition clears at 0. Undefined means "no countdown" (persists) — this keeps
+ * existing single-turn callers unchanged.
+ */
 export interface FieldState {
   weather: Weather;
   terrain: Terrain;
   trickRoom: boolean;
+  weatherTurns?: number;
+  terrainTurns?: number;
+  trickRoomTurns?: number;
 }
 
 /** Conditions that apply to a single side of the field. */
@@ -63,6 +81,10 @@ export interface SideConditions {
   reflect: boolean;
   lightScreen: boolean;
   auroraVeil: boolean;
+  tailwindTurns?: number;
+  reflectTurns?: number;
+  lightScreenTurns?: number;
+  auroraVeilTurns?: number;
 }
 
 export const NO_SIDE_CONDITIONS: SideConditions = {

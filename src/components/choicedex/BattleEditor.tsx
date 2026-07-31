@@ -11,7 +11,7 @@ import type { StatusCondition } from "@/domain/types/battle";
 import {
   buildStateWithEntry,
   COMMON_ITEMS,
-  emptySlot,
+  emptySide,
   type PokemonRef,
   type SideForm,
   type SlotForm,
@@ -33,7 +33,7 @@ const STATUSES: StatusCondition[] = [
 const STAGE_KEYS = ["atk", "def", "spa", "spd", "spe"] as const;
 
 function side(slot0: string, slot1: string): SideForm {
-  return { slots: [emptySlot(slot0), emptySlot(slot1)], tailwind: false };
+  return emptySide(slot0, slot1);
 }
 
 export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
@@ -117,8 +117,8 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
           onSlot={patchSlot}
           abilitiesFor={abilitiesFor}
           onStage={setStage}
-          onTailwind={(v) =>
-            setForm((f) => ({ ...f, user: { ...f.user, tailwind: v } }))
+          onSide={(patch) =>
+            setForm((f) => ({ ...f, user: { ...f.user, ...patch } }))
           }
         />
         <SideEditor
@@ -129,8 +129,8 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
           onSlot={patchSlot}
           abilitiesFor={abilitiesFor}
           onStage={setStage}
-          onTailwind={(v) =>
-            setForm((f) => ({ ...f, opponent: { ...f.opponent, tailwind: v } }))
+          onSide={(patch) =>
+            setForm((f) => ({ ...f, opponent: { ...f.opponent, ...patch } }))
           }
         />
       </div>
@@ -282,7 +282,7 @@ function SideEditor({
   options,
   onSlot,
   onStage,
-  onTailwind,
+  onSide,
   abilitiesFor,
 }: {
   title: string;
@@ -296,24 +296,34 @@ function SideEditor({
     key: (typeof STAGE_KEYS)[number],
     delta: number,
   ) => void;
-  onTailwind: (v: boolean) => void;
+  onSide: (patch: Partial<SideForm>) => void;
   abilitiesFor: (species: string) => string[];
 }) {
   const sideForm = form[sideKey];
+  const conds: { key: keyof SideForm; label: string }[] = [
+    { key: "tailwind", label: "Tailwind" },
+    { key: "reflect", label: "Reflect" },
+    { key: "lightScreen", label: "Light Screen" },
+    { key: "auroraVeil", label: "Aurora Veil" },
+  ];
   return (
     <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
           {title}
         </h3>
-        <label className="flex items-center gap-1 text-xs text-slate-400">
-          <input
-            type="checkbox"
-            checked={sideForm.tailwind}
-            onChange={(e) => onTailwind(e.target.checked)}
-          />
-          Tailwind
-        </label>
+        <div className="flex flex-wrap gap-2 text-xs text-slate-400">
+          {conds.map((c) => (
+            <label key={c.key} className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={sideForm[c.key] as boolean}
+                onChange={(e) => onSide({ [c.key]: e.target.checked })}
+              />
+              {c.label}
+            </label>
+          ))}
+        </div>
       </div>
       <div className="space-y-2">
         {[0, 1].map((raw) => {
