@@ -1,11 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { MonPanel } from "./MonPanel";
 import { Recommendations } from "./Recommendations";
 import { analyzeLeads } from "@/domain/choicedex/leads";
 import { recommend } from "@/domain/choicedex/recommend";
-import { DEFAULT_FIELD, type StatusCondition, type Terrain, type Weather } from "@/domain/types/battle";
-import type { PokemonType } from "@/domain/types/pokemon";
+import {
+  DEFAULT_FIELD,
+  NEUTRAL_STAGES,
+  type Combatant,
+  type StageStats,
+  type StatusCondition,
+  type Terrain,
+  type Weather,
+} from "@/domain/types/battle";
+import type { PokemonType, StatKey } from "@/domain/types/pokemon";
 import { TypeBadge } from "@/components/ui";
 import {
   buildStateWithEntry,
@@ -297,7 +306,7 @@ function SlotPicker({
 // ---------------------------------------------------------------------------
 
 /** Per-Pokémon battle state, tracked by species slug and persisted across
- *  switches (HP, status, item, and ability stay with the Pokémon). */
+ *  switches (HP, status, item, ability, spread, and stages stay with the mon). */
 interface MonState {
   hpPct: number;
   status: StatusCondition;
@@ -305,8 +314,23 @@ interface MonState {
   item: string;
   /** Whether the held item has been consumed (Berry eaten, Sash/Orb spent, …). */
   itemUsed: boolean;
+  nature: string;
+  evs: Partial<Record<StatKey, number>>;
+  stages: StageStats;
+  /** Treat this Pokémon's moves as critical hits in the damage readout. */
+  crit: boolean;
 }
-const emptyMon = (): MonState => ({ hpPct: 100, status: "none", ability: "", item: "None", itemUsed: false });
+const emptyMon = (): MonState => ({
+  hpPct: 100,
+  status: "none",
+  ability: "",
+  item: "None",
+  itemUsed: false,
+  nature: "Serious",
+  evs: {},
+  stages: { ...NEUTRAL_STAGES },
+  crit: false,
+});
 
 function BattleView({
   bySlug,
@@ -366,6 +390,9 @@ function BattleView({
       status: s.status,
       ability: s.ability,
       item: s.itemUsed ? "None" : s.item,
+      nature: s.nature,
+      evs: s.evs,
+      stages: s.stages,
     };
   };
 
@@ -497,29 +524,40 @@ function BattleView({
         </div>
       </div>
 
-      {/* Move panels (Showdown-style, below the screen) */}
-      <div className="grid gap-3 md:grid-cols-2">
-        {[0, 1].map((i) => {
-          const slug = activeUser[i as 0 | 1];
-          const ref = slug ? refBySlug.get(slug) : undefined;
-          return (
-            <div key={i} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-              <p className="mb-2 text-xs font-semibold uppercase text-slate-500">
-                {ref?.name ?? "—"} moves
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {(ref?.moves ?? []).slice(0, 4).map((m) => (
-                  <div key={m.name} className="rounded border border-slate-700 bg-slate-800/60 px-2 py-1 text-xs">
-                    <span className="font-medium">{m.name}</span>
-                    <span className="ml-1 text-slate-500">{m.power ?? "—"}</span>
-                  </div>
-                ))}
-                {(!ref || ref.moves.length === 0) && <span className="text-xs text-slate-600">no move data</span>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {/* Showdex-style detail panels: per-move damage/KO + full stat table */}
+      {built?.state && (
+        <div className="grid gap-3 md:grid-cols-2">
+          {([
+            { key: "u0", slug: activeUser[0], attacker: built.state.user.active[0], enemies: built.state.opponent, foe: false },
+            { key: "u1", slug: activeUser[1], attacker: built.state.user.active[1], enemies: built.state.opponent, foe: false },
+            { key: "o0", slug: activeOpp[0], attacker: built.state.opponent.active[0], enemies: built.state.user, foe: true },
+            { key: "o1", slug: activeOpp[1], attacker: built.state.opponent.active[1], enemies: built.state.user, foe: true },
+          ] as const).map((spec) => {
+            const ref = spec.slug ? refBySlug.get(spec.slug) : undefined;
+            if (!ref || !spec.attacker || !spec.slug) return null;
+            const targets = spec.enemies.active
+              .filter((c): c is Combatant => c !== null)
+              .map((c) => ({ name: c.name, combatant: c }));
+            return (
+              <MonPanel
+                key={spec.key}
+                name={ref.name}
+                types={ref.types}
+                baseStats={ref.baseStats}
+                attacker={spec.attacker}
+                targets={targets}
+                abilities={allAbilities}
+                defaultAbility={abilitiesFor(spec.slug)[0] ?? ""}
+                field={built.state.field}
+                defenderConditions={spec.enemies.conditions}
+                state={monOf(spec.slug)}
+                onPatch={(p) => patchMon(spec.slug, p)}
+                foe={spec.foe}
+              />
+            );
+          })}
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-slate-500">

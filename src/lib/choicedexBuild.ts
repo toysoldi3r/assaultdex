@@ -14,7 +14,7 @@ import type {
   Weather,
 } from "@/domain/types/battle";
 import { NEUTRAL_STAGES } from "@/domain/types/battle";
-import type { Pokemon } from "@/domain/types/pokemon";
+import type { BaseStats, Pokemon } from "@/domain/types/pokemon";
 
 export type PokemonRef = Pick<
   Pokemon,
@@ -30,6 +30,10 @@ export interface SlotForm {
   ability: string;
   /** Item name; "None" means no item. */
   item: string;
+  /** Nature name; defaults to "Serious" (neutral) when omitted. */
+  nature?: string;
+  /** EV spread; missing stats default to 0. */
+  evs?: Partial<BaseStats>;
 }
 
 /** Items with a modeled effect, offered in the editor. */
@@ -101,6 +105,7 @@ export function combatantFromRef(
   const ability =
     slot.ability === "(none)" ? null : slot.ability ? slot.ability : (ref.abilities[0] ?? null);
   const item = slot.item && slot.item !== "None" ? slot.item : null;
+  const evs: BaseStats = { ...DEFAULT_EVS, ...(slot.evs ?? {}) };
   const c = buildCombatant({
     species: ref.slug,
     name: ref.name,
@@ -109,8 +114,8 @@ export function combatantFromRef(
     moves: ref.moves,
     level: 50,
     ivs: DEFAULT_IVS,
-    evs: DEFAULT_EVS,
-    nature: natureByName("Serious"),
+    evs,
+    nature: natureByName(slot.nature ?? "Serious"),
     hpFraction: slot.hpPct / 100,
     status: slot.status,
     ability,
