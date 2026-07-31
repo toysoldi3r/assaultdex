@@ -20,8 +20,9 @@ import {
   restoreVersion,
   updateTeamNotes,
 } from "@/server/repositories/teamRepo";
-import { getPokemonBySlug } from "@/server/repositories/pokemonRepo";
+import { getPokemonBySlug, listPokemon } from "@/server/repositories/pokemonRepo";
 import { resolveTeam } from "@/server/teamResolve";
+import { parseShowdownTeam } from "@/data/showdown";
 
 /** Build a default PokemonSet from a reference species. */
 async function defaultSetFor(species: string): Promise<PokemonSet | null> {
@@ -178,25 +179,51 @@ export async function updateNotesAction(formData: FormData): Promise<void> {
   revalidatePath(`/teams/${teamId}`);
 }
 
+/** Normalize a species name/slug for loose matching (Rotom-Wash -> rotomwash). */
+function normSpecies(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 export async function importTeamAction(formData: FormData): Promise<void> {
   const name = String(formData.get("name") ?? "").trim() || "Imported team";
-  const json = String(formData.get("json") ?? "");
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(json);
-  } catch {
-    redirect("/teams?import=invalid-json");
+  const text = String(formData.get("text") ?? "");
+  const sets = parseShowdownTeam(text);
+  if (sets.length === 0) {
+    redirect("/teams?import=empty");
   }
-  const result = teamSnapshotSchema.safeParse(parsed);
-  if (!result.success) {
-    redirect("/teams?import=invalid-shape");
+
+  // Resolve species names to reference slugs.
+  const all = await listPokemon();
+  const bySlug = new Map(all.map((p) => [normSpecies(p.slug), p]));
+  const byName = new Map(all.map((p) => [normSpecies(p.name), p]));
+
+  const members: PokemonSet[] = [];
+  const unresolved: string[] = [];
+  for (const s of sets.slice(0, 6)) {
+    const key = normSpecies(s.speciesName);
+    const ref = bySlug.get(key) ?? byName.get(key);
+    if (!ref) {
+      unresolved.push(s.speciesName);
+      continue;
+    }
+    members.push({
+      species: ref.slug,
+      level: s.level === 100 ? 50 : s.level,
+      ability: s.ability && ref.abilities.includes(s.ability) ? s.ability : (ref.abilities[0] ?? null),
+      item: s.item,
+      nature: s.nature,
+      moves: s.moves.slice(0, 4),
+      spread: { ivs: s.ivs, evs: s.evs },
+    });
   }
-  const input = createTeamSchema.parse({
-    name,
-    collectionId: null,
-    snapshot: result.data,
-  });
+
+  if (members.length === 0) {
+    redirect("/teams?import=unresolved");
+  }
+
+  const snapshot = teamSnapshotSchema.parse({ members });
+  const input = createTeamSchema.parse({ name, collectionId: null, snapshot });
   const id = await createTeam(input);
   revalidatePath("/teams");
-  redirect(`/teams/${id}`);
+  redirect(`/teams/${id}${unresolved.length ? "?skipped=" + encodeURIComponent(unresolved.join(",")) : ""}`);
 }
