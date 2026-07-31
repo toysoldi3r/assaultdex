@@ -25,6 +25,9 @@ export interface SavedTeam {
 }
 
 type Side = "user" | "opponent";
+// Abilities a move can grant that may not be native to any pool species, plus
+// a "(none)" sentinel for ability suppression (Gastro Acid / Neutralizing Gas).
+const ABILITY_CHANGE_RESULTS = ["(none)", "Simple", "Insomnia", "Truant"];
 const WEATHERS: Weather[] = ["none", "sun", "rain", "sand", "snow"];
 const TERRAINS: Terrain[] = ["none", "electric", "grassy", "misty", "psychic"];
 const STATUSES: StatusCondition[] = ["none", "burn", "paralysis", "poison", "toxic", "sleep", "freeze"];
@@ -41,6 +44,13 @@ export function ChoiceDexApp({
   teams: SavedTeam[];
 }) {
   const bySlug = useMemo(() => new Map(pokemon.map((p) => [p.slug, p])), [pokemon]);
+  // Every ability across the pool, plus the results of ability-changing moves,
+  // so a card can be set to an off-species ability (Skill Swap, Simple Beam, …).
+  const allAbilities = useMemo(() => {
+    const set = new Set<string>(pokemon.flatMap((p) => p.abilities));
+    for (const a of ABILITY_CHANGE_RESULTS) set.add(a);
+    return [...set].sort();
+  }, [pokemon]);
   const [phase, setPhase] = useState<"preview" | "battle">("preview");
   const [userTeam, setUserTeam] = useState<(string | null)[]>(emptyTeam());
   const [oppTeam, setOppTeam] = useState<(string | null)[]>(emptyTeam());
@@ -79,6 +89,7 @@ export function ChoiceDexApp({
     return (
       <BattleView
         bySlug={bySlug}
+        allAbilities={allAbilities}
         userTeam={userTeam.filter((s): s is string => !!s)}
         oppTeam={oppTeam.filter((s): s is string => !!s)}
         onBack={() => setPhase("preview")}
@@ -292,16 +303,20 @@ interface MonState {
   status: StatusCondition;
   ability: string;
   item: string;
+  /** Whether the held item has been consumed (Berry eaten, Sash/Orb spent, …). */
+  itemUsed: boolean;
 }
-const emptyMon = (): MonState => ({ hpPct: 100, status: "none", ability: "", item: "None" });
+const emptyMon = (): MonState => ({ hpPct: 100, status: "none", ability: "", item: "None", itemUsed: false });
 
 function BattleView({
   bySlug,
+  allAbilities,
   userTeam,
   oppTeam,
   onBack,
 }: {
   bySlug: Map<string, PokemonRef>;
+  allAbilities: string[];
   userTeam: string[];
   oppTeam: string[];
   onBack: () => void;
@@ -344,8 +359,18 @@ function BattleView({
 
   const toSlot = (slug: string): SlotForm => {
     const s = monOf(slug);
-    return { ...emptySlot(slug), hpPct: s.hpPct, status: s.status, ability: s.ability, item: s.item };
+    // A consumed item no longer applies to damage/speed.
+    return {
+      ...emptySlot(slug),
+      hpPct: s.hpPct,
+      status: s.status,
+      ability: s.ability,
+      item: s.itemUsed ? "None" : s.item,
+    };
   };
+
+  const allySwitch = (side: Side) =>
+    (side === "user" ? setActiveUser : setActiveOpp)((a) => [a[1], a[0]]);
 
   const built = useMemo(() => {
     const [u0, u1] = activeUser;
@@ -403,7 +428,8 @@ function BattleView({
                   slug={slug}
                   state={monOf(slug)}
                   options={optionsFor(oppTeam, activeOpp, i as 0 | 1)}
-                  abilities={abilitiesFor(slug)}
+                  abilities={allAbilities}
+                  defaultAbility={abilitiesFor(slug)[0] ?? ""}
                   onSelect={(s) => setActive("opponent", i as 0 | 1, s)}
                   onPatch={(p) => patchMon(slug, p)}
                 />
@@ -420,7 +446,8 @@ function BattleView({
                   slug={slug}
                   state={monOf(slug)}
                   options={optionsFor(userTeam, activeUser, i as 0 | 1)}
-                  abilities={abilitiesFor(slug)}
+                  abilities={allAbilities}
+                  defaultAbility={abilitiesFor(slug)[0] ?? ""}
                   onSelect={(s) => setActive("user", i as 0 | 1, s)}
                   onPatch={(p) => patchMon(slug, p)}
                 />
@@ -449,6 +476,24 @@ function BattleView({
           </label>
           <ConditionRow label="Your side" cond={uCond} onChange={setUCond} />
           <ConditionRow label="Opponent side" cond={oCond} onChange={setOCond} />
+
+          <div className="border-t border-slate-800 pt-2">
+            <p className="mb-1 text-[10px] uppercase text-slate-500">Battle moves</p>
+            <div className="flex flex-wrap gap-1">
+              <button onClick={() => allySwitch("user")} className="rounded border border-slate-700 px-2 py-0.5 hover:border-amber-500">
+                Ally Switch (you)
+              </button>
+              <button onClick={() => allySwitch("opponent")} className="rounded border border-slate-700 px-2 py-0.5 hover:border-amber-500">
+                Ally Switch (opp)
+              </button>
+            </div>
+            <p className="mt-1 text-[10px] leading-snug text-slate-600">
+              Switch moves (Volt Switch, U-turn, Roar, Whirlwind, Dragon Tail,
+              Parting Shot): change that spot&apos;s Pokémon above. Ability moves
+              (Skill Swap, Simple Beam, Worry Seed, Entrainment, Gastro Acid): set
+              the new ability on a card. Item used up: tick “used”.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -507,6 +552,7 @@ function ActiveCard({
   state,
   options,
   abilities,
+  defaultAbility,
   onSelect,
   onPatch,
 }: {
@@ -516,6 +562,7 @@ function ActiveCard({
   state: MonState;
   options: { slug: string; name: string }[];
   abilities: string[];
+  defaultAbility: string;
   onSelect: (slug: string | null) => void;
   onPatch: (p: Partial<MonState>) => void;
 }) {
@@ -549,8 +596,10 @@ function ActiveCard({
       </select>
       {abilities.length > 0 && (
         <select
-          value={state.ability || abilities[0]}
+          value={state.ability || defaultAbility}
+          disabled={!slug}
           onChange={(e) => onPatch({ ability: e.target.value })}
+          title="Set the current ability (Skill Swap, Simple Beam, …)"
           className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs"
         >
           {abilities.map((a) => <option key={a} value={a}>{a}</option>)}
@@ -558,11 +607,22 @@ function ActiveCard({
       )}
       <select
         value={state.item}
+        disabled={!slug}
         onChange={(e) => onPatch({ item: e.target.value })}
-        className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs"
+        className={`mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs ${state.itemUsed ? "text-slate-500 line-through" : ""}`}
       >
         {COMMON_ITEMS.map((it) => <option key={it} value={it}>{it}</option>)}
       </select>
+      {slug && state.item !== "None" && (
+        <label className="mt-1 flex items-center gap-1 text-[10px] text-slate-400">
+          <input
+            type="checkbox"
+            checked={state.itemUsed}
+            onChange={(e) => onPatch({ itemUsed: e.target.checked })}
+          />
+          item used (consumed)
+        </label>
+      )}
     </div>
   );
 }
