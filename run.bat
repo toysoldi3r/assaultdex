@@ -44,20 +44,19 @@ if errorlevel 1 (
 for /f "delims=" %%v in ('node -v') do set "NODEV=%%v"
 echo Using Node !NODEV!
 
-REM --- 2. pnpm (via corepack, bundled with Node) ----------------------------
-where /q pnpm
+REM --- 2. Package manager ---------------------------------------------------
+REM Use pnpm THROUGH corepack (ships with Node). No global shim, no admin, no
+REM PATH refresh needed - corepack fetches pnpm into a per-user cache on first
+REM use. Fall back to npm only if corepack is somehow unavailable.
+set "COREPACK_ENABLE_DOWNLOAD_PROMPT=0"
+set "PM_INSTALL=corepack pnpm install"
+set "PM_RUN=corepack pnpm"
+call corepack pnpm --version >nul 2>&1
 if errorlevel 1 (
-  echo Enabling pnpm...
-  call corepack enable
-  call corepack prepare pnpm@latest --activate
+  echo corepack/pnpm unavailable - falling back to npm.
+  set "PM_INSTALL=npm install"
+  set "PM_RUN=npm run"
 )
-where /q pnpm
-if errorlevel 1 (
-  echo Installing pnpm via npm...
-  call npm install -g pnpm
-)
-where /q pnpm
-if errorlevel 1 goto :fail
 
 REM --- 3. Environment file --------------------------------------------------
 if not exist ".env" (
@@ -68,17 +67,17 @@ if not exist ".env" (
 REM --- 4. Dependencies ------------------------------------------------------
 if not exist "node_modules" (
   echo Installing dependencies. First time takes a few minutes...
-  call pnpm install
+  call %PM_INSTALL%
   if errorlevel 1 goto :fail
 )
 
 REM --- 5. Database ----------------------------------------------------------
 if not exist "prisma\dev.db" (
   echo Setting up the database...
-  call pnpm db:migrate
+  call %PM_RUN% db:migrate
   if errorlevel 1 goto :fail
   echo Seeding 213 Pokemon...
-  call pnpm db:seed
+  call %PM_RUN% db:seed
   if errorlevel 1 goto :fail
 )
 
@@ -89,7 +88,7 @@ echo The first page load compiles on demand and may take ~15s - refresh if blank
 echo Keep this window open. Press Ctrl+C to stop.
 echo.
 start "" http://localhost:3000
-call pnpm dev
+call %PM_RUN% dev
 goto :eof
 
 :fail
