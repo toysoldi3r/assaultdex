@@ -69,7 +69,13 @@ fi
 # --- 4. Dependencies -------------------------------------------------------
 if [ ! -d node_modules ]; then
   say "Installing dependencies"
-  pnpm install
+  # pnpm v10 exits non-zero on ERR_PNPM_IGNORED_BUILDS (optional native build
+  # scripts it skips by default); those aren't needed to run. Judge by result.
+  pnpm install || true
+  if [ ! -d node_modules/next ]; then
+    echo "Dependency install failed (node_modules/next missing)."
+    exit 1
+  fi
 fi
 
 # --- 5. Database -----------------------------------------------------------
