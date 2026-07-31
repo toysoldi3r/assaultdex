@@ -1,20 +1,17 @@
 import { Panel, ProvisionalTag } from "@/components/ui";
-import { BattleEditor } from "@/components/choicedex/BattleEditor";
+import { ChoiceDexApp, type SavedTeam } from "@/components/choicedex/ChoiceDexApp";
 import { HitInference } from "@/components/choicedex/HitInference";
-import { LeadAnalyzer } from "@/components/choicedex/LeadAnalyzer";
-import { MatchupMatrix } from "@/components/choicedex/MatchupMatrix";
 import { OpponentInference } from "@/components/choicedex/OpponentInference";
 import { Practice } from "@/components/choicedex/Practice";
-import { Sandbox } from "@/components/choicedex/Sandbox";
 import { Simulator } from "@/components/choicedex/Simulator";
-import { TurnExplorer } from "@/components/choicedex/TurnExplorer";
 import type { PokemonRef } from "@/lib/choicedexBuild";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
+import { listTeams } from "@/server/repositories/teamRepo";
 
 export const dynamic = "force-dynamic";
 
 export default async function ChoiceDexPage() {
-  const pokemon = await listPokemon();
+  const [pokemon, teams] = await Promise.all([listPokemon(), listTeams()]);
   const refs: PokemonRef[] = pokemon.map((p) => ({
     slug: p.slug,
     name: p.name,
@@ -24,6 +21,17 @@ export default async function ChoiceDexPage() {
     moves: p.moves,
   }));
 
+  const savedTeams: SavedTeam[] = teams
+    .map((t) => {
+      const latest = t.versions[t.versions.length - 1];
+      return {
+        id: t.id,
+        name: t.name,
+        members: latest ? latest.snapshot.members.map((m) => m.species) : [],
+      };
+    })
+    .filter((t) => t.members.length > 0);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -31,11 +39,9 @@ export default async function ChoiceDexPage() {
         <ProvisionalTag />
       </div>
       <p className="max-w-2xl text-sm text-slate-400">
-        Interactive doubles decision support. Edit the battle state live —
-        recommendations update as you change HP, status, stat stages, and field —
-        record turns to build a history you can undo or return to, and rank leads
-        before the battle. All calculations are provisional and unverified for
-        Pokémon Champions.
+        Set up both teams, start the battle, and get the best options each round
+        as you enter what happened. All calculations are provisional and
+        unverified for Pokémon Champions.
       </p>
 
       {refs.length === 0 ? (
@@ -46,33 +52,31 @@ export default async function ChoiceDexPage() {
         </Panel>
       ) : (
         <>
-          <Panel title="Lead analysis">
-            <LeadAnalyzer pokemon={refs} />
-          </Panel>
-          <Panel title="Opponent inference (Speed)">
-            <OpponentInference pokemon={refs} />
-          </Panel>
-          <Panel title="Opponent stats from a hit">
-            <HitInference pokemon={refs} />
-          </Panel>
-          <Panel title="Battle editor">
-            <BattleEditor pokemon={refs} />
-          </Panel>
-          <Panel title="Matchup matrix">
-            <MatchupMatrix pokemon={refs} />
-          </Panel>
-          <Panel title="Scenario sandbox">
-            <Sandbox pokemon={refs} />
-          </Panel>
-          <Panel title="Branching turn explorer">
-            <TurnExplorer pokemon={refs} />
-          </Panel>
-          <Panel title="Simulation mode">
-            <Simulator pokemon={refs} />
-          </Panel>
-          <Panel title="Practice opponent">
-            <Practice pokemon={refs} />
-          </Panel>
+          <ChoiceDexApp pokemon={refs} teams={savedTeams} />
+
+          <details className="rounded-lg border border-slate-800 bg-slate-900/40">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-300">
+              Advanced tools
+            </summary>
+            <div className="space-y-6 border-t border-slate-800 p-4">
+              <section>
+                <h3 className="mb-2 text-sm font-semibold text-slate-400">Opponent stats from a hit</h3>
+                <HitInference pokemon={refs} />
+              </section>
+              <section>
+                <h3 className="mb-2 text-sm font-semibold text-slate-400">Opponent Speed inference</h3>
+                <OpponentInference pokemon={refs} />
+              </section>
+              <section>
+                <h3 className="mb-2 text-sm font-semibold text-slate-400">Simulation mode</h3>
+                <Simulator pokemon={refs} />
+              </section>
+              <section>
+                <h3 className="mb-2 text-sm font-semibold text-slate-400">Practice opponent</h3>
+                <Practice pokemon={refs} />
+              </section>
+            </div>
+          </details>
         </>
       )}
     </div>

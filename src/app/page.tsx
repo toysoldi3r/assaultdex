@@ -9,36 +9,36 @@ export default function HomePage() {
         <h1 className="text-3xl font-bold">AssaultDex</h1>
         <p className="mt-2 max-w-2xl text-slate-300">
           Decision support for competitive{" "}
-          <strong>Pokémon Champions doubles</strong>. This is the Phase 1
-          vertical slice: import Pokémon fixtures, browse the Pokédex, build and
-          version teams, and run ChoiceDex on a basic battle state.
+          <strong>Pokémon Champions doubles</strong>: browse the Pokédex, build
+          and version teams, and run the ChoiceDex battle calculator on a live
+          battle state.
         </p>
       </div>
 
-      <Panel title="What works in this slice">
+      <Panel title="What's here">
         <ul className="grid gap-2 text-sm text-slate-300 sm:grid-cols-2">
           <li>
             <Link className="text-amber-400 hover:underline" href="/pokemon">
               Pokédex
             </Link>{" "}
-            — search and open Pokémon pages with types, base stats, and
-            provisional matchups.
+            — live search by name, type, ability, or move, sortable by any base
+            stat, with per-Pokémon pages (stats, matchups, moves).
           </li>
           <li>
             <Link className="text-amber-400 hover:underline" href="/teams">
               Teams
             </Link>{" "}
-            — create teams, save immutable versions, compare versions, and file
-            them in collections.
+            — build teams, save immutable versions, and import/export in Pokémon
+            Showdown format.
           </li>
           <li>
             <Link className="text-amber-400 hover:underline" href="/choicedex">
               ChoiceDex
             </Link>{" "}
-            — pick two user and two opponent Pokémon, enter a basic battle
-            state, and get ranked recommendations.
+            — set up both teams, start a battle, and get the best options each
+            round as you enter what happened.
           </li>
-          <li>All external data flows through a validated provider adapter.</li>
+          <li>Every data value flows through a validated provider adapter.</li>
         </ul>
       </Panel>
 

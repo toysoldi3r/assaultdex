@@ -93,10 +93,13 @@ export function combatantFromRef(
   ref: PokemonRef,
   slot: SlotForm,
 ): Combatant {
+  // A non-empty ability is trusted as-is, even if it is not one of the species'
+  // legal abilities — ability-changing moves (Skill Swap, Simple Beam, Worry
+  // Seed, Entrainment, …) can grant an off-species ability mid-battle. The
+  // "(none)" sentinel suppresses the ability (Gastro Acid / Neutralizing Gas);
+  // an empty string means "use the species' first ability".
   const ability =
-    slot.ability && ref.abilities.includes(slot.ability)
-      ? slot.ability
-      : (ref.abilities[0] ?? null);
+    slot.ability === "(none)" ? null : slot.ability ? slot.ability : (ref.abilities[0] ?? null);
   const item = slot.item && slot.item !== "None" ? slot.item : null;
   const c = buildCombatant({
     species: ref.slug,

@@ -5,10 +5,9 @@ import { TeamEditor, type EditorMember } from "@/components/TeamEditor";
 import { NATURES } from "@/data/fixtures/natures";
 import { diffSnapshots } from "@/domain/team/versionDiff";
 import { getPokemonBySlug } from "@/server/repositories/pokemonRepo";
-import { listCollections, getTeam } from "@/server/repositories/teamRepo";
+import { getTeam } from "@/server/repositories/teamRepo";
 import { resolveTeam } from "@/server/teamResolve";
 import {
-  assignCollectionAction,
   deleteTeamAction,
   duplicateTeamAction,
   restoreVersionAction,
@@ -28,7 +27,7 @@ export default async function TeamDetailPage({
 }) {
   const { id } = await params;
   const { a, b } = await searchParams;
-  const [team, collections] = await Promise.all([getTeam(id), listCollections()]);
+  const team = await getTeam(id);
   if (!team) notFound();
 
   const latest = team.versions[team.versions.length - 1]!;
@@ -69,7 +68,7 @@ export default async function TeamDetailPage({
             href={`/teams/${team.id}/export`}
             className="rounded border border-slate-600 px-3 py-1 hover:border-amber-500"
           >
-            Export JSON
+            Export (Showdown)
           </a>
           <form action={duplicateTeamAction}>
             <input type="hidden" name="teamId" value={team.id} />
@@ -208,53 +207,39 @@ export default async function TeamDetailPage({
         </form>
       </Panel>
 
-      <Panel title="Assign to collection">
-        <form action={assignCollectionAction} className="flex gap-2">
-          <input type="hidden" name="teamId" value={team.id} />
-          <select
-            name="collectionId"
-            defaultValue={team.collectionId ?? ""}
-            className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-          >
-            <option value="">No collection</option>
-            {collections.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <button className="rounded border border-slate-600 px-3 py-2 text-sm hover:border-amber-500">
-            Save
-          </button>
-        </form>
-      </Panel>
+      <details className="rounded-lg border border-slate-800 bg-slate-900/40">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-300">
+          ⋯ Version history &amp; compare ({team.versions.length})
+        </summary>
+        <div className="space-y-4 border-t border-slate-800 p-4">
+          <div>
+            <h3 className="mb-1 text-xs font-semibold uppercase text-slate-500">Versions</h3>
+            <ul className="space-y-1 text-sm">
+              {team.versions.map((v) => (
+                <li key={v.id} className="flex items-center gap-3">
+                  <span className="font-mono text-amber-400">v{v.versionNumber}</span>
+                  <span className="text-slate-300">{v.label ?? "—"}</span>
+                  <span className="text-xs text-slate-500">
+                    {v.snapshot.members.length} members ·{" "}
+                    {new Date(v.createdAt).toLocaleString()}
+                  </span>
+                  {v.versionNumber !== latest.versionNumber && (
+                    <form action={restoreVersionAction} className="ml-auto">
+                      <input type="hidden" name="teamId" value={team.id} />
+                      <input type="hidden" name="versionNumber" value={v.versionNumber} />
+                      <button className="rounded border border-slate-700 px-2 py-0.5 text-xs hover:border-amber-500">
+                        Restore
+                      </button>
+                    </form>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
 
-      <Panel title={`Versions (${team.versions.length})`}>
-        <ul className="space-y-1 text-sm">
-          {team.versions.map((v) => (
-            <li key={v.id} className="flex items-center gap-3">
-              <span className="font-mono text-amber-400">v{v.versionNumber}</span>
-              <span className="text-slate-300">{v.label ?? "—"}</span>
-              <span className="text-xs text-slate-500">
-                {v.snapshot.members.length} members ·{" "}
-                {new Date(v.createdAt).toLocaleString()}
-              </span>
-              {v.versionNumber !== latest.versionNumber && (
-                <form action={restoreVersionAction} className="ml-auto">
-                  <input type="hidden" name="teamId" value={team.id} />
-                  <input type="hidden" name="versionNumber" value={v.versionNumber} />
-                  <button className="rounded border border-slate-700 px-2 py-0.5 text-xs hover:border-amber-500">
-                    Restore
-                  </button>
-                </form>
-              )}
-            </li>
-          ))}
-        </ul>
-      </Panel>
-
-      <Panel title="Compare versions">
-        <form method="get" className="mb-3 flex items-end gap-2 text-sm">
+          <div>
+            <h3 className="mb-1 text-xs font-semibold uppercase text-slate-500">Compare</h3>
+            <form method="get" className="mb-3 flex items-end gap-2 text-sm">
           <label className="flex flex-col">
             <span className="text-xs text-slate-500">From</span>
             <select
@@ -318,10 +303,12 @@ export default async function TeamDetailPage({
                 ))}
             </ul>
           )
-        ) : (
-          <p className="text-sm text-slate-500">Select two versions to compare.</p>
-        )}
-      </Panel>
+            ) : (
+              <p className="text-sm text-slate-500">Select two versions to compare.</p>
+            )}
+          </div>
+        </div>
+      </details>
 
       <Panel title="Edit sets → save as new version">
         <TeamEditor
