@@ -37,11 +37,23 @@ export async function resolveTeam(
     const ref = refs[i];
     if (!ref) {
       missingSpecies.push(set.species);
-      validatable.push({ set, legalMoves: [], legalNatures: LEGAL_NATURES });
+      validatable.push({
+        set,
+        legalMoves: [],
+        legalNatures: LEGAL_NATURES,
+        legalAbilities: [],
+      });
       return;
     }
-    const legalMoves = ref.moves.map((mv) => mv.name);
-    validatable.push({ set, legalMoves, legalNatures: LEGAL_NATURES });
+    // Legality checks against the full movepool; the editor dropdown offers the
+    // curated playable subset (moves with battle data).
+    const legalMoves = ref.movepool.length ? ref.movepool : ref.moves.map((mv) => mv.name);
+    validatable.push({
+      set,
+      legalMoves,
+      legalNatures: LEGAL_NATURES,
+      legalAbilities: ref.abilities,
+    });
 
     const resolvedMoves: MoveFixture[] = set.moves
       .map((name) => ref.moves.find((mv) => mv.name === name))

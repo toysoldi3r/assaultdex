@@ -19,6 +19,7 @@ export default async function ChoiceDexPage() {
     name: p.name,
     types: p.types,
     baseStats: p.baseStats,
+    abilities: p.abilities,
     moves: p.moves,
   }));
 

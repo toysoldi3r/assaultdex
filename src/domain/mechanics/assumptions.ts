@@ -88,6 +88,41 @@ export const ASSUMPTIONS = {
     source: "mainline-derived",
     verified: false,
   },
+  abilityEffects: {
+    id: "abilityEffects",
+    description:
+      "Ability effects (offensive/defensive multipliers, type immunities, speed) use documented mainline behaviour. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  itemEffects: {
+    id: "itemEffects",
+    description:
+      "Held-item effects (Choice items, Life Orb, Assault Vest, type boosters, …) use documented mainline behaviour. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  secondaryEffects: {
+    id: "secondaryEffects",
+    description:
+      "Move secondary effects (status/flinch/stat changes) use documented chances from move data and are applied only in simulations. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  entryEffects: {
+    id: "entryEffects",
+    description:
+      "On-entry abilities (Intimidate −1 Atk to foes; weather setters like Drought/Drizzle; terrain setters like Electric Surge) are auto-applied to the initial state. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  reactiveItems: {
+    id: "reactiveItems",
+    description:
+      "Reactive held items (Sitrus Berry heal at ≤50% HP, Weakness Policy +2 Atk/SpA when hit super-effectively, Focus Sash surviving a KO from full HP) trigger during simulations. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
   spreadGridPrior: {
     id: "spreadGridPrior",
     description:

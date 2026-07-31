@@ -23,6 +23,7 @@ function member(overrides: Partial<PokemonSet> = {}): ValidatableMember {
     set: set(overrides),
     legalMoves: ["Fake Out", "Flare Blitz", "Knock Off", "Parting Shot", "U-turn"],
     legalNatures: ["Adamant", "Serious", "Jolly"],
+    legalAbilities: ["Blaze", "Intimidate"],
   };
 }
 
@@ -52,6 +53,12 @@ describe("validateTeam", () => {
 
     const dup = validateTeam([member({ moves: ["Fake Out", "Fake Out"] })]);
     expect(dup.errors.some((e) => e.message.includes("Duplicate moves"))).toBe(true);
+  });
+
+  it("flags an ability not legal for the species", () => {
+    const r = validateTeam([member({ ability: "Levitate" })]);
+    expect(r.valid).toBe(false);
+    expect(r.errors.some((e) => e.field === "ability")).toBe(true);
   });
 
   it("enforces the species clause", () => {

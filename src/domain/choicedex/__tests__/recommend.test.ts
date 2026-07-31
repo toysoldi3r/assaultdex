@@ -47,6 +47,24 @@ describe("recommend", () => {
     expect(top!.explanation.toLowerCase()).toContain("provisional");
   });
 
+  it("combines two hits on the same foe instead of double-counting KO chance", () => {
+    // Two weak attackers focus one bulky foe: neither OHKOs, but together they
+    // can. KO probability must reflect the combined damage, and never exceed 1.
+    const a1 = combatant({ name: "A1", types: ["normal"], base: stats({ atk: 120 }), moves: [move({ name: "Hit1", power: 70 })] });
+    const a2 = combatant({ name: "A2", types: ["normal"], base: stats({ atk: 120 }), moves: [move({ name: "Hit2", power: 70 })] });
+    const foe = combatant({ name: "Foe", types: ["normal"], base: stats({ hp: 150 }), hpFraction: 0.6, moves: [move({ name: "Tackle" })] });
+    const foe2 = combatant({ name: "Foe2", types: ["normal"], base: stats(), moves: [move({ name: "Tackle" })] });
+    const state = battleState([a1, a2], [foe, foe2]);
+
+    const recs = recommend(state, { profile: "aggressive", limit: 20 });
+    const focusFoe = recs.find(
+      (r) => r.damage.length === 2 && r.damage.every((d) => d.target === "Foe"),
+    );
+    expect(focusFoe).toBeDefined();
+    expect(focusFoe!.koProbability).toBeGreaterThanOrEqual(0);
+    expect(focusFoe!.koProbability).toBeLessThanOrEqual(1);
+  });
+
   it("aggressive profile favours the super-effective KO move over the weak move", () => {
     const recs = recommend(stateWithKoOption(), { profile: "aggressive" });
     const top = recs[0]!;

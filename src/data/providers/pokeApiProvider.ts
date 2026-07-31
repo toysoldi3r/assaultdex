@@ -29,6 +29,8 @@ export interface PokemonReference {
   name: string;
   types: [PokemonType] | [PokemonType, PokemonType];
   baseStats: BaseStats;
+  /** Ability names as PokéAPI reports them (hyphenated, e.g. "clear-body"). */
+  abilities: string[];
   provenance: Provenance;
 }
 
@@ -98,6 +100,7 @@ export class PokeApiProvider {
       name: raw.name,
       types: types.length === 2 ? [types[0]!, types[1]!] : [types[0]!],
       baseStats,
+      abilities: raw.abilities.map((a) => a.ability.name),
       provenance: {
         provider: this.provider,
         externalId: raw.name,

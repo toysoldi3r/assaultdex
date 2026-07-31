@@ -68,6 +68,18 @@ export function Recommendations({
                         · {mods.map((m) => `${m.name}×${m.multiplier}`).join(", ")}
                       </span>
                     )}
+                    {d.effects.length > 0 && (
+                      <span className="ml-1 inline-flex flex-wrap gap-1 align-middle">
+                        {d.effects.map((e) => (
+                          <span
+                            key={e}
+                            className="rounded bg-slate-800 px-1 py-0.5 text-[10px] text-slate-300"
+                          >
+                            {e}
+                          </span>
+                        ))}
+                      </span>
+                    )}
                   </li>
                 );
               })}

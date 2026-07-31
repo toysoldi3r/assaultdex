@@ -3,12 +3,12 @@
 Decision support for competitive **Pokémon Champions doubles**: a Pokédex, team
 builder, the **ChoiceDex** battle assistant, and battle analysis.
 
-> **Mechanics are provisional.** Pokémon Champions mechanics are not publicly
-> documented, so every formula (type chart, speed, damage, field effects) is a
-> mainline-derived placeholder flagged as unverified in
-> `src/domain/mechanics/assumptions.ts` and surfaced in the UI. Pokémon data is
-> documented **fixture** data, not a live provider feed. See
-> `docs/ARCHITECTURE.md`.
+> **Data & mechanics.** The Pokédex is the full **Pokémon Champions pool (213
+> species/forms)**, generated from the authoritative roster + `@pkmn/dex`
+> (Pokémon Showdown data) — see `docs/DATA_VERIFICATION.md`. Champions battle
+> mechanics are not publicly documented, so every formula (type chart, speed,
+> damage, field effects) is a mainline-derived placeholder flagged as unverified
+> in `src/domain/mechanics/assumptions.ts` and surfaced in the UI.
 
 ## Features
 
@@ -72,12 +72,18 @@ All four pass. Tests asserting values from unverified mechanics are prefixed
 
 ## Deployment
 
-Production uses PostgreSQL. Switch the datasource in `prisma/schema.prisma` to
-`provider = "postgresql"`, regenerate migrations, set `DATABASE_URL` to a
-`postgresql://` URL, and run `pnpm exec prisma migrate deploy` as a release step.
-A multi-stage `Dockerfile` (Next.js standalone output) and a `docker-compose.yml`
-describing the app + Postgres topology are included. `/api/health` reports
-process and database status for monitoring.
+Local dev uses SQLite; hosting uses PostgreSQL. The repo ships both schemas
+(`prisma/schema.prisma` for SQLite, `prisma/schema.postgres.prisma` for
+production) plus a standalone `Dockerfile` and a `docker-compose.yml`. Quick
+paths:
+
+- **Vercel + hosted Postgres** (Neon/Supabase): set `DATABASE_URL`, build with
+  `pnpm db:generate:pg && pnpm build`, and run `pnpm deploy:setup:pg` once to
+  create the schema and seed.
+- **Docker + Postgres on a VPS**: `docker compose up -d --build`, then seed.
+
+See **`docs/DEPLOYMENT.md`** for step-by-step instructions. `/api/health` reports
+process + database status for monitoring.
 
 ## Roadmap
 

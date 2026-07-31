@@ -54,6 +54,21 @@ async function main() {
         });
       }
     }
+
+    // Abilities: normalize names (PokéAPI uses hyphenated-lowercase). Every
+    // fixture ability must exist in PokéAPI's ability list for that species.
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const refAbilities = new Set(ref.abilities.map(norm));
+    for (const ability of fixture.abilities) {
+      if (!refAbilities.has(norm(ability))) {
+        conflicts.push({
+          species: fixture.name,
+          field: "ability",
+          fixture: ability,
+          pokeapi: ref.abilities.join(", "),
+        });
+      }
+    }
   }
 
   const lines = [

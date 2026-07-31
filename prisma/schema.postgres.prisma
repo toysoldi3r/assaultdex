@@ -1,40 +1,36 @@
-// AssaultDex — Prisma schema (Phase 1)
+// AssaultDex — PostgreSQL schema (production/hosting).
 //
-// Development/CI provider is SQLite so the slice runs with no external DB
-// server. Production target is PostgreSQL (docs/ARCHITECTURE.md). JSON-shaped
-// columns are stored as validated TEXT (Zod at the repository boundary) so the
-// schema stays portable between SQLite and PostgreSQL.
+// This is the production variant of prisma/schema.prisma. The models are
+// identical — JSON-shaped columns are stored as validated TEXT so the repository
+// code is unchanged — only the datasource provider differs. Use it for hosting:
+//
+//   DATABASE_URL="postgresql://…"
+//   pnpm prisma generate --schema prisma/schema.postgres.prisma
+//   pnpm prisma db push  --schema prisma/schema.postgres.prisma
+//   pnpm db:seed
+//
+// The default prisma/schema.prisma (SQLite) is kept for local dev / CI.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-/// Normalized Pokémon reference row imported from a provider adapter.
-/// Provenance columns are required by the spec; (provider, externalId) is
-/// unique so imports are idempotent.
 model Pokemon {
   id   String @id @default(cuid())
   slug String @unique
   name String
 
-  /// JSON string: PokemonType[] (validated by Zod on read/write).
-  types String
-  /// JSON string: BaseStats.
+  types     String
   baseStats String
-  /// JSON string: string[] of legal ability names.
   abilities String @default("[]")
-  /// JSON string: string[] of the full legal movepool (move names).
-  movepool String @default("[]")
-  /// JSON string: MoveFixture[] (curated playable subset with data).
-  moves String
+  movepool  String @default("[]")
+  moves     String
 
-  // Provenance (spec: provider, external ID, retrieval time, data version,
-  // normalization version, update status).
   provider             String
   externalId           String
   retrievedAt          DateTime
@@ -49,7 +45,6 @@ model Pokemon {
   @@index([name])
 }
 
-/// A named grouping of teams. Private by default (spec).
 model Collection {
   id        String   @id @default(cuid())
   name      String
@@ -60,7 +55,6 @@ model Collection {
   teams Team[]
 }
 
-/// A team. Owned by no user in Phase 1 (accounts are Phase 10).
 model Team {
   id           String  @id @default(cuid())
   name         String
@@ -76,31 +70,24 @@ model Team {
   @@index([collectionId])
 }
 
-/// A recorded battle (provisional replay) plus its computed post-battle
-/// summary. Users can delete individual battles or their whole history.
 model BattleRecord {
   id        String   @id @default(cuid())
   label     String   @default("")
-  result    String // win | loss | draw | timeout | unknown
+  result    String
   turns     Int
-  /// JSON string: the provisional Replay.
   replay    String
-  /// JSON string: BattleSummary (decision quality, mistakes, KO calibration).
   summary   String
-  source    String   @default("imported") // imported | generated
+  source    String   @default("imported")
   createdAt DateTime @default(now())
 
   @@index([createdAt])
 }
 
-/// An immutable snapshot of a team's six Pokémon sets. Comparing two versions
-/// is a pure diff over `snapshot`.
 model TeamVersion {
   id            String   @id @default(cuid())
   teamId        String
   versionNumber Int
   label         String?
-  /// JSON string: TeamSnapshot (validated by Zod).
   snapshot      String
   createdAt     DateTime @default(now())
 

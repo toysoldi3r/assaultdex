@@ -17,7 +17,7 @@ function slugify(externalId: string): string {
 }
 
 function normalizeMove(raw: RawMove): MoveFixture {
-  return {
+  const move: MoveFixture = {
     name: raw.name,
     type: raw.type,
     category: raw.category,
@@ -26,6 +26,14 @@ function normalizeMove(raw: RawMove): MoveFixture {
     priority: raw.priority,
     target: raw.target,
   };
+  if (raw.overrideOffensiveStat) move.overrideOffensiveStat = raw.overrideOffensiveStat;
+  if (raw.overrideDefensiveStat) move.overrideDefensiveStat = raw.overrideDefensiveStat;
+  if (raw.useTargetOffense) move.useTargetOffense = true;
+  if (raw.hits && raw.hits > 1) move.hits = raw.hits;
+  if (raw.flags && raw.flags.length > 0) move.flags = [...raw.flags];
+  if (raw.secondary) move.secondary = { ...raw.secondary };
+  if (raw.selfBoosts) move.selfBoosts = { ...raw.selfBoosts };
+  return move;
 }
 
 export function normalizePokemon(
@@ -58,6 +66,8 @@ export function normalizePokemon(
       spd: raw.base_stats.special_defense,
       spe: raw.base_stats.speed,
     },
+    abilities: [...raw.abilities],
+    movepool: [...raw.movepool],
     moves: raw.moves.map(normalizeMove),
     provenance,
   };

@@ -9,7 +9,8 @@ import {
 } from "@/domain/choicedex/scoring";
 import type { StatusCondition } from "@/domain/types/battle";
 import {
-  buildState,
+  buildStateWithEntry,
+  COMMON_ITEMS,
   emptySlot,
   type PokemonRef,
   type SideForm,
@@ -41,6 +42,7 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
     [pokemon],
   );
   const options = pokemon.map((p) => ({ slug: p.slug, name: p.name }));
+  const abilitiesFor = (species: string) => refBySlug.get(species)?.abilities ?? [];
   const d = (i: number) => options[i % options.length]?.slug ?? "";
 
   const [form, setForm] = useState<TurnForm>({
@@ -54,7 +56,12 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
   const [history, setHistory] = useState<TurnForm[]>([]);
   const [profile, setProfile] = useState<ProfileName>("balanced");
 
-  const state = useMemo(() => buildState(form, refBySlug), [form, refBySlug]);
+  const built = useMemo(
+    () => buildStateWithEntry(form, refBySlug),
+    [form, refBySlug],
+  );
+  const state = built?.state ?? null;
+  const entryLog = built?.entryLog ?? [];
   const recommendations = useMemo(
     () => (state ? recommend(state, { profile, limit: 5 }) : []),
     [state, profile],
@@ -108,6 +115,7 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
           form={form}
           options={options}
           onSlot={patchSlot}
+          abilitiesFor={abilitiesFor}
           onStage={setStage}
           onTailwind={(v) =>
             setForm((f) => ({ ...f, user: { ...f.user, tailwind: v } }))
@@ -119,6 +127,7 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
           form={form}
           options={options}
           onSlot={patchSlot}
+          abilitiesFor={abilitiesFor}
           onStage={setStage}
           onTailwind={(v) =>
             setForm((f) => ({ ...f, opponent: { ...f.opponent, tailwind: v } }))
@@ -178,6 +187,27 @@ export function BattleEditor({ pokemon }: { pokemon: PokemonRef[] }) {
           </select>
         </label>
       </div>
+
+      {entryLog.length > 0 && (
+        <div className="rounded border border-slate-800 bg-slate-900/40 p-3 text-xs">
+          <p className="mb-1 uppercase tracking-wide text-slate-500">
+            On-entry effects (auto-applied)
+          </p>
+          <ul className="flex flex-wrap gap-1">
+            {entryLog.map((e) => (
+              <li
+                key={e}
+                className="rounded bg-slate-800 px-2 py-0.5 text-slate-300"
+              >
+                {e}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-[10px] text-slate-600">
+            Provisional. Weather/terrain are only auto-set when left on “none”.
+          </p>
+        </div>
+      )}
 
       {!state && (
         <p className="text-sm text-rose-400">
@@ -253,6 +283,7 @@ function SideEditor({
   onSlot,
   onStage,
   onTailwind,
+  abilitiesFor,
 }: {
   title: string;
   sideKey: "user" | "opponent";
@@ -266,6 +297,7 @@ function SideEditor({
     delta: number,
   ) => void;
   onTailwind: (v: boolean) => void;
+  abilitiesFor: (species: string) => string[];
 }) {
   const sideForm = form[sideKey];
   return (
@@ -326,6 +358,32 @@ function SideEditor({
                   {STATUSES.map((s) => (
                     <option key={s} value={s}>
                       {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                <select
+                  value={slot.ability || abilitiesFor(slot.species)[0] || ""}
+                  onChange={(e) => onSlot(sideKey, idx, { ability: e.target.value })}
+                  aria-label="Ability"
+                  className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
+                >
+                  {abilitiesFor(slot.species).map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={slot.item}
+                  onChange={(e) => onSlot(sideKey, idx, { item: e.target.value })}
+                  aria-label="Item"
+                  className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
+                >
+                  {COMMON_ITEMS.map((it) => (
+                    <option key={it} value={it}>
+                      {it}
                     </option>
                   ))}
                 </select>

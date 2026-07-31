@@ -30,7 +30,7 @@ async function defaultSetFor(species: string): Promise<PokemonSet | null> {
   return {
     species: ref.slug,
     level: 50,
-    ability: null,
+    ability: ref.abilities[0] ?? null,
     item: null,
     nature: "Serious",
     moves: ref.moves.slice(0, 4).map((m) => m.name),

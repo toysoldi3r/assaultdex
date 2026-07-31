@@ -14,6 +14,10 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "generate:fixtures": "tsx scripts/generateFixtures.ts",
+    "db:generate:pg": "prisma generate --schema prisma/schema.postgres.prisma",
+    "db:push:pg": "prisma db push --schema prisma/schema.postgres.prisma",
+    "deploy:setup:pg": "prisma generate --schema prisma/schema.postgres.prisma && prisma db push --schema prisma/schema.postgres.prisma && tsx prisma/seed.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
@@ -37,16 +41,17 @@
     "zod": "3.24.1"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "3.2.0",
+    "@pkmn/dex": "^0.10.11",
     "@types/node": "22.10.7",
     "@types/react": "19.0.7",
     "@types/react-dom": "19.0.3",
-    "@eslint/eslintrc": "3.2.0",
+    "autoprefixer": "10.4.20",
     "eslint": "9.18.0",
     "eslint-config-next": "15.1.6",
+    "postcss": "8.5.1",
     "prisma": "6.3.1",
     "tailwindcss": "3.4.17",
-    "postcss": "8.5.1",
-    "autoprefixer": "10.4.20",
     "tsx": "4.19.2",
     "typescript": "5.7.3",
     "vitest": "3.0.4"

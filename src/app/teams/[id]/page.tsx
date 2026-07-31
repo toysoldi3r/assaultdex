@@ -46,6 +46,7 @@ export default async function TeamDetailPage({
       species: set.species,
       name: ref?.name ?? set.species,
       legalMoves: ref ? ref.moves.map((mv) => mv.name) : set.moves,
+      abilities: ref?.abilities ?? (set.ability ? [set.ability] : []),
       set,
     };
   });

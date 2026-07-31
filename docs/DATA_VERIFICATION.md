@@ -1,79 +1,93 @@
-# Fixture data verification
+# Data verification
 
-This file records cross-source verification of the fixture Pokémon shipped in
-`src/data/fixtures/pokemon.json` and notes any conflicts. Regenerate the
-automated portion with `pnpm tsx scripts/verifyFixtures.ts` in an environment
-that can reach PokéAPI (see the egress note below).
+The Pokémon dataset (`src/data/fixtures/pokemon.json`) is **generated**, not
+hand-authored, from two independent sources:
+
+- **Pool membership** — `src/data/fixtures/championsRoster.json`, the
+  user-provided authoritative list of every Pokémon available in Pokémon
+  Champions (213 entries, including forms).
+- **Base stats, types, abilities, movepools, move data** — `@pkmn/dex`
+  (Pokémon Showdown's dataset: accurate, offline, MIT-licensed).
+
+Regenerate with `pnpm generate:fixtures`. `@pkmn/dex` is a **dev dependency**;
+the app ships only the generated JSON.
 
 ## What is verified vs. provisional
 
-| Data | Verifiability | Source of truth |
+| Data | Status | Source |
 | --- | --- | --- |
-| **Base stats** | Verifiable public data | PokéAPI, PokémonDB, Serebii |
-| **Types** | Verifiable public data | PokéAPI, PokémonDB, Serebii |
-| **Pool membership (Champions-legal)** | Verifiable | Champions roster (Game8, Serebii Champions Pokédex, PokéBase-Champions) |
-| **Move power / accuracy / priority / target** | **Provisional** | Mainline-derived; unverified for Champions |
-| **Damage / speed / type-effectiveness formulas** | **Provisional** | Mainline-derived; unverified for Champions (see `mechanics/assumptions.ts`) |
+| **Pool membership** | Authoritative | user-provided Champions roster |
+| **Base stats** | Verified | `@pkmn/dex` (Showdown), cross-checkable vs PokéAPI |
+| **Types** | Verified | `@pkmn/dex`; **cross-checked against the roster's types (0 conflicts)** |
+| **Abilities** | Verified | `@pkmn/dex` |
+| **Movepools** | Verified (mainline learnsets) | `@pkmn/dex` learnsets |
+| **Move power / accuracy / priority / target** | Verified mainline values, **provisional for Champions** | `@pkmn/dex` |
+| **Damage / speed / type-effectiveness formulas** | **Provisional** | mainline-derived (see `mechanics/assumptions.ts`) |
 
-Base stats and types below are treated as authoritative and cross-checked. Move
-and mechanic data remain provisional by design and are **not** asserted as
-verified here.
+Notes:
 
-## Egress note
+- The `moves` array on each Pokémon is a **curated playable subset** (STAB /
+  high-power damaging moves + key utility, ≤10) with full battle data; the
+  `movepool` array is the **complete** legal move list used for team-legality
+  validation and display.
+- **Special move mechanics** are data-driven from `@pkmn/dex` and honoured by the
+  damage engine: offensive-stat overrides (Body Press → Defense), target-stat
+  moves (Foul Play → the target's Attack), defensive-stat overrides
+  (Psyshock/Secret Sword → physical Defense), and multi-hit moves (Dragon Darts
+  ×2, Population Bomb ×10). These follow documented mainline rules and remain
+  provisional for Champions like the rest of the damage math.
+- **Abilities and items** are modeled as data-driven multipliers/immunities in
+  the damage and speed engines: e.g. Adaptability, Technician, Guts, Huge Power,
+  type/low-HP boosters, Tough Claws/Iron Fist (via move flags); Thick Fat,
+  Multiscale, Ice Scales, Filter, Fur Coat; immunities (Levitate, Flash Fire,
+  Water/Volt Absorb, Sap Sipper, Bulletproof); speed abilities (Chlorophyll,
+  Swift Swim, …); and items (Choice Band/Specs/Scarf, Life Orb, Assault Vest,
+  Muscle Band/Wise Glasses, Expert Belt, type boosters). Move flags/secondaries
+  come from `@pkmn/dex`; the ability/item *effect values* are hand-coded
+  documented mainline behaviour (ASSUMPTIONS.abilityEffects / itemEffects),
+  provisional for Champions.
+- **Move secondary effects** (status/flinch/stat changes, with their chances)
+  come from `@pkmn/dex` and are applied in **simulations**
+  (ASSUMPTIONS.secondaryEffects). They are also surfaced in the UI as short
+  effect chips (Pokémon page move table and ChoiceDex recommendation rows) via
+  `mechanics/moveEffects.ts`.
+- **On-entry ability effects** (Intimidate −1 Atk to foes; weather setters like
+  Drought/Drizzle/Sand Stream/Snow Warning; terrain setters like Electric/
+  Grassy/Misty/Psychic Surge) are auto-applied when the initial battle state is
+  built (`mechanics/entry.ts`, ASSUMPTIONS.entryEffects). A manually-selected
+  weather/terrain is never overridden. The ChoiceDex editor lists what fired.
+- **Reactive held items** (Sitrus Berry heal at ≤50% HP, Weakness Policy +2 Atk/
+  SpA when hit super-effectively, Focus Sash surviving a KO from full HP) trigger
+  during **simulations** (`sim/transition.ts`, ASSUMPTIONS.reactiveItems).
+- Data values are **mainline** (via Showdown). If Pokémon Champions rebalanced
+  any stat, ability, or movepool, this dataset would differ — that is the same
+  provisional caveat that applies to the mechanics engine, and is flagged rather
+  than asserted as first-party Champions data.
 
-Live PokéAPI verification could not be executed in the build session: outbound
-egress to `pokeapi.co:443` is **denied by the environment's network policy**
-(the agent proxy returns 403 for that host, and likewise for third-party
-Champions API hosts). The automated script `scripts/verifyFixtures.ts` performs
-the live PokéAPI diff and is intended to be run where that egress is allowed
-(e.g. CI or a developer machine). The cross-check below was therefore performed
-against multiple public web sources instead.
+## Cross-checks performed
 
-## Cross-check results (2026-07)
+1. **Roster ↔ types.** The generator compares every species' Showdown types
+   against the authoritative roster's `Type1`/`Type2`. Result on the current
+   roster: **213/213 match, 0 conflicts.**
+2. **Fixtures ≡ pool.** `src/data/__tests__/roster.test.ts` asserts the fixture
+   set is exactly the roster (same count, unique ids, all fields populated), so
+   the site contains **only** the listed Pokémon.
+3. **PokéAPI diff (optional, second source).** `scripts/verifyFixtures.ts`
+   diffs base stats / types / abilities against PokéAPI, an independent source.
+   It requires outbound access to `pokeapi.co`, which is blocked by this
+   environment's egress policy; run it in CI or locally to produce
+   `docs/DATA_VERIFICATION_AUTORUN.md`.
 
-Fixture base stats and types were compared against public Pokédex sources
-(PokémonDB, Serebii — including Serebii's dedicated Champions Pokédex — and
-PokéBase's Champions pages). **All eight fixtures match on base stats and types;
-0 conflicts.**
+## Corrections this made
 
-| Species | Types | HP | Atk | Def | SpA | SpD | Spe | Match |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Incineroar | Fire/Dark | 95 | 115 | 90 | 80 | 90 | 60 | ✅ |
-| Rillaboom | Grass | 100 | 125 | 90 | 60 | 70 | 85 | ✅ |
-| Amoonguss | Grass/Poison | 114 | 85 | 70 | 85 | 80 | 30 | ✅ |
-| Gholdengo | Steel/Ghost | 87 | 60 | 95 | 133 | 91 | 84 | ✅ |
-| Garchomp | Dragon/Ground | 108 | 130 | 95 | 80 | 85 | 102 | ✅ |
-| Dragonite | Dragon/Flying | 91 | 134 | 95 | 100 | 100 | 80 | ✅ |
-| Tyranitar | Rock/Dark | 100 | 134 | 110 | 95 | 100 | 61 | ✅ |
-| Corviknight | Flying/Steel | 98 | 87 | 105 | 53 | 85 | 67 | ✅ |
-
-### Pool-legality check
-
-All eight are regular, fully-evolved species with **no** legendary, mythical,
-Ultra Beast, or Paradox status, matching the Pokémon Champions pool rules.
-(Removed in a prior change for violating this: Chien-Pao, Flutter Mane,
-Landorus-Therian, Urshifu-Rapid-Strike.)
-
-## Known assumptions / potential future conflicts
-
-- **Rebalancing risk.** Champions could adjust base stats or movepools relative
-  to the mainline games. The sources consulted (including Champions-specific
-  Pokédex pages) show these species' base stats unchanged, but a first-party
-  confirmation is not available; treat as verified-against-community-sources,
-  not first-party.
-- **Move data is provisional** and intentionally excluded from this
-  verification. When a permitted Champions move/mechanic source exists, extend
-  `scripts/verifyFixtures.ts` to diff move data too.
-- **PokéAPI does not model Champions.** It confirms base stats/types of a species
-  but not pool membership or Champions mechanics ([PokeAPI issue #1484] is closed
-  without Champions support), which is why pool-legality is verified separately.
+The authoritative roster overrode several earlier web-search assumptions:
+removed as **not in the pool** — Amoonguss, Gholdengo, Rillaboom, Annihilape,
+Grimmsnarl, Metagross (and earlier: Chien-Pao, Flutter Mane, Landorus-Therian,
+Urshifu-Rapid-Strike). **Skeledirge, previously excluded on a conflicting
+report, is in the pool** per the list and is included.
 
 ## Sources
 
-- PokéAPI — https://pokeapi.co/ (base stats/types; blocked by egress in-session)
-- PokémonDB — https://pokemondb.net/
-- Serebii Champions Pokédex — https://www.serebii.net/pokedex-champions/
-- PokéBase (Champions) — https://pokebase.app/pokemon-champions
-- Pikalytics (Champions) — https://www.pikalytics.com/
-- Game8 Champions roster — https://game8.co/games/Pokemon-Champions/archives/501889
-- PokeAPI issue #1484 — https://github.com/PokeAPI/pokeapi/issues/1484
+- Pokémon Champions roster — user-provided authoritative list
+- `@pkmn/dex` — https://github.com/pkmn/ps (Pokémon Showdown data, MIT)
+- PokéAPI — https://pokeapi.co/ (independent cross-check; egress-blocked here)

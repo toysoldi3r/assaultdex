@@ -7,6 +7,7 @@
 
 import type { AssumptionId } from "../mechanics/assumptions";
 import { calculateDamage, type DamageResult } from "../mechanics/damage";
+import { describeMoveEffects } from "../mechanics/moveEffects";
 import {
   legalCombinations,
   type Action,
@@ -28,9 +29,13 @@ export interface ActionDamage {
   attacker: string;
   moveName: string;
   target: string;
+  /** The target's current HP (for combined multi-hit KO math). */
+  targetHp: number;
   damage: DamageResult;
   /** Attacker moves before the target this turn. */
   movesFirst: boolean;
+  /** Human-readable move-effect chips (secondaries, self drops, multi-hit, …). */
+  effects: string[];
 }
 
 export interface Recommendation {
@@ -106,6 +111,29 @@ function opponentInfoCompleteness(state: BattleState): number {
   return known / actives.length;
 }
 
+/** Probability a target is KO'd by the combined hits it receives this turn. */
+function targetKoProbability(hitRolls: number[][], hp: number): number {
+  if (hitRolls.length === 0) return 0;
+  if (hitRolls.length === 1) {
+    const rolls = hitRolls[0]!;
+    return rolls.filter((d) => d >= hp).length / rolls.length;
+  }
+  if (hitRolls.length === 2) {
+    const [a, b] = hitRolls as [number[], number[]];
+    let ko = 0;
+    for (const x of a) for (const y of b) if (x + y >= hp) ko++;
+    return ko / (a.length * b.length);
+  }
+  // >2 hits (not reachable in 2v2 doubles): combine as independent single hits.
+  return (
+    1 -
+    hitRolls.reduce(
+      (s, r) => s * (1 - r.filter((d) => d >= hp).length / r.length),
+      1,
+    )
+  );
+}
+
 /** Evaluate one user combination into a full Recommendation. */
 export function evaluateCombination(
   state: BattleState,
@@ -135,6 +163,7 @@ export function evaluateCombination(
 
     const aSpeed = effectiveSpeed(attacker, {
       tailwind: sideConditions(state, action.side).tailwind,
+      field: state.field,
     });
     aSpeed.assumptions.forEach((a) => assumptions.add(a));
 
@@ -147,6 +176,7 @@ export function evaluateCombination(
 
       const tSpeed = effectiveSpeed(target, {
         tailwind: sideConditions(state, foe).tailwind,
+        field: state.field,
       });
       const order = moveOrder(
         { speed: aSpeed.effectiveSpeed, priority: move.priority },
@@ -154,12 +184,15 @@ export function evaluateCombination(
         state.field,
       );
 
+      if (move.secondary) assumptions.add("secondaryEffects");
       actionDamage.push({
         attacker: attacker.name,
         moveName: move.name,
         target: target.name,
+        targetHp: target.currentHp,
         damage,
         movesFirst: order.probabilityAFirst >= 0.5,
+        effects: describeMoveEffects(move),
       });
     }
   }
@@ -169,9 +202,20 @@ export function evaluateCombination(
     (a, d) => a + d.damage.expectedPercent,
     0,
   );
+  // KO probability: group hits by target so two hits on the SAME foe combine as
+  // one damage total (not two independent OHKOs), then combine across foes.
+  const hitsByTarget = new Map<string, { hp: number; rolls: number[][] }>();
+  for (const d of actionDamage) {
+    const g = hitsByTarget.get(d.target) ?? { hp: d.targetHp, rolls: [] };
+    g.rolls.push(d.damage.rolls);
+    hitsByTarget.set(d.target, g);
+  }
   const koRaw =
     1 -
-    actionDamage.reduce((a, d) => a * (1 - d.damage.ohkoProbability), 1);
+    [...hitsByTarget.values()].reduce(
+      (surv, g) => surv * (1 - targetKoProbability(g.rolls, g.hp)),
+      1,
+    );
   const speedRaw = actionDamage.length
     ? actionDamage.filter((d) => d.movesFirst).length / actionDamage.length
     : 0;

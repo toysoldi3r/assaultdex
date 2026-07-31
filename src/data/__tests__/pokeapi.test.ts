@@ -16,6 +16,10 @@ const SAMPLE = {
     { base_stat: 85, stat: { name: "special-defense" } },
     { base_stat: 102, stat: { name: "speed" } },
   ],
+  abilities: [
+    { ability: { name: "sand-veil" }, is_hidden: false },
+    { ability: { name: "rough-skin" }, is_hidden: true },
+  ],
 };
 
 describe("PokeApiProvider", () => {
@@ -32,11 +36,14 @@ describe("PokeApiProvider", () => {
       spd: 85,
       spe: 102,
     });
+    expect(ref.abilities).toEqual(["sand-veil", "rough-skin"]);
     expect(ref.provenance.provider).toBe("pokeapi");
     expect(ref.provenance.dataVersion).toBe("pokeapi-v2");
   });
 
   it("rejects malformed responses", () => {
-    expect(() => pokeApiProvider.validate({ name: "x", types: [], stats: [] })).toThrow();
+    expect(() =>
+      pokeApiProvider.validate({ name: "x", types: [], stats: [], abilities: [] }),
+    ).toThrow();
   });
 });

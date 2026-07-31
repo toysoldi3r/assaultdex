@@ -17,10 +17,16 @@ const pokeApiTypeSchema = z.object({
   type: z.object({ name: pokemonTypeSchema }),
 });
 
+const pokeApiAbilitySchema = z.object({
+  ability: z.object({ name: z.string().min(1) }),
+  is_hidden: z.boolean(),
+});
+
 export const pokeApiPokemonSchema = z.object({
   name: z.string().min(1),
   stats: z.array(pokeApiStatSchema).min(6),
   types: z.array(pokeApiTypeSchema).min(1).max(2),
+  abilities: z.array(pokeApiAbilitySchema).min(1),
 });
 
 export type PokeApiPokemon = z.infer<typeof pokeApiPokemonSchema>;

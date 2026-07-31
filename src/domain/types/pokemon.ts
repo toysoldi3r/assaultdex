@@ -49,6 +49,28 @@ export type MoveTarget =
   | "self"
   | "ally";
 
+/** Combat stat stages (all stats except HP). */
+export type StageStatKey = Exclude<StatKey, "hp">;
+
+/** Status a move's secondary effect can inflict. */
+export type MoveStatusEffect =
+  | "burn"
+  | "paralysis"
+  | "poison"
+  | "toxic"
+  | "sleep"
+  | "freeze";
+
+/** A move's secondary effect (applied to the target on hit, by chance). */
+export interface MoveSecondary {
+  /** 0–100. */
+  chance: number;
+  status?: MoveStatusEffect;
+  flinch?: boolean;
+  /** Stat-stage changes applied to the target. */
+  boosts?: Partial<Record<StageStatKey, number>>;
+}
+
 /** A move as shipped in fixtures. Power/accuracy/target are provisional. */
 export interface MoveFixture {
   name: string;
@@ -61,6 +83,20 @@ export interface MoveFixture {
   /** Turn-order priority bracket. 0 is normal. */
   priority: number;
   target: MoveTarget;
+  /** Attacking stat override (e.g. Body Press uses Defense). Default by category. */
+  overrideOffensiveStat?: StageStatKey;
+  /** Defending stat override (e.g. Psyshock hits physical Defense). Default by category. */
+  overrideDefensiveStat?: Extract<StageStatKey, "def" | "spd">;
+  /** Use the TARGET's offensive stat instead of the user's (Foul Play). */
+  useTargetOffense?: boolean;
+  /** Number of hits for multi-hit moves (default 1). */
+  hits?: number;
+  /** Relevant Showdown flags (contact, punch, sound, bullet, bite, pulse, slicing). */
+  flags?: string[];
+  /** Secondary effect applied to the target on hit, by chance. */
+  secondary?: MoveSecondary;
+  /** Stat-stage changes applied to the user after using the move (Close Combat). */
+  selfBoosts?: Partial<Record<StageStatKey, number>>;
 }
 
 /** True when a move hits more than one Pokémon (spread modifier applies). */
@@ -76,6 +112,11 @@ export interface Pokemon {
   /** One or two types. */
   types: [PokemonType] | [PokemonType, PokemonType];
   baseStats: BaseStats;
+  /** Legal ability names (regular + hidden). */
+  abilities: string[];
+  /** All legal move names the species can learn (the full movepool). */
+  movepool: string[];
+  /** Curated playable subset of moves with full battle data. */
   moves: MoveFixture[];
   provenance: Provenance;
 }

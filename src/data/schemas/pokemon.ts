@@ -17,6 +17,23 @@ export const moveTargetSchema = z.enum([
   "ally",
 ]);
 
+const stageStatSchema = z.enum(["atk", "def", "spa", "spd", "spe"]);
+const boostsSchema = z.record(stageStatSchema, z.number().int().min(-6).max(6));
+const moveStatusSchema = z.enum([
+  "burn",
+  "paralysis",
+  "poison",
+  "toxic",
+  "sleep",
+  "freeze",
+]);
+const secondarySchema = z.object({
+  chance: z.number().min(0).max(100),
+  status: moveStatusSchema.optional(),
+  flinch: z.boolean().optional(),
+  boosts: boostsSchema.optional(),
+});
+
 export const rawMoveSchema = z.object({
   name: z.string().min(1),
   type: pokemonTypeSchema,
@@ -25,6 +42,13 @@ export const rawMoveSchema = z.object({
   accuracy: z.number().min(0).max(100).nullable(),
   priority: z.number().int().min(-7).max(7),
   target: moveTargetSchema.default("normal"),
+  overrideOffensiveStat: stageStatSchema.optional(),
+  overrideDefensiveStat: z.enum(["def", "spd"]).optional(),
+  useTargetOffense: z.boolean().optional(),
+  hits: z.number().int().min(1).max(10).optional(),
+  flags: z.array(z.string()).optional(),
+  secondary: secondarySchema.optional(),
+  selfBoosts: boostsSchema.optional(),
 });
 
 export const rawBaseStatsSchema = z.object({
@@ -41,6 +65,8 @@ export const rawPokemonSchema = z.object({
   name: z.string().min(1),
   types: z.array(pokemonTypeSchema).min(1).max(2),
   base_stats: rawBaseStatsSchema,
+  abilities: z.array(z.string().min(1)).min(1),
+  movepool: z.array(z.string().min(1)).default([]),
   moves: z.array(rawMoveSchema).min(1),
 });
 

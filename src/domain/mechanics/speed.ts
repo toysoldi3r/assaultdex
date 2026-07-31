@@ -3,7 +3,10 @@
 // Trick Room, and honest speed-tie handling (50/50, never a fabricated winner).
 
 import type { Combatant, FieldState } from "../types/battle";
+import { DEFAULT_FIELD } from "../types/battle";
 import type { AssumptionId } from "./assumptions";
+import { abilitySpeed } from "./abilities";
+import { itemSpeed } from "./items";
 
 /** Multiplier for a stat stage (-6..+6). */
 export function stageMultiplier(stage: number): number {
@@ -19,6 +22,8 @@ export interface SpeedResult {
 export interface SpeedContext {
   /** The combatant's side has Tailwind up. */
   tailwind?: boolean;
+  /** Field (for weather/terrain speed abilities). */
+  field?: FieldState;
 }
 
 /** Effective in-battle Speed for a combatant. */
@@ -34,6 +39,16 @@ export function effectiveSpeed(
   if (ctx.tailwind) {
     speed *= 2;
     assumptions.push("tailwind");
+  }
+  const item = itemSpeed(combatant);
+  if (item !== 1) {
+    speed *= item;
+    assumptions.push("itemEffects");
+  }
+  const ability = abilitySpeed(combatant, ctx.field ?? DEFAULT_FIELD);
+  if (ability !== 1) {
+    speed *= ability;
+    assumptions.push("abilityEffects");
   }
   return { effectiveSpeed: Math.floor(speed), assumptions };
 }
