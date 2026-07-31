@@ -1,5 +1,6 @@
 import { Panel, ProvisionalTag } from "@/components/ui";
 import { BattleEditor } from "@/components/choicedex/BattleEditor";
+import { HitInference } from "@/components/choicedex/HitInference";
 import { LeadAnalyzer } from "@/components/choicedex/LeadAnalyzer";
 import { MatchupMatrix } from "@/components/choicedex/MatchupMatrix";
 import { OpponentInference } from "@/components/choicedex/OpponentInference";
@@ -48,8 +49,11 @@ export default async function ChoiceDexPage() {
           <Panel title="Lead analysis">
             <LeadAnalyzer pokemon={refs} />
           </Panel>
-          <Panel title="Opponent inference">
+          <Panel title="Opponent inference (Speed)">
             <OpponentInference pokemon={refs} />
+          </Panel>
+          <Panel title="Opponent stats from a hit">
+            <HitInference pokemon={refs} />
           </Panel>
           <Panel title="Battle editor">
             <BattleEditor pokemon={refs} />

@@ -7,6 +7,7 @@ import { calculateDamage } from "../mechanics/damage";
 import { effectiveSpeed } from "../mechanics/speed";
 import type { ActionCombination } from "../mechanics/legalActions";
 import type { BattleState, Combatant } from "../types/battle";
+import { applyResidual } from "./residual";
 
 /** Deterministic PRNG (mulberry32) so simulations are reproducible by seed. */
 export function makeRng(seed: number): () => number {
@@ -163,6 +164,10 @@ export function applyTurn(
       applyBoosts(exec.attacker, exec.move.selfBoosts);
     }
   }
+
+  // End-of-turn residuals (weather/status chip, Leftovers, Perish Song) and
+  // multi-turn countdowns (weather/terrain/Trick Room/screens/Tailwind).
+  faints += applyResidual(next).faints;
 
   next.turn += 1;
   return { state: next, faints, userLanded, userAttempts };

@@ -123,6 +123,20 @@ export const ASSUMPTIONS = {
     source: "mainline-derived",
     verified: false,
   },
+  residualEffects: {
+    id: "residualEffects",
+    description:
+      "End-of-turn residuals (sandstorm −1/16, burn −1/16, poison −1/8, badly-poisoned n/16 ramp, Leftovers +1/16, Perish Song) and weather/terrain/Trick Room/screen/Tailwind countdowns use documented mainline rules and durations. Applied only in simulations. Unverified for Champions.",
+    source: "mainline-derived",
+    verified: false,
+  },
+  statInference: {
+    id: "statInference",
+    description:
+      "Opponent offensive/defensive spreads are inferred by keeping only EV/IV/nature grid points whose damage rolls are consistent with observed HP change. Uses the provisional damage formula and a uniform (non-usage) prior.",
+    source: "mainline-derived",
+    verified: false,
+  },
   spreadGridPrior: {
     id: "spreadGridPrior",
     description:
