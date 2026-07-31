@@ -28,7 +28,18 @@ say() { printf '\n\033[1;33m▶ %s\033[0m\n' "$1"; }
 
 # --- 1. Node ---------------------------------------------------------------
 if ! command -v node >/dev/null 2>&1; then
-  echo "Node.js is not installed. Install Node 20+ from https://nodejs.org and re-run."
+  say "Node.js not found — attempting install"
+  if command -v brew >/dev/null 2>&1; then
+    brew install node
+  elif command -v apt-get >/dev/null 2>&1; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+  elif command -v dnf >/dev/null 2>&1; then
+    sudo dnf install -y nodejs
+  fi
+fi
+if ! command -v node >/dev/null 2>&1; then
+  echo "Could not install Node automatically. Install Node 20+ from https://nodejs.org and re-run."
   exit 1
 fi
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
