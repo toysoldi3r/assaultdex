@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Panel, TypeBadge } from "@/components/ui";
+import { moveMeta, speciesMeta, spriteUrl } from "@/data/pkmnEnrich";
 import { describeMoveEffects } from "@/domain/mechanics/moveEffects";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { POKEMON_TYPES, STAT_KEYS } from "@/domain/types/pokemon";
@@ -43,6 +44,7 @@ export default async function PokemonPage({
   if (!p) notFound();
 
   const chart = defensiveChart(p.types);
+  const meta = speciesMeta(p.name, p.abilities);
 
   return (
     <div className="space-y-6">
@@ -50,9 +52,31 @@ export default async function PokemonPage({
         ← Pokédex
       </Link>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{p.name}</h1>
-        <div className="flex gap-1">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          {meta && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={spriteUrl(meta.spriteId)}
+              alt={p.name}
+              width={96}
+              height={96}
+              className="h-24 w-24 shrink-0 [image-rendering:pixelated]"
+            />
+          )}
+          <div>
+            {meta && (
+              <span className="tabular-nums text-sm text-slate-500">
+                #{String(meta.num).padStart(4, "0")}
+              </span>
+            )}
+            <h1 className="text-2xl font-bold">{p.name}</h1>
+            {meta && (
+              <span className="text-xs text-slate-400">{meta.genderLabel}</span>
+            )}
+          </div>
+        </div>
+        <div className="flex shrink-0 gap-1">
           {p.types.map((t) => (
             <TypeBadge key={t} type={t} />
           ))}
@@ -96,16 +120,39 @@ export default async function PokemonPage({
       </div>
 
       <Panel title="Abilities">
-        <div className="flex flex-wrap gap-2">
-          {p.abilities.map((a) => (
-            <span
-              key={a}
-              className="rounded bg-slate-800 px-2 py-1 text-sm text-slate-200"
-            >
-              {a}
-            </span>
-          ))}
-        </div>
+        {meta ? (
+          <ul className="space-y-2">
+            {meta.abilities.map((a) => (
+              <li key={a.name} className="rounded bg-slate-800/50 px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-slate-100">{a.name}</span>
+                  {a.hidden && (
+                    <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-300">
+                      Hidden
+                    </span>
+                  )}
+                </div>
+                {a.effect && (
+                  <p className="mt-0.5 text-xs text-slate-400">{a.effect}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {p.abilities.map((a) => (
+              <span
+                key={a}
+                className="rounded bg-slate-800 px-2 py-1 text-sm text-slate-200"
+              >
+                {a}
+              </span>
+            ))}
+          </div>
+        )}
+        <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
+          Competitive usage % pending a usage dataset.
+        </p>
       </Panel>
 
       <Panel title="Moves">
@@ -130,7 +177,9 @@ export default async function PokemonPage({
             </thead>
             <tbody>
               {p.moves.map((m) => {
-                const effects = describeMoveEffects(m);
+                const mm = moveMeta(m.name);
+                const effectText = mm.effect;
+                const effects = effectText ? [] : describeMoveEffects(m);
                 const legal = p.movepool.includes(m.name);
                 return (
                   <tr key={m.name} className="border-t border-slate-800">
@@ -143,9 +192,11 @@ export default async function PokemonPage({
                     <td className="text-right tabular-nums">
                       {m.accuracy === null ? "—" : m.accuracy}
                     </td>
-                    <td className="text-right tabular-nums text-slate-600">—</td>
+                    <td className="text-right tabular-nums">{mm.pp ?? "—"}</td>
                     <td>
-                      {effects.length > 0 ? (
+                      {effectText ? (
+                        <span className="text-xs text-slate-300">{effectText}</span>
+                      ) : effects.length > 0 ? (
                         <span className="flex flex-wrap gap-1">
                           {effects.map((e) => (
                             <span
@@ -174,7 +225,7 @@ export default async function PokemonPage({
           </table>
         </div>
         <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
-          Effect column is provisional (mainline-derived); PP not yet in dataset.
+          PP and effect text from @pkmn/dex; usage % pending a usage dataset.
         </p>
       </Panel>
 
