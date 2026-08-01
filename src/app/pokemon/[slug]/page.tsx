@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Panel, TypeBadge } from "@/components/ui";
-import { changeHistory, moveMeta, speciesMeta, spriteUrl } from "@/data/pkmnEnrich";
-import { describeMoveEffects } from "@/domain/mechanics/moveEffects";
+import { changeHistory, speciesMeta, spriteUrl } from "@/data/pkmnEnrich";
+import { getDexSpecies } from "@/data/pokedexSource";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { POKEMON_TYPES, STAT_KEYS } from "@/domain/types/pokemon";
-import { getPokemonBySlug } from "@/server/repositories/pokemonRepo";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +39,7 @@ export default async function PokemonPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const p = await getPokemonBySlug(slug);
+  const p = await getDexSpecies(slug);
   if (!p) notFound();
 
   const chart = defensiveChart(p.types);
@@ -66,11 +65,9 @@ export default async function PokemonPage({
             />
           )}
           <div>
-            {meta && (
-              <span className="tabular-nums text-sm text-slate-500">
-                #{String(meta.num).padStart(4, "0")}
-              </span>
-            )}
+            <span className="tabular-nums text-sm text-slate-500">
+              #{String(p.num).padStart(4, "0")}
+            </span>
             <h1 className="text-2xl font-bold">{p.name}</h1>
             {meta && (
               <span className="text-xs text-slate-400">{meta.genderLabel}</span>
@@ -195,9 +192,8 @@ export default async function PokemonPage({
 
       <Panel title="Moves">
         <p className="mb-2 text-xs text-slate-500">
-          {p.moves.length} moves with battle data. Columns follow the
-          pokemondb.net layout. Legal = present in this species&rsquo; legal
-          movepool.
+          {p.moves.length} Gen 9-legal moves. Columns follow the pokemondb.net
+          layout; all listed moves are legal in the current format.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -214,76 +210,34 @@ export default async function PokemonPage({
               </tr>
             </thead>
             <tbody>
-              {p.moves.map((m) => {
-                const mm = moveMeta(m.name);
-                const effectText = mm.effect;
-                const effects = effectText ? [] : describeMoveEffects(m);
-                const legal = p.movepool.includes(m.name);
-                return (
-                  <tr key={m.name} className="border-t border-slate-800">
-                    <td className="py-1">{m.name}</td>
-                    <td>
-                      <TypeBadge type={m.type} />
-                    </td>
-                    <td className="capitalize text-slate-400">{m.category}</td>
-                    <td className="text-right tabular-nums">{m.power ?? "—"}</td>
-                    <td className="text-right tabular-nums">
-                      {m.accuracy === null ? "—" : m.accuracy}
-                    </td>
-                    <td className="text-right tabular-nums">{mm.pp ?? "—"}</td>
-                    <td>
-                      {effectText ? (
-                        <span className="text-xs text-slate-300">{effectText}</span>
-                      ) : effects.length > 0 ? (
-                        <span className="flex flex-wrap gap-1">
-                          {effects.map((e) => (
-                            <span
-                              key={e}
-                              className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-300"
-                            >
-                              {e}
-                            </span>
-                          ))}
-                        </span>
-                      ) : (
-                        <span className="text-slate-600">—</span>
-                      )}
-                    </td>
-                    <td>
-                      {legal ? (
-                        <span className="text-emerald-400">Legal</span>
-                      ) : (
-                        <span className="text-slate-600">—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+              {p.moves.map((m) => (
+                <tr key={m.name} className="border-t border-slate-800">
+                  <td className="py-1">{m.name}</td>
+                  <td>{m.type ? <TypeBadge type={m.type} /> : "—"}</td>
+                  <td className="capitalize text-slate-400">{m.category}</td>
+                  <td className="text-right tabular-nums">{m.power ?? "—"}</td>
+                  <td className="text-right tabular-nums">
+                    {m.accuracy === null ? "—" : m.accuracy}
+                  </td>
+                  <td className="text-right tabular-nums">{m.pp ?? "—"}</td>
+                  <td>
+                    {m.effect ? (
+                      <span className="text-xs text-slate-300">{m.effect}</span>
+                    ) : (
+                      <span className="text-slate-600">—</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className="text-emerald-400">Legal</span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
         <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
-          PP and effect text from @pkmn/dex; usage % pending a usage dataset.
+          Move data from @pkmn/dex; usage % pending a usage dataset.
         </p>
-      </Panel>
-
-      <Panel title="Full movepool">
-        <p className="mb-2 text-xs text-slate-500">{p.movepool.length} legal moves.</p>
-        <details>
-          <summary className="cursor-pointer text-sm text-amber-400">
-            Show all {p.movepool.length}
-          </summary>
-          <div className="mt-2 flex flex-wrap gap-1">
-            {p.movepool.map((m) => (
-              <span
-                key={m}
-                className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-slate-300"
-              >
-                {m}
-              </span>
-            ))}
-          </div>
-        </details>
       </Panel>
     </div>
   );
