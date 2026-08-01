@@ -1,11 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { MonPanel } from "./MonPanel";
 import { Recommendations } from "./Recommendations";
 import { analyzeLeads } from "@/domain/choicedex/leads";
 import { recommend } from "@/domain/choicedex/recommend";
-import { DEFAULT_FIELD, type StatusCondition, type Terrain, type Weather } from "@/domain/types/battle";
-import type { PokemonType } from "@/domain/types/pokemon";
+import {
+  DEFAULT_FIELD,
+  NEUTRAL_STAGES,
+  type Combatant,
+  type StageStats,
+  type StatusCondition,
+  type Terrain,
+  type Weather,
+} from "@/domain/types/battle";
+import type { PokemonType, StatKey } from "@/domain/types/pokemon";
 import { TypeBadge } from "@/components/ui";
 import {
   buildStateWithEntry,
@@ -297,7 +306,7 @@ function SlotPicker({
 // ---------------------------------------------------------------------------
 
 /** Per-Pokémon battle state, tracked by species slug and persisted across
- *  switches (HP, status, item, and ability stay with the Pokémon). */
+ *  switches (HP, status, item, ability, spread, and stages stay with the mon). */
 interface MonState {
   hpPct: number;
   status: StatusCondition;
@@ -305,8 +314,45 @@ interface MonState {
   item: string;
   /** Whether the held item has been consumed (Berry eaten, Sash/Orb spent, …). */
   itemUsed: boolean;
+  nature: string;
+  evs: Partial<Record<StatKey, number>>;
+  stages: StageStats;
+  /** Treat this Pokémon's moves as critical hits in the damage readout. */
+  crit: boolean;
 }
-const emptyMon = (): MonState => ({ hpPct: 100, status: "none", ability: "", item: "None", itemUsed: false });
+const emptyMon = (): MonState => ({
+  hpPct: 100,
+  status: "none",
+  ability: "",
+  item: "None",
+  itemUsed: false,
+  nature: "Serious",
+  evs: {},
+  stages: { ...NEUTRAL_STAGES },
+  crit: false,
+});
+
+/** One side's field conditions: screens, Tailwind, and entry hazards. */
+interface SideCond {
+  tailwind: boolean;
+  reflect: boolean;
+  lightScreen: boolean;
+  auroraVeil: boolean;
+  stealthRock: boolean;
+  spikes: number;
+  toxicSpikes: number;
+  stickyWeb: boolean;
+}
+const emptyCond = (): SideCond => ({
+  tailwind: false,
+  reflect: false,
+  lightScreen: false,
+  auroraVeil: false,
+  stealthRock: false,
+  spikes: 0,
+  toxicSpikes: 0,
+  stickyWeb: false,
+});
 
 function BattleView({
   bySlug,
@@ -342,8 +388,9 @@ function BattleView({
   const [weather, setWeather] = useState<Weather>("none");
   const [terrain, setTerrain] = useState<Terrain>("none");
   const [trickRoom, setTrickRoom] = useState(false);
-  const [uCond, setUCond] = useState({ tailwind: false, reflect: false, lightScreen: false, auroraVeil: false });
-  const [oCond, setOCond] = useState({ tailwind: false, reflect: false, lightScreen: false, auroraVeil: false });
+  const [gravity, setGravity] = useState(false);
+  const [uCond, setUCond] = useState<SideCond>(emptyCond());
+  const [oCond, setOCond] = useState<SideCond>(emptyCond());
 
   const monOf = (slug: string | null): MonState => (slug && mon[slug]) || emptyMon();
   const patchMon = (slug: string | null, p: Partial<MonState>) => {
@@ -366,6 +413,9 @@ function BattleView({
       status: s.status,
       ability: s.ability,
       item: s.itemUsed ? "None" : s.item,
+      nature: s.nature,
+      evs: s.evs,
+      stages: s.stages,
     };
   };
 
@@ -376,7 +426,7 @@ function BattleView({
     const [u0, u1] = activeUser;
     const [o0, o1] = activeOpp;
     if (!u0 || !u1 || !o0 || !o1) return null;
-    const side = (slugs: [string, string], c: typeof uCond): SideForm => ({
+    const side = (slugs: [string, string], c: SideCond): SideForm => ({
       slots: [toSlot(slugs[0]), toSlot(slugs[1])],
       ...c,
     });
@@ -386,11 +436,12 @@ function BattleView({
       weather,
       terrain,
       trickRoom,
+      gravity,
       note: "",
     };
     return buildStateWithEntry(form, refBySlug);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeUser, activeOpp, mon, weather, terrain, trickRoom, uCond, oCond, refBySlug]);
+  }, [activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, refBySlug]);
 
   const recommendations = useMemo(
     () => (built?.state ? recommend(built.state, { limit: 6 }) : []),
@@ -471,9 +522,14 @@ function BattleView({
               {TERRAINS.map((t) => <option key={t}>{t}</option>)}
             </select>
           </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={trickRoom} onChange={(e) => setTrickRoom(e.target.checked)} /> Trick Room
-          </label>
+          <div className="flex flex-wrap gap-3">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={trickRoom} onChange={(e) => setTrickRoom(e.target.checked)} /> Trick Room
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={gravity} onChange={(e) => setGravity(e.target.checked)} /> Gravity
+            </label>
+          </div>
           <ConditionRow label="Your side" cond={uCond} onChange={setUCond} />
           <ConditionRow label="Opponent side" cond={oCond} onChange={setOCond} />
 
@@ -497,29 +553,41 @@ function BattleView({
         </div>
       </div>
 
-      {/* Move panels (Showdown-style, below the screen) */}
-      <div className="grid gap-3 md:grid-cols-2">
-        {[0, 1].map((i) => {
-          const slug = activeUser[i as 0 | 1];
-          const ref = slug ? refBySlug.get(slug) : undefined;
-          return (
-            <div key={i} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-              <p className="mb-2 text-xs font-semibold uppercase text-slate-500">
-                {ref?.name ?? "—"} moves
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {(ref?.moves ?? []).slice(0, 4).map((m) => (
-                  <div key={m.name} className="rounded border border-slate-700 bg-slate-800/60 px-2 py-1 text-xs">
-                    <span className="font-medium">{m.name}</span>
-                    <span className="ml-1 text-slate-500">{m.power ?? "—"}</span>
-                  </div>
-                ))}
-                {(!ref || ref.moves.length === 0) && <span className="text-xs text-slate-600">no move data</span>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {/* Showdex-style detail panels: per-move damage/KO + full stat table */}
+      {built?.state && (
+        <div className="grid gap-3 md:grid-cols-2">
+          {([
+            { key: "u0", slug: activeUser[0], attacker: built.state.user.active[0], enemies: built.state.opponent, own: built.state.user, foe: false },
+            { key: "u1", slug: activeUser[1], attacker: built.state.user.active[1], enemies: built.state.opponent, own: built.state.user, foe: false },
+            { key: "o0", slug: activeOpp[0], attacker: built.state.opponent.active[0], enemies: built.state.user, own: built.state.opponent, foe: true },
+            { key: "o1", slug: activeOpp[1], attacker: built.state.opponent.active[1], enemies: built.state.user, own: built.state.opponent, foe: true },
+          ] as const).map((spec) => {
+            const ref = spec.slug ? refBySlug.get(spec.slug) : undefined;
+            if (!ref || !spec.attacker || !spec.slug) return null;
+            const targets = spec.enemies.active
+              .filter((c): c is Combatant => c !== null)
+              .map((c) => ({ name: c.name, combatant: c }));
+            return (
+              <MonPanel
+                key={spec.key}
+                name={ref.name}
+                types={ref.types}
+                baseStats={ref.baseStats}
+                attacker={spec.attacker}
+                targets={targets}
+                abilities={allAbilities}
+                defaultAbility={abilitiesFor(spec.slug)[0] ?? ""}
+                field={built.state.field}
+                defenderConditions={spec.enemies.conditions}
+                ownConditions={spec.own.conditions}
+                state={monOf(spec.slug)}
+                onPatch={(p) => patchMon(spec.slug, p)}
+                foe={spec.foe}
+              />
+            );
+          })}
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-slate-500">
@@ -633,10 +701,10 @@ function ConditionRow({
   onChange,
 }: {
   label: string;
-  cond: { tailwind: boolean; reflect: boolean; lightScreen: boolean; auroraVeil: boolean };
-  onChange: (c: typeof cond) => void;
+  cond: SideCond;
+  onChange: (c: SideCond) => void;
 }) {
-  const items: [keyof typeof cond, string][] = [
+  const screens: [keyof SideCond, string][] = [
     ["tailwind", "Tailwind"],
     ["reflect", "Reflect"],
     ["lightScreen", "Light Screen"],
@@ -646,12 +714,37 @@ function ConditionRow({
     <div>
       <p className="mb-1 text-[10px] uppercase text-slate-500">{label}</p>
       <div className="flex flex-wrap gap-2">
-        {items.map(([k, lbl]) => (
+        {screens.map(([k, lbl]) => (
           <label key={k} className="flex items-center gap-1">
-            <input type="checkbox" checked={cond[k]} onChange={(e) => onChange({ ...cond, [k]: e.target.checked })} />
+            <input type="checkbox" checked={cond[k] as boolean} onChange={(e) => onChange({ ...cond, [k]: e.target.checked })} />
             {lbl}
           </label>
         ))}
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-2 text-slate-400">
+        <span className="text-[10px] uppercase text-slate-500">Hazards</span>
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={cond.stealthRock} onChange={(e) => onChange({ ...cond, stealthRock: e.target.checked })} />
+          SR
+        </label>
+        <label className="flex items-center gap-1">
+          Spikes
+          <select value={cond.spikes} onChange={(e) => onChange({ ...cond, spikes: Number(e.target.value) })}
+            className="rounded border border-slate-700 bg-slate-900 px-1">
+            {[0, 1, 2, 3].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </label>
+        <label className="flex items-center gap-1">
+          T.Spikes
+          <select value={cond.toxicSpikes} onChange={(e) => onChange({ ...cond, toxicSpikes: Number(e.target.value) })}
+            className="rounded border border-slate-700 bg-slate-900 px-1">
+            {[0, 1, 2].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </label>
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={cond.stickyWeb} onChange={(e) => onChange({ ...cond, stickyWeb: e.target.checked })} />
+          Web
+        </label>
       </div>
     </div>
   );

@@ -73,9 +73,15 @@ export interface FieldState {
   weatherTurns?: number;
   terrainTurns?: number;
   trickRoomTurns?: number;
+  /** Gravity: grounds every Pokémon (incl. Flying/Levitate) and boosts accuracy. */
+  gravity?: boolean;
+  gravityTurns?: number;
 }
 
-/** Conditions that apply to a single side of the field. */
+/**
+ * Conditions that apply to a single side of the field, including entry hazards.
+ * Hazards affect a Pokémon that switches in on this side.
+ */
 export interface SideConditions {
   tailwind: boolean;
   reflect: boolean;
@@ -85,6 +91,14 @@ export interface SideConditions {
   reflectTurns?: number;
   lightScreenTurns?: number;
   auroraVeilTurns?: number;
+  /** Stealth Rock: entry damage scaled by Rock type-effectiveness. */
+  stealthRock?: boolean;
+  /** Spikes layers 0–3 (entry damage to grounded Pokémon). */
+  spikes?: number;
+  /** Toxic Spikes layers 0–2 (poison/toxic to grounded, non-immune Pokémon). */
+  toxicSpikes?: number;
+  /** Sticky Web: −1 Speed to a grounded Pokémon on entry. */
+  stickyWeb?: boolean;
 }
 
 export const NO_SIDE_CONDITIONS: SideConditions = {

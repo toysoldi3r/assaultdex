@@ -1,5 +1,6 @@
 import { PokedexBrowser, type PokedexEntry } from "@/components/PokedexBrowser";
 import { Panel } from "@/components/ui";
+import dexNumbers from "@/data/fixtures/dexNumbers.json";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 
 export const dynamic = "force-dynamic";
@@ -19,9 +20,11 @@ export default async function PokedexPage() {
     );
   }
 
+  const nums = dexNumbers as Record<string, number>;
   const entries: PokedexEntry[] = pokemon.map((p) => ({
     slug: p.slug,
     name: p.name,
+    num: nums[p.slug] ?? 99999,
     types: p.types,
     abilities: p.abilities,
     movepool: p.movepool,

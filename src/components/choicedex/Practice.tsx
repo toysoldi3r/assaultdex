@@ -69,6 +69,7 @@ export function Practice({ pokemon }: { pokemon: PokemonRef[] }) {
       weather: "none",
       terrain: "none",
       trickRoom: false,
+      gravity: false,
       note: "",
     };
     const s = buildState(form, refBySlug);

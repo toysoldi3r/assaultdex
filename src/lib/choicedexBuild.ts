@@ -14,7 +14,7 @@ import type {
   Weather,
 } from "@/domain/types/battle";
 import { NEUTRAL_STAGES } from "@/domain/types/battle";
-import type { Pokemon } from "@/domain/types/pokemon";
+import type { BaseStats, Pokemon } from "@/domain/types/pokemon";
 
 export type PokemonRef = Pick<
   Pokemon,
@@ -30,6 +30,10 @@ export interface SlotForm {
   ability: string;
   /** Item name; "None" means no item. */
   item: string;
+  /** Nature name; defaults to "Serious" (neutral) when omitted. */
+  nature?: string;
+  /** EV spread; missing stats default to 0. */
+  evs?: Partial<BaseStats>;
 }
 
 /** Items with a modeled effect, offered in the editor. */
@@ -56,6 +60,10 @@ export interface SideForm {
   reflect: boolean;
   lightScreen: boolean;
   auroraVeil: boolean;
+  stealthRock: boolean;
+  spikes: number;
+  toxicSpikes: number;
+  stickyWeb: boolean;
 }
 
 export interface TurnForm {
@@ -64,6 +72,7 @@ export interface TurnForm {
   weather: Weather;
   terrain: Terrain;
   trickRoom: boolean;
+  gravity: boolean;
   note: string;
 }
 
@@ -75,6 +84,10 @@ export function emptySide(slot0: string, slot1: string): SideForm {
     reflect: false,
     lightScreen: false,
     auroraVeil: false,
+    stealthRock: false,
+    spikes: 0,
+    toxicSpikes: 0,
+    stickyWeb: false,
   };
 }
 
@@ -101,6 +114,7 @@ export function combatantFromRef(
   const ability =
     slot.ability === "(none)" ? null : slot.ability ? slot.ability : (ref.abilities[0] ?? null);
   const item = slot.item && slot.item !== "None" ? slot.item : null;
+  const evs: BaseStats = { ...DEFAULT_EVS, ...(slot.evs ?? {}) };
   const c = buildCombatant({
     species: ref.slug,
     name: ref.name,
@@ -109,8 +123,8 @@ export function combatantFromRef(
     moves: ref.moves,
     level: 50,
     ivs: DEFAULT_IVS,
-    evs: DEFAULT_EVS,
-    nature: natureByName("Serious"),
+    evs,
+    nature: natureByName(slot.nature ?? "Serious"),
     hpFraction: slot.hpPct / 100,
     status: slot.status,
     ability,
@@ -142,7 +156,12 @@ function buildRawState(
 
   return {
     turn: 1,
-    field: { weather: form.weather, terrain: form.terrain, trickRoom: form.trickRoom },
+    field: {
+      weather: form.weather,
+      terrain: form.terrain,
+      trickRoom: form.trickRoom,
+      gravity: form.gravity,
+    },
     user: { active: u.active, bench: [], conditions: sideConditions(form.user) },
     opponent: {
       active: o.active,
@@ -180,5 +199,9 @@ function sideConditions(side: SideForm) {
     reflect: side.reflect,
     lightScreen: side.lightScreen,
     auroraVeil: side.auroraVeil,
+    stealthRock: side.stealthRock,
+    spikes: side.spikes,
+    toxicSpikes: side.toxicSpikes,
+    stickyWeb: side.stickyWeb,
   };
 }

@@ -68,6 +68,13 @@ Notes:
   Light Screen, Aurora Veil, and Tailwind carry optional turn counters that count
   down and expire; an undefined counter persists (unchanged single-turn
   behaviour). Screens are now settable per side in the battle editor.
+- **Entry hazards and Gravity** (`mechanics/hazards.ts`, ASSUMPTIONS.hazards):
+  Stealth Rock (1/8 × Rock type-effectiveness), Spikes (1/8·1/6·1/4 to grounded),
+  Toxic Spikes (poison/badly-poison grounded non-immune; Poison absorbs, Steel
+  immune), and Sticky Web (−1 Speed to grounded). Heavy-Duty Boots grant full
+  immunity and Magic Guard ignores the chip. Gravity grounds every Pokémon
+  (affecting terrain and hazards). Surfaced per-Pokémon in the battle view's
+  detail panel as an on-switch-in readout with an "apply" action.
 - **Opponent spread inference from a hit** (`choicedex/spreadInference.ts`,
   ASSUMPTIONS.statInference): given your Pokémon's HP before/after a hit, the
   tool enumerates the opponent's EV/IV/nature grid and keeps only spreads whose

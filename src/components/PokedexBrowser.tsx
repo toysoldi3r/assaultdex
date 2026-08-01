@@ -8,15 +8,17 @@ import type { PokemonType } from "@/domain/types/pokemon";
 export interface PokedexEntry {
   slug: string;
   name: string;
+  num: number;
   types: PokemonType[];
   abilities: string[];
   movepool: string[];
   baseStats: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
 }
 
-type SortKey = "bst" | "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "name";
+type SortKey = "num" | "bst" | "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "name";
 
 const SORTS: { key: SortKey; label: string }[] = [
+  { key: "num", label: "Dex number" },
   { key: "bst", label: "Total (BST)" },
   { key: "hp", label: "HP" },
   { key: "atk", label: "Attack" },
@@ -33,7 +35,7 @@ function bst(e: PokedexEntry): number {
 
 export function PokedexBrowser({ pokemon }: { pokemon: PokedexEntry[] }) {
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState<SortKey>("bst");
+  const [sort, setSort] = useState<SortKey>("num");
 
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -50,9 +52,11 @@ export function PokedexBrowser({ pokemon }: { pokemon: PokedexEntry[] }) {
     matched.sort((a, b) =>
       sort === "name"
         ? a.name.localeCompare(b.name)
-        : sort === "bst"
-          ? bst(b) - bst(a)
-          : b.baseStats[sort] - a.baseStats[sort],
+        : sort === "num"
+          ? a.num - b.num
+          : sort === "bst"
+            ? bst(b) - bst(a)
+            : b.baseStats[sort] - a.baseStats[sort],
     );
     return matched;
   }, [q, sort, pokemon]);
@@ -94,12 +98,9 @@ export function PokedexBrowser({ pokemon }: { pokemon: PokedexEntry[] }) {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((p) => {
-            const shownStat =
-              sort === "bst" || sort === "name" ? bst(p) : p.baseStats[sort];
-            const statLabel =
-              sort === "bst" || sort === "name"
-                ? "BST"
-                : SORTS.find((s) => s.key === sort)!.label;
+            const showStat = sort !== "name" && sort !== "num";
+            const shownStat = sort === "bst" ? bst(p) : showStat ? p.baseStats[sort] : bst(p);
+            const statLabel = showStat && sort !== "bst" ? SORTS.find((s) => s.key === sort)!.label : "BST";
             return (
               <Link
                 key={p.slug}
@@ -107,7 +108,12 @@ export function PokedexBrowser({ pokemon }: { pokemon: PokedexEntry[] }) {
                 className="rounded-lg border border-slate-800 bg-slate-900/40 p-4 hover:border-amber-500/60"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold">{p.name}</span>
+                  <span className="font-semibold">
+                    <span className="mr-1 tabular-nums text-xs text-slate-500">
+                      #{p.num}
+                    </span>
+                    {p.name}
+                  </span>
                   <div className="flex shrink-0 gap-1">
                     {p.types.map((t) => (
                       <TypeBadge key={t} type={t} />
