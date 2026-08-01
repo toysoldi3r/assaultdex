@@ -36,14 +36,26 @@ function statsOf(bs: BaseStatsLike) {
   return { hp: bs.hp, atk: bs.atk, def: bs.def, spa: bs.spa, spd: bs.spd, spe: bs.spe };
 }
 
+/**
+ * True for species Pokémon Showdown actually ships. @pkmn/dex is generated from
+ * Showdown's data, so the only non-Showdown entries are fan-made CAP mons
+ * (num ≤ 0) and one-off Custom fakemon — everything else (standard, past-gen,
+ * LGPE, future/DLC) is in Showdown's dex.
+ */
+function inShowdown(s: { num: number; isNonstandard: string | null }): boolean {
+  if (s.num <= 0) return false;
+  if (s.isNonstandard === "CAP" || s.isNonstandard === "Custom") return false;
+  return true;
+}
+
 let listCache: PokedexEntry[] | null = null;
 
-/** Every real species (num > 0) as browsable dex entries. Memoised. */
+/** Every Showdown species as browsable dex entries. Memoised. */
 export function listDexEntries(): PokedexEntry[] {
   if (listCache) return listCache;
   const out: PokedexEntry[] = [];
   for (const s of Dex.species.all()) {
-    if (s.num <= 0) continue;
+    if (!inShowdown(s)) continue;
     const types = mapTypes(s.types);
     if (types.length === 0) continue;
     out.push({
@@ -83,7 +95,7 @@ export interface DexSpecies {
 /** Detail for one species by slug (@pkmn id). Null if unknown. */
 export async function getDexSpecies(slug: string): Promise<DexSpecies | null> {
   const s = Dex.species.get(slug);
-  if (!s.exists || s.num <= 0) return null;
+  if (!s.exists || !inShowdown(s)) return null;
 
   // Learnsets key off the base species for formes; fall back to it.
   let ls = await Dex.learnsets.get(s.id);
