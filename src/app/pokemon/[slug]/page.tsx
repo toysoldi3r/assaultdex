@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Panel, TypeBadge } from "@/components/ui";
-import { moveMeta, speciesMeta, spriteUrl } from "@/data/pkmnEnrich";
+import { changeHistory, moveMeta, speciesMeta, spriteUrl } from "@/data/pkmnEnrich";
 import { describeMoveEffects } from "@/domain/mechanics/moveEffects";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { POKEMON_TYPES, STAT_KEYS } from "@/domain/types/pokemon";
@@ -45,6 +45,7 @@ export default async function PokemonPage({
 
   const chart = defensiveChart(p.types);
   const meta = speciesMeta(p.name, p.abilities);
+  const history = changeHistory(p.name);
 
   return (
     <div className="space-y-6">
@@ -154,6 +155,43 @@ export default async function PokemonPage({
           Competitive usage % pending a usage dataset.
         </p>
       </Panel>
+
+      {meta && (
+        <Panel title="Competitive change history">
+          <details>
+            <summary className="cursor-pointer text-sm text-amber-400">
+              {history.length > 0
+                ? `${history.length} generation${history.length > 1 ? "s" : ""} with changes`
+                : "No competitively significant changes since introduction"}
+            </summary>
+            {history.length > 0 && (
+              <ul className="mt-2 space-y-2">
+                {history.map((h) => (
+                  <li key={h.gen} className="flex gap-3 text-sm">
+                    <span className="w-14 shrink-0 font-semibold text-slate-400">
+                      Gen {h.gen}
+                    </span>
+                    <span className="flex flex-wrap gap-1">
+                      {h.changes.map((c) => (
+                        <span
+                          key={c}
+                          className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-slate-300"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </details>
+          <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
+            Base-stat, typing, and ability revisions across generations
+            (@pkmn/dex).
+          </p>
+        </Panel>
+      )}
 
       <Panel title="Moves">
         <p className="mb-2 text-xs text-slate-500">

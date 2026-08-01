@@ -70,3 +70,71 @@ export function moveMeta(name: string): MoveMeta {
   if (!m.exists) return { pp: null, effect: null };
   return { pp: m.pp ?? null, effect: m.shortDesc || m.desc || null };
 }
+
+export interface GenChange {
+  gen: number;
+  changes: string[];
+}
+
+const STAT_ORDER = ["hp", "atk", "def", "spa", "spd", "spe"] as const;
+const STAT_LABEL: Record<(typeof STAT_ORDER)[number], string> = {
+  hp: "HP",
+  atk: "Atk",
+  def: "Def",
+  spa: "SpA",
+  spd: "SpD",
+  spe: "Spe",
+};
+
+/**
+ * Competitively relevant cross-generation changes for a species: base-stat,
+ * typing, and ability revisions. Diffed from the generation the species was
+ * introduced (earlier gens return modern data in @pkmn/dex, so they're skipped)
+ * up to the current one.
+ */
+export function changeHistory(name: string): GenChange[] {
+  const base = Dex.species.get(name);
+  if (!base.exists) return [];
+
+  const out: GenChange[] = [];
+  let prev: ReturnType<typeof Dex.species.get> | null = null;
+
+  for (let g = base.gen; g <= 9; g++) {
+    let dex;
+    try {
+      dex = Dex.forGen(g);
+    } catch {
+      continue;
+    }
+    const s = dex.species.get(name);
+    if (!s.exists) continue;
+
+    if (prev) {
+      const changes: string[] = [];
+
+      for (const k of STAT_ORDER) {
+        const a = prev.baseStats[k];
+        const b = s.baseStats[k];
+        if (a !== b) {
+          changes.push(`${STAT_LABEL[k]} ${a}→${b} (${b > a ? "+" : ""}${b - a})`);
+        }
+      }
+
+      const prevTypes = prev.types.join("/");
+      const nowTypes = s.types.join("/");
+      if (prevTypes !== nowTypes) changes.push(`Type ${prevTypes} → ${nowTypes}`);
+
+      const prevAb = new Set(Object.values(prev.abilities));
+      const nowAb = Object.values(s.abilities);
+      const added = nowAb.filter((a) => !prevAb.has(a));
+      const removed = [...prevAb].filter((a) => !nowAb.includes(a));
+      if (added.length) changes.push(`Gained ability ${added.join(", ")}`);
+      if (removed.length) changes.push(`Lost ability ${removed.join(", ")}`);
+
+      if (changes.length) out.push({ gen: g, changes });
+    }
+    prev = s;
+  }
+
+  return out;
+}
