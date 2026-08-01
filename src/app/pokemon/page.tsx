@@ -27,7 +27,6 @@ export default async function PokedexPage() {
     num: nums[p.slug] ?? 99999,
     types: p.types,
     abilities: p.abilities,
-    movepool: p.movepool,
     baseStats: p.baseStats,
   }));
 

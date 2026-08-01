@@ -11,7 +11,6 @@ export interface PokedexEntry {
   num: number;
   types: PokemonType[];
   abilities: string[];
-  movepool: string[];
   baseStats: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
 }
 
@@ -39,12 +38,13 @@ export function PokedexBrowser({ pokemon }: { pokemon: PokedexEntry[] }) {
 
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();
+    // Match name, type, and ability only — moves are deliberately excluded so a
+    // query like "lip" surfaces Pelipper, not every Flip Turn user.
     const matched = needle
       ? pokemon.filter((p) => {
           if (p.name.toLowerCase().includes(needle)) return true;
           if (p.types.some((t) => t.toLowerCase().includes(needle))) return true;
           if (p.abilities.some((a) => a.toLowerCase().includes(needle))) return true;
-          if (p.movepool.some((m) => m.toLowerCase().includes(needle))) return true;
           return false;
         })
       : [...pokemon];
@@ -73,7 +73,7 @@ export function PokedexBrowser({ pokemon }: { pokemon: PokedexEntry[] }) {
           type="text"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search name, type, ability, or move…"
+          placeholder="Search name, type, or ability…"
           className="min-w-[16rem] flex-1 rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
           autoFocus
         />
