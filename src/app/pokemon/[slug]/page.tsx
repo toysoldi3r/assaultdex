@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Panel, ProvisionalTag, TypeBadge } from "@/components/ui";
+import { Panel, TypeBadge } from "@/components/ui";
 import { describeMoveEffects } from "@/domain/mechanics/moveEffects";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { POKEMON_TYPES, STAT_KEYS } from "@/domain/types/pokemon";
@@ -77,12 +77,7 @@ export default async function PokemonPage({
           </ul>
         </Panel>
 
-        <Panel
-          title="Defensive type matchups"
-        >
-          <div className="mb-2">
-            <ProvisionalTag />
-          </div>
+        <Panel title="Defensive type matchups">
           <div className="grid grid-cols-3 gap-1 text-xs sm:grid-cols-4">
             {POKEMON_TYPES.map((t) => {
               const l = multiplierLabel(chart[t]);
@@ -113,11 +108,78 @@ export default async function PokemonPage({
         </div>
       </Panel>
 
-      <Panel title="Full movepool">
+      <Panel title="Moves">
         <p className="mb-2 text-xs text-slate-500">
-          {p.movepool.length} legal moves. The playable set below is a curated
-          subset with battle data.
+          {p.moves.length} moves with battle data. Columns follow the
+          pokemondb.net layout. Legal = present in this species&rsquo; legal
+          movepool.
         </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs uppercase text-slate-500">
+              <tr>
+                <th className="py-1">Name</th>
+                <th>Type</th>
+                <th>Cat.</th>
+                <th className="text-right">Power</th>
+                <th className="text-right">Acc.</th>
+                <th className="text-right">PP</th>
+                <th>Effect</th>
+                <th>Legal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {p.moves.map((m) => {
+                const effects = describeMoveEffects(m);
+                const legal = p.movepool.includes(m.name);
+                return (
+                  <tr key={m.name} className="border-t border-slate-800">
+                    <td className="py-1">{m.name}</td>
+                    <td>
+                      <TypeBadge type={m.type} />
+                    </td>
+                    <td className="capitalize text-slate-400">{m.category}</td>
+                    <td className="text-right tabular-nums">{m.power ?? "—"}</td>
+                    <td className="text-right tabular-nums">
+                      {m.accuracy === null ? "—" : m.accuracy}
+                    </td>
+                    <td className="text-right tabular-nums text-slate-600">—</td>
+                    <td>
+                      {effects.length > 0 ? (
+                        <span className="flex flex-wrap gap-1">
+                          {effects.map((e) => (
+                            <span
+                              key={e}
+                              className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-300"
+                            >
+                              {e}
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
+                        <span className="text-slate-600">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {legal ? (
+                        <span className="text-emerald-400">Legal</span>
+                      ) : (
+                        <span className="text-slate-600">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
+          Effect column is provisional (mainline-derived); PP not yet in dataset.
+        </p>
+      </Panel>
+
+      <Panel title="Full movepool">
+        <p className="mb-2 text-xs text-slate-500">{p.movepool.length} legal moves.</p>
         <details>
           <summary className="cursor-pointer text-sm text-amber-400">
             Show all {p.movepool.length}
@@ -133,89 +195,6 @@ export default async function PokemonPage({
             ))}
           </div>
         </details>
-      </Panel>
-
-      <Panel title="Playable moves (curated)">
-        <table className="w-full text-left text-sm">
-          <thead className="text-xs uppercase text-slate-500">
-            <tr>
-              <th className="py-1">Move</th>
-              <th>Type</th>
-              <th>Cat.</th>
-              <th className="text-right">Power</th>
-              <th className="text-right">Acc.</th>
-              <th className="text-right">Prio.</th>
-              <th>Effect</th>
-            </tr>
-          </thead>
-          <tbody>
-            {p.moves.map((m) => {
-              const effects = describeMoveEffects(m);
-              return (
-                <tr key={m.name} className="border-t border-slate-800">
-                  <td className="py-1">{m.name}</td>
-                  <td>
-                    <TypeBadge type={m.type} />
-                  </td>
-                  <td className="capitalize text-slate-400">{m.category}</td>
-                  <td className="text-right tabular-nums">{m.power ?? "—"}</td>
-                  <td className="text-right tabular-nums">
-                    {m.accuracy === null ? "—" : m.accuracy}
-                  </td>
-                  <td className="text-right tabular-nums">{m.priority}</td>
-                  <td>
-                    {effects.length > 0 ? (
-                      <span className="flex flex-wrap gap-1">
-                        {effects.map((e) => (
-                          <span
-                            key={e}
-                            className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-300"
-                          >
-                            {e}
-                          </span>
-                        ))}
-                      </span>
-                    ) : (
-                      <span className="text-slate-600">—</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
-          Effect column is provisional (mainline-derived move data).
-        </p>
-      </Panel>
-
-      <Panel title="Provenance">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-400 sm:grid-cols-3">
-          <div>
-            <dt className="text-slate-500">Provider</dt>
-            <dd>{p.provenance.provider}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">External ID</dt>
-            <dd>{p.provenance.externalId}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Data version</dt>
-            <dd>{p.provenance.dataVersion}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Normalization</dt>
-            <dd>{p.provenance.normalizationVersion}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Retrieved</dt>
-            <dd>{new Date(p.provenance.retrievedAt).toLocaleDateString()}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Status</dt>
-            <dd>{p.provenance.updateStatus}</dd>
-          </div>
-        </dl>
       </Panel>
     </div>
   );
