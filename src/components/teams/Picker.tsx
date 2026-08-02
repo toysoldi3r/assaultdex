@@ -6,7 +6,7 @@
 // The Popular section is wired but stays empty until per-mon usage data is
 // available; everything else is real @pkmn/dex data.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export interface Option {
   name: string;
@@ -30,6 +30,22 @@ export function Picker({
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click or Escape so an open panel never gets stuck.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   const filtered = useMemo(() => {
     const n = q.trim().toLowerCase();
@@ -41,7 +57,7 @@ export function Picker({
   }, [q, options]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

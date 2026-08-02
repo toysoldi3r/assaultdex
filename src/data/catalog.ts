@@ -33,3 +33,30 @@ export function moveDescOf(name: string): string {
   const m = Dex.moves.get(name);
   return m.exists ? m.shortDesc || m.desc || "" : "";
 }
+
+interface DescPool {
+  abilities: string[];
+  moves: { name: string }[];
+}
+
+let descCache: {
+  abilityDesc: Record<string, string>;
+  moveDesc: Record<string, string>;
+} | null = null;
+
+/**
+ * Ability/move description maps over the teambuilder pool. The pool is static
+ * (the Champions roster), so this is built once and reused across requests
+ * instead of re-running hundreds of @pkmn/dex lookups on every team page load.
+ */
+export function poolDescMaps(pool: DescPool[]) {
+  if (descCache) return descCache;
+  const abilityDesc: Record<string, string> = {};
+  const moveDesc: Record<string, string> = {};
+  for (const p of pool) {
+    for (const a of p.abilities) abilityDesc[a] ??= abilityDescOf(a);
+    for (const m of p.moves) moveDesc[m.name] ??= moveDescOf(m.name);
+  }
+  descCache = { abilityDesc, moveDesc };
+  return descCache;
+}
