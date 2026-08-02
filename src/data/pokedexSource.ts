@@ -6,6 +6,20 @@
 
 import { Dex } from "@pkmn/dex";
 import type { PokedexEntry } from "@/components/PokedexBrowser";
+import fixtureData from "./fixtures/pokemon.json";
+
+// The Pokémon Champions roster (the curated fixture). We map each entry to its
+// BASE species id, so a base shows in Champions mode when any of its formes is
+// legal there (e.g. Tauros-Paldea → Tauros); the forme is reached via the
+// on-page switcher.
+const CHAMPIONS_BASE: Set<string> = (() => {
+  const set = new Set<string>();
+  for (const p of (fixtureData as { pokemon: { external_id: string }[] }).pokemon) {
+    const s = Dex.species.get(p.external_id);
+    if (s.exists) set.add(Dex.species.get(s.baseSpecies).id);
+  }
+  return set;
+})();
 import {
   POKEMON_TYPES,
   type MoveCategory,
@@ -50,12 +64,13 @@ function inShowdown(s: { num: number; isNonstandard: string | null }): boolean {
 
 let listCache: PokedexEntry[] | null = null;
 
-/** Every Showdown species as browsable dex entries. Memoised. */
+/** Only base species list (formes like Venusaur-Mega collapse into the base). */
 export function listDexEntries(): PokedexEntry[] {
   if (listCache) return listCache;
   const out: PokedexEntry[] = [];
   for (const s of Dex.species.all()) {
     if (!inShowdown(s)) continue;
+    if (s.baseSpecies !== s.name) continue; // skip formes; switch them on the page
     const types = mapTypes(s.types);
     if (types.length === 0) continue;
     out.push({
@@ -65,10 +80,37 @@ export function listDexEntries(): PokedexEntry[] {
       types,
       abilities: Object.values(s.abilities),
       baseStats: statsOf(s.baseStats),
+      champions: CHAMPIONS_BASE.has(s.id),
     });
   }
   listCache = out;
   return out;
+}
+
+export interface SpeciesForm {
+  id: string;
+  label: string;
+  isBase: boolean;
+}
+
+/**
+ * The switchable forms of a species (base + Mega/regional/Gmax/etc.), given any
+ * form's slug. Returns [] when the species has only one form. `id` is the @pkmn
+ * id used as the ?form= value; `label` is the forme name ("Mega", "Alola") or
+ * "Base".
+ */
+export function getSpeciesForms(anySlug: string): SpeciesForm[] {
+  const s = Dex.species.get(anySlug);
+  if (!s.exists) return [];
+  const base = Dex.species.get(s.baseSpecies);
+  const names = [base.name, ...(base.otherFormes ?? [])];
+  const forms: SpeciesForm[] = [];
+  for (const name of names) {
+    const f = Dex.species.get(name);
+    if (!f.exists || (f.isNonstandard === "CAP" || f.isNonstandard === "Custom")) continue;
+    forms.push({ id: f.id, label: f.forme || "Base", isBase: f.name === base.name });
+  }
+  return forms.length > 1 ? forms : [];
 }
 
 export interface DexMoveRow {

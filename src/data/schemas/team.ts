@@ -12,6 +12,7 @@ const statBlock = z.object(
 
 export const pokemonSetSchema = z.object({
   species: z.string().min(1),
+  nickname: z.string().min(1).max(30).optional(),
   level: z.number().int().min(1).max(100),
   ability: z.string().min(1).nullable(),
   item: z.string().min(1).nullable(),
@@ -23,8 +24,14 @@ export const pokemonSetSchema = z.object({
   }),
 });
 
+/** Hard cap on stored members. Teams are further capped at 6 at the edit layer;
+ *  boxes (unbounded collections) use the full range. Empty (0) is allowed so a
+ *  freshly created team or box can exist before any Pokémon is added. */
+export const TEAM_MEMBER_LIMIT = 6;
+export const BOX_MEMBER_LIMIT = 60;
+
 export const teamSnapshotSchema = z.object({
-  members: z.array(pokemonSetSchema).min(1).max(6),
+  members: z.array(pokemonSetSchema).min(0).max(BOX_MEMBER_LIMIT),
 });
 
 export type PokemonSetInput = z.infer<typeof pokemonSetSchema>;
@@ -34,6 +41,7 @@ export type TeamSnapshotInput = z.infer<typeof teamSnapshotSchema>;
 export const createTeamSchema = z.object({
   name: z.string().min(1).max(80),
   collectionId: z.string().min(1).nullable().optional(),
+  isBox: z.boolean().optional(),
   snapshot: teamSnapshotSchema,
 });
 

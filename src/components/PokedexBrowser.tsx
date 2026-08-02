@@ -12,6 +12,8 @@ export interface PokedexEntry {
   types: PokemonType[];
   abilities: string[];
   baseStats: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
+  /** In the Pokémon Champions roster. */
+  champions: boolean;
 }
 
 type SortKey = "num" | "bst" | "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "name";
@@ -35,8 +37,16 @@ function bst(e: PokedexEntry): number {
 export function PokedexBrowser({ pokemon }: { pokemon: PokedexEntry[] }) {
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("num");
+  const [showAll, setShowAll] = useState(false);
+
+  const championsCount = useMemo(
+    () => pokemon.filter((p) => p.champions).length,
+    [pokemon],
+  );
 
   const results = useMemo(() => {
+    // Default view is the Pokémon Champions roster; the toggle opens the full dex.
+    const scoped = showAll ? pokemon : pokemon.filter((p) => p.champions);
     const needle = q.trim().toLowerCase();
     // Exact type name (e.g. "water") = pure type filter, so ability names like
     // "Water Absorb" don't drag in non-Water mons.
@@ -44,10 +54,10 @@ export function PokedexBrowser({ pokemon }: { pokemon: PokedexEntry[] }) {
     // Otherwise match name, type, and ability — moves are deliberately excluded
     // so a query like "lip" surfaces Pelipper, not every Flip Turn user.
     const matched = !needle
-      ? [...pokemon]
+      ? [...scoped]
       : exactType
-        ? pokemon.filter((p) => p.types.includes(exactType))
-        : pokemon.filter((p) => {
+        ? scoped.filter((p) => p.types.includes(exactType))
+        : scoped.filter((p) => {
             if (p.name.toLowerCase().includes(needle)) return true;
             if (p.types.some((t) => t.toLowerCase().includes(needle))) return true;
             if (p.abilities.some((a) => a.toLowerCase().includes(needle))) return true;
@@ -64,13 +74,32 @@ export function PokedexBrowser({ pokemon }: { pokemon: PokedexEntry[] }) {
             : b.baseStats[sort] - a.baseStats[sort],
     );
     return matched;
-  }, [q, sort, pokemon]);
+  }, [q, sort, pokemon, showAll]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Pokédex</h1>
         <span className="text-xs text-slate-500">{results.length} shown</span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setShowAll(false)}
+          className={`rounded px-3 py-1 text-xs font-medium ${
+            !showAll ? "bg-amber-500 text-black" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+          }`}
+        >
+          Champions ({championsCount})
+        </button>
+        <button
+          onClick={() => setShowAll(true)}
+          className={`rounded px-3 py-1 text-xs font-medium ${
+            showAll ? "bg-amber-500 text-black" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+          }`}
+        >
+          Full dex ({pokemon.length})
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2">

@@ -40,7 +40,7 @@ async function defaultSetFor(species: string): Promise<PokemonSet | null> {
 }
 
 export async function createTeamAction(formData: FormData): Promise<void> {
-  const name = String(formData.get("name") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim() || "Untitled";
   const collectionId = String(formData.get("collectionId") ?? "").trim() || null;
   const species = formData.getAll("species").map(String).filter(Boolean);
 
@@ -52,6 +52,80 @@ export async function createTeamAction(formData: FormData): Promise<void> {
 
   const snapshot: TeamSnapshotInput = { members };
   const input = createTeamSchema.parse({ name, collectionId, snapshot });
+  const id = await createTeam(input);
+  revalidatePath("/teams");
+  redirect(`/teams/${id}`);
+}
+
+/** Save the whole team snapshot as a new version (teambuilder save). Returns a
+ *  short status string for the client. */
+export async function saveTeamSnapshotAction(formData: FormData): Promise<string> {
+  const teamId = String(formData.get("teamId") ?? "");
+  if (!teamId) return "Missing team.";
+  let raw: unknown;
+  try {
+    raw = JSON.parse(String(formData.get("snapshot") ?? "{}"));
+  } catch {
+    return "Bad snapshot.";
+  }
+  const snapshot = teamSnapshotSchema.parse(raw);
+  const version = await addTeamVersion(teamId, snapshot, "Teambuilder edit");
+  revalidatePath(`/teams/${teamId}`);
+  return `Saved as v${version}.`;
+}
+
+/** Delete without revalidate/redirect — the homepage manages its own list state
+ *  and shows an undo affordance, so a navigation here would drop it. */
+export async function deleteTeamSilentAction(formData: FormData): Promise<void> {
+  const teamId = String(formData.get("teamId") ?? "");
+  if (teamId) await deleteTeam(teamId);
+}
+
+/** Recreate a team/box from a captured snapshot — powers undo-delete. Returns
+ *  the new card so the client can slot it back in without a full reload. */
+export async function recreateTeamAction(formData: FormData): Promise<{
+  id: string;
+  name: string;
+  isBox: boolean;
+  collectionId: string | null;
+  members: { species: string }[];
+}> {
+  const name = String(formData.get("name") ?? "").trim() || "Untitled";
+  const collectionId = String(formData.get("collectionId") ?? "").trim() || null;
+  const isBox = String(formData.get("isBox") ?? "") === "true";
+  let members: unknown = [];
+  try {
+    members = JSON.parse(String(formData.get("members") ?? "[]"));
+  } catch {
+    members = [];
+  }
+  const input = createTeamSchema.parse({
+    name,
+    collectionId,
+    isBox,
+    snapshot: { members },
+  });
+  const id = await createTeam(input);
+  revalidatePath("/teams");
+  return {
+    id,
+    name,
+    isBox,
+    collectionId,
+    members: input.snapshot.members.map((m) => ({ species: m.species })),
+  };
+}
+
+/** Create an empty box (unbounded holding list) in the current folder. */
+export async function createBoxAction(formData: FormData): Promise<void> {
+  const name = String(formData.get("name") ?? "").trim() || "Box";
+  const collectionId = String(formData.get("collectionId") ?? "").trim() || null;
+  const input = createTeamSchema.parse({
+    name,
+    collectionId,
+    isBox: true,
+    snapshot: { members: [] },
+  });
   const id = await createTeam(input);
   revalidatePath("/teams");
   redirect(`/teams/${id}`);

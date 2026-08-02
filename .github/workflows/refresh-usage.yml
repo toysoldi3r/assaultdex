@@ -1,0 +1,50 @@
+# Refreshes the committed competitive-usage snapshot on a schedule, entirely
+# within this private repo. The job runs in GitHub Actions (GitHub infra) and
+# only ever contacts GitHub (raw.githubusercontent), so the deployed app makes
+# no external calls and the aggregated data never leaves this private repo.
+#
+# If Actions is disabled for the org, run `pnpm refresh:usage` manually and
+# commit the result — same effect.
+name: refresh-usage
+
+on:
+  schedule:
+    - cron: "17 */6 * * *" # every 6h, offset off the hour
+  workflow_dispatch: {}
+
+# Serialize so two runs never race to push the snapshot.
+concurrency:
+  group: refresh-usage
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm refresh:usage
+
+      - name: Commit snapshot if changed
+        run: |
+          if [ -n "$(git status --porcelain src/data/fixtures/usage)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add src/data/fixtures/usage
+            git commit -m "chore: refresh usage snapshot [skip ci]"
+            git push
+          else
+            echo "no change"
+          fi
