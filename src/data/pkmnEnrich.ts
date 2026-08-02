@@ -58,12 +58,6 @@ export function speciesMeta(name: string, fixtureAbilities: string[]): SpeciesMe
   };
 }
 
-/** Sprite served by Showdown's CDN (loads in the user's browser). The dex set
- *  covers every generation, unlike the gen-specific folders. */
-export function spriteUrl(spriteId: string): string {
-  return `https://play.pokemonshowdown.com/sprites/dex/${spriteId}.png`;
-}
-
 /** PP + one-line effect for a move by name. Null fields if unknown. */
 export function moveMeta(name: string): MoveMeta {
   const m = Dex.moves.get(name);
