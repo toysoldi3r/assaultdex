@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Panel, TypeBadge } from "@/components/ui";
 import { changeHistory, speciesMeta, spriteUrl } from "@/data/pkmnEnrich";
 import { getDexSpecies } from "@/data/pokedexSource";
+import { CHAMPIONS_FORMAT_LABEL, getMonUsage } from "@/data/usageStats";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { POKEMON_TYPES, STAT_KEYS } from "@/domain/types/pokemon";
 
@@ -45,6 +46,7 @@ export default async function PokemonPage({
   const chart = defensiveChart(p.types);
   const meta = speciesMeta(p.name, p.abilities);
   const history = changeHistory(p.name);
+  const usage = await getMonUsage(p.name);
 
   return (
     <div className="space-y-6">
@@ -71,6 +73,13 @@ export default async function PokemonPage({
             <h1 className="text-2xl font-bold">{p.name}</h1>
             {meta && (
               <span className="text-xs text-slate-400">{meta.genderLabel}</span>
+            )}
+            {usage && (
+              <span className="mt-1 block text-xs text-slate-400">
+                {CHAMPIONS_FORMAT_LABEL}:{" "}
+                <span className="text-amber-300">{usage.usage}%</span> usage ·{" "}
+                {usage.winRate}% win rate
+              </span>
             )}
           </div>
         </div>
@@ -186,6 +195,30 @@ export default async function PokemonPage({
           <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
             Base-stat, typing, and ability revisions across generations
             (@pkmn/dex).
+          </p>
+        </Panel>
+      )}
+
+      {usage && usage.teammates.length > 0 && (
+        <Panel title={`Common teammates · ${CHAMPIONS_FORMAT_LABEL}`}>
+          <ul className="grid grid-cols-2 gap-1 text-sm sm:grid-cols-3">
+            {usage.teammates.map((t) => (
+              <li key={t.key}>
+                <Link
+                  href={`/pokemon/${t.key}`}
+                  className="flex items-center justify-between rounded bg-slate-800/50 px-2 py-1 hover:bg-slate-800 hover:text-amber-300"
+                >
+                  <span className="truncate">{t.name}</span>
+                  <span className="ml-2 shrink-0 tabular-nums text-slate-400">
+                    {t.pct}%
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
+            Share of this Pokémon&rsquo;s ranked teams that also ran each
+            partner (MunchStats replay data, refreshed hourly).
           </p>
         </Panel>
       )}
