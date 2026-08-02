@@ -60,6 +60,8 @@ model Team {
   name         String
   notes        String  @default("")
   collectionId String?
+  /// A box is an unbounded holding list, not bound by the 6-Pokémon team limit.
+  isBox        Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

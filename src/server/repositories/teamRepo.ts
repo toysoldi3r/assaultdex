@@ -20,10 +20,13 @@ export interface TeamView {
   id: string;
   name: string;
   notes: string;
+  isBox: boolean;
   collectionId: string | null;
   collectionName: string | null;
   createdAt: Date;
   versions: TeamVersionView[];
+  /** Members of the latest version (species list for icons / search). */
+  members: TeamSnapshotInput["members"];
 }
 
 function parseSnapshot(raw: string): TeamSnapshotInput {
@@ -49,6 +52,7 @@ export async function createTeam(input: CreateTeamInput): Promise<string> {
     data: {
       name: input.name,
       collectionId: input.collectionId ?? null,
+      isBox: input.isBox ?? false,
       versions: {
         create: {
           versionNumber: 1,
@@ -106,6 +110,7 @@ export async function listTeams(): Promise<TeamView[]> {
     id: t.id,
     name: t.name,
     notes: t.notes,
+    isBox: t.isBox,
     collectionId: t.collectionId,
     collectionName: t.collection?.name ?? null,
     createdAt: t.createdAt,
@@ -116,6 +121,10 @@ export async function listTeams(): Promise<TeamView[]> {
       createdAt: v.createdAt,
       snapshot: parseSnapshot(v.snapshot),
     })),
+    members:
+      t.versions.length > 0
+        ? parseSnapshot(t.versions[t.versions.length - 1]!.snapshot).members
+        : [],
   }));
 }
 
@@ -132,6 +141,7 @@ export async function getTeam(id: string): Promise<TeamView | null> {
     id: t.id,
     name: t.name,
     notes: t.notes,
+    isBox: t.isBox,
     collectionId: t.collectionId,
     collectionName: t.collection?.name ?? null,
     createdAt: t.createdAt,
@@ -142,6 +152,10 @@ export async function getTeam(id: string): Promise<TeamView | null> {
       createdAt: v.createdAt,
       snapshot: parseSnapshot(v.snapshot),
     })),
+    members:
+      t.versions.length > 0
+        ? parseSnapshot(t.versions[t.versions.length - 1]!.snapshot).members
+        : [],
   };
 }
 

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Panel, TypeBadge } from "@/components/ui";
-import { changeHistory, speciesMeta, spriteUrl } from "@/data/pkmnEnrich";
+import { changeHistory, speciesMeta } from "@/data/pkmnEnrich";
+import { PokeIcon } from "@/components/PokeIcon";
 import { getDexSpecies, getSpeciesForms } from "@/data/pokedexSource";
 import { CHAMPIONS_FORMAT_LABEL, getMonUsage } from "@/data/usageStats";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
@@ -61,16 +62,9 @@ export default async function PokemonPage({
 
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          {meta && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={spriteUrl(meta.spriteId)}
-              alt={p.name}
-              width={96}
-              height={96}
-              className="h-24 w-24 shrink-0 [image-rendering:pixelated]"
-            />
-          )}
+          <span className="grid h-16 w-16 shrink-0 place-items-center rounded bg-slate-800/50">
+            <PokeIcon species={p.name} />
+          </span>
           <div>
             <span className="tabular-nums text-sm text-slate-500">
               #{String(p.num).padStart(4, "0")}
