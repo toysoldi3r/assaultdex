@@ -69,12 +69,18 @@ export function TeamsHome({
 
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase();
+    // Species are stored as ids (no spaces/hyphens), so normalise the query too:
+    // "flutter mane" and "great-tusk" both match "fluttermane" / "greattusk".
+    const speciesNeedle = needle.replace(/[^a-z0-9]/g, "");
     return teams.filter((t) => {
       if (folder === "uncat" && t.collectionId !== null) return false;
       if (folder && folder !== "uncat" && t.collectionId !== folder) return false;
       if (!needle) return true;
       if (t.name.toLowerCase().includes(needle)) return true;
-      return t.members.some((m) => m.species.toLowerCase().includes(needle));
+      return (
+        speciesNeedle.length > 0 &&
+        t.members.some((m) => m.species.toLowerCase().includes(speciesNeedle))
+      );
     });
   }, [teams, folder, q]);
 
