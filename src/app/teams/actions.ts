@@ -64,13 +64,12 @@ export async function createTeamAction(formData: FormData): Promise<void> {
 export async function saveTeamSnapshotAction(formData: FormData): Promise<string> {
   const teamId = String(formData.get("teamId") ?? "");
   if (!teamId) return "Missing team.";
-  let raw: unknown;
+  let snapshot: TeamSnapshotInput;
   try {
-    raw = JSON.parse(String(formData.get("snapshot") ?? "{}"));
+    snapshot = teamSnapshotSchema.parse(JSON.parse(String(formData.get("snapshot") ?? "{}")));
   } catch {
-    return "Bad snapshot.";
+    return "Could not save: invalid team data.";
   }
-  const snapshot = teamSnapshotSchema.parse(raw);
   // Boxes are unbounded; ordinary teams cap at 6 (enforce server-side too).
   const isBox = await getTeamIsBox(teamId);
   if (isBox === null) return "Team not found.";
