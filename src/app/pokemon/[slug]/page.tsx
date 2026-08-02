@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Panel, TypeBadge } from "@/components/ui";
 import { changeHistory, speciesMeta, spriteUrl } from "@/data/pkmnEnrich";
-import { getDexSpecies } from "@/data/pokedexSource";
+import { getDexSpecies, getSpeciesForms } from "@/data/pokedexSource";
 import { CHAMPIONS_FORMAT_LABEL, getMonUsage } from "@/data/usageStats";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { POKEMON_TYPES, STAT_KEYS } from "@/domain/types/pokemon";
@@ -36,11 +36,16 @@ function statBarColor(v: number): string {
 
 export default async function PokemonPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ form?: string }>;
 }) {
   const { slug } = await params;
-  const p = await getDexSpecies(slug);
+  const { form } = await searchParams;
+  const forms = getSpeciesForms(slug);
+  const target = form && forms.some((f) => f.id === form) ? form : slug;
+  const p = await getDexSpecies(target);
   if (!p) notFound();
 
   const chart = defensiveChart(p.types);
@@ -89,6 +94,29 @@ export default async function PokemonPage({
           ))}
         </div>
       </div>
+
+      {forms.length > 1 && (
+        <div className="flex flex-wrap gap-1">
+          {forms.map((f) => {
+            const active = target === f.id;
+            const href = f.isBase ? `/pokemon/${slug}` : `/pokemon/${slug}?form=${f.id}`;
+            return (
+              <Link
+                key={f.id}
+                href={href}
+                scroll={false}
+                className={`rounded px-2.5 py-1 text-xs font-medium ${
+                  active
+                    ? "bg-amber-500 text-black"
+                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                {f.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Panel title="Base stats">
