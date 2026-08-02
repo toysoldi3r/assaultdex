@@ -6,6 +6,20 @@
 
 import { Dex } from "@pkmn/dex";
 import type { PokedexEntry } from "@/components/PokedexBrowser";
+import fixtureData from "./fixtures/pokemon.json";
+
+// The Pokémon Champions roster (the curated fixture). We map each entry to its
+// BASE species id, so a base shows in Champions mode when any of its formes is
+// legal there (e.g. Tauros-Paldea → Tauros); the forme is reached via the
+// on-page switcher.
+const CHAMPIONS_BASE: Set<string> = (() => {
+  const set = new Set<string>();
+  for (const p of (fixtureData as { pokemon: { external_id: string }[] }).pokemon) {
+    const s = Dex.species.get(p.external_id);
+    if (s.exists) set.add(Dex.species.get(s.baseSpecies).id);
+  }
+  return set;
+})();
 import {
   POKEMON_TYPES,
   type MoveCategory,
@@ -66,6 +80,7 @@ export function listDexEntries(): PokedexEntry[] {
       types,
       abilities: Object.values(s.abilities),
       baseStats: statsOf(s.baseStats),
+      champions: CHAMPIONS_BASE.has(s.id),
     });
   }
   listCache = out;
