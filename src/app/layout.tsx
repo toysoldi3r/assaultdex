@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Nav } from "@/components/Nav";
+import { RecentNav } from "@/components/RecentNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -37,6 +38,7 @@ export default function RootLayout({
         <main id="content" className="mx-auto max-w-5xl px-4 py-8">
           {children}
         </main>
+        <RecentNav />
         <footer className="mx-auto max-w-5xl px-4 py-8 text-xs text-slate-500">
           Mechanics are <strong>provisional</strong> and unverified for Pokémon
           Champions. Fixture data only — not a live provider feed.{" "}

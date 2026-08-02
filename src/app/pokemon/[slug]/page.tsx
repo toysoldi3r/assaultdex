@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Panel, ProvisionalTag, TypeBadge } from "@/components/ui";
-import { describeMoveEffects } from "@/domain/mechanics/moveEffects";
+import { Panel, TypeBadge } from "@/components/ui";
+import { changeHistory, speciesMeta, spriteUrl } from "@/data/pkmnEnrich";
+import { getDexSpecies } from "@/data/pokedexSource";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { POKEMON_TYPES, STAT_KEYS } from "@/domain/types/pokemon";
-import { getPokemonBySlug } from "@/server/repositories/pokemonRepo";
 
 export const dynamic = "force-dynamic";
 
@@ -24,16 +24,27 @@ function multiplierLabel(m: number): { text: string; cls: string } {
   return { text: `${m}×`, cls: "text-rose-400" };
 }
 
+/** Colour a base stat by tier: red low → light-blue extremely high. */
+function statBarColor(v: number): string {
+  if (v < 60) return "bg-red-500"; // low
+  if (v < 80) return "bg-yellow-500"; // normal but low
+  if (v < 100) return "bg-green-500"; // average
+  if (v < 130) return "bg-green-700"; // high
+  return "bg-sky-400"; // extremely high
+}
+
 export default async function PokemonPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const p = await getPokemonBySlug(slug);
+  const p = await getDexSpecies(slug);
   if (!p) notFound();
 
   const chart = defensiveChart(p.types);
+  const meta = speciesMeta(p.name, p.abilities);
+  const history = changeHistory(p.name);
 
   return (
     <div className="space-y-6">
@@ -41,9 +52,29 @@ export default async function PokemonPage({
         ← Pokédex
       </Link>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{p.name}</h1>
-        <div className="flex gap-1">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          {meta && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={spriteUrl(meta.spriteId)}
+              alt={p.name}
+              width={96}
+              height={96}
+              className="h-24 w-24 shrink-0 [image-rendering:pixelated]"
+            />
+          )}
+          <div>
+            <span className="tabular-nums text-sm text-slate-500">
+              #{String(p.num).padStart(4, "0")}
+            </span>
+            <h1 className="text-2xl font-bold">{p.name}</h1>
+            {meta && (
+              <span className="text-xs text-slate-400">{meta.genderLabel}</span>
+            )}
+          </div>
+        </div>
+        <div className="flex shrink-0 gap-1">
           {p.types.map((t) => (
             <TypeBadge key={t} type={t} />
           ))}
@@ -59,7 +90,7 @@ export default async function PokemonPage({
                 <span className="w-10 tabular-nums">{p.baseStats[k]}</span>
                 <span className="h-2 flex-1 overflow-hidden rounded bg-slate-800">
                   <span
-                    className="block h-full bg-amber-500"
+                    className={`block h-full ${statBarColor(p.baseStats[k])}`}
                     style={{ width: `${Math.min(100, (p.baseStats[k] / 255) * 100)}%` }}
                   />
                 </span>
@@ -68,12 +99,7 @@ export default async function PokemonPage({
           </ul>
         </Panel>
 
-        <Panel
-          title="Defensive type matchups"
-        >
-          <div className="mb-2">
-            <ProvisionalTag />
-          </div>
+        <Panel title="Defensive type matchups">
           <div className="grid grid-cols-3 gap-1 text-xs sm:grid-cols-4">
             {POKEMON_TYPES.map((t) => {
               const l = multiplierLabel(chart[t]);
@@ -92,121 +118,126 @@ export default async function PokemonPage({
       </div>
 
       <Panel title="Abilities">
-        <div className="flex flex-wrap gap-2">
-          {p.abilities.map((a) => (
-            <span
-              key={a}
-              className="rounded bg-slate-800 px-2 py-1 text-sm text-slate-200"
-            >
-              {a}
-            </span>
-          ))}
-        </div>
-      </Panel>
-
-      <Panel title="Full movepool">
-        <p className="mb-2 text-xs text-slate-500">
-          {p.movepool.length} legal moves. The playable set below is a curated
-          subset with battle data.
-        </p>
-        <details>
-          <summary className="cursor-pointer text-sm text-amber-400">
-            Show all {p.movepool.length}
-          </summary>
-          <div className="mt-2 flex flex-wrap gap-1">
-            {p.movepool.map((m) => (
+        {meta ? (
+          <ul className="space-y-2">
+            {meta.abilities.map((a) => (
+              <li key={a.name} className="rounded bg-slate-800/50 px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-slate-100">{a.name}</span>
+                  {a.hidden && (
+                    <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-300">
+                      Hidden
+                    </span>
+                  )}
+                </div>
+                {a.effect && (
+                  <p className="mt-0.5 text-xs text-slate-400">{a.effect}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {p.abilities.map((a) => (
               <span
-                key={m}
-                className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-slate-300"
+                key={a}
+                className="rounded bg-slate-800 px-2 py-1 text-sm text-slate-200"
               >
-                {m}
+                {a}
               </span>
             ))}
           </div>
-        </details>
+        )}
+        <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
+          Competitive usage % pending a usage dataset.
+        </p>
       </Panel>
 
-      <Panel title="Playable moves (curated)">
-        <table className="w-full text-left text-sm">
-          <thead className="text-xs uppercase text-slate-500">
-            <tr>
-              <th className="py-1">Move</th>
-              <th>Type</th>
-              <th>Cat.</th>
-              <th className="text-right">Power</th>
-              <th className="text-right">Acc.</th>
-              <th className="text-right">Prio.</th>
-              <th>Effect</th>
-            </tr>
-          </thead>
-          <tbody>
-            {p.moves.map((m) => {
-              const effects = describeMoveEffects(m);
-              return (
+      {meta && (
+        <Panel title="Competitive change history">
+          <details>
+            <summary className="cursor-pointer text-sm text-amber-400">
+              {history.length > 0
+                ? `${history.length} generation${history.length > 1 ? "s" : ""} with changes`
+                : "No competitively significant changes since introduction"}
+            </summary>
+            {history.length > 0 && (
+              <ul className="mt-2 space-y-2">
+                {history.map((h) => (
+                  <li key={h.gen} className="flex gap-3 text-sm">
+                    <span className="w-14 shrink-0 font-semibold text-slate-400">
+                      Gen {h.gen}
+                    </span>
+                    <span className="flex flex-wrap gap-1">
+                      {h.changes.map((c) => (
+                        <span
+                          key={c}
+                          className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-slate-300"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </details>
+          <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
+            Base-stat, typing, and ability revisions across generations
+            (@pkmn/dex).
+          </p>
+        </Panel>
+      )}
+
+      <Panel title="Moves">
+        <p className="mb-2 text-xs text-slate-500">
+          {p.moves.length} Gen 9-legal moves. Columns follow the pokemondb.net
+          layout; all listed moves are legal in the current format.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs uppercase text-slate-500">
+              <tr>
+                <th className="py-1">Name</th>
+                <th>Type</th>
+                <th>Cat.</th>
+                <th className="text-right">Power</th>
+                <th className="text-right">Acc.</th>
+                <th className="text-right">PP</th>
+                <th>Effect</th>
+                <th>Legal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {p.moves.map((m) => (
                 <tr key={m.name} className="border-t border-slate-800">
                   <td className="py-1">{m.name}</td>
-                  <td>
-                    <TypeBadge type={m.type} />
-                  </td>
+                  <td>{m.type ? <TypeBadge type={m.type} /> : "—"}</td>
                   <td className="capitalize text-slate-400">{m.category}</td>
                   <td className="text-right tabular-nums">{m.power ?? "—"}</td>
                   <td className="text-right tabular-nums">
                     {m.accuracy === null ? "—" : m.accuracy}
                   </td>
-                  <td className="text-right tabular-nums">{m.priority}</td>
+                  <td className="text-right tabular-nums">{m.pp ?? "—"}</td>
                   <td>
-                    {effects.length > 0 ? (
-                      <span className="flex flex-wrap gap-1">
-                        {effects.map((e) => (
-                          <span
-                            key={e}
-                            className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-300"
-                          >
-                            {e}
-                          </span>
-                        ))}
-                      </span>
+                    {m.effect ? (
+                      <span className="text-xs text-slate-300">{m.effect}</span>
                     ) : (
                       <span className="text-slate-600">—</span>
                     )}
                   </td>
+                  <td>
+                    <span className="text-emerald-400">Legal</span>
+                  </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
-          Effect column is provisional (mainline-derived move data).
+          Move data from @pkmn/dex; usage % pending a usage dataset.
         </p>
-      </Panel>
-
-      <Panel title="Provenance">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-400 sm:grid-cols-3">
-          <div>
-            <dt className="text-slate-500">Provider</dt>
-            <dd>{p.provenance.provider}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">External ID</dt>
-            <dd>{p.provenance.externalId}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Data version</dt>
-            <dd>{p.provenance.dataVersion}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Normalization</dt>
-            <dd>{p.provenance.normalizationVersion}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Retrieved</dt>
-            <dd>{new Date(p.provenance.retrievedAt).toLocaleDateString()}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Status</dt>
-            <dd>{p.provenance.updateStatus}</dd>
-          </div>
-        </dl>
       </Panel>
     </div>
   );

@@ -1,0 +1,140 @@
+// Server-only enrichment from @pkmn/dex. The curated fixtures carry the data the
+// battle/choicedex sim needs; this layer adds display-only extras (gender,
+// sprite, ability effects + hidden flag, move PP + effect text) looked up live
+// at render so no DB column, migration, or fixture regen is required. Every
+// lookup is name-keyed and null-guarded — species the fixtures invent that
+// @pkmn doesn't know simply return no extras.
+
+import { Dex } from "@pkmn/dex";
+
+export interface AbilityMeta {
+  name: string;
+  hidden: boolean;
+  effect: string | null;
+}
+
+export interface SpeciesMeta {
+  num: number;
+  spriteId: string;
+  genderLabel: string;
+  abilities: AbilityMeta[];
+}
+
+export interface MoveMeta {
+  pp: number | null;
+  effect: string | null;
+}
+
+function genderLabel(spriteId: string): string {
+  const s = Dex.species.get(spriteId);
+  if (s.gender === "N") return "Genderless";
+  if (s.gender === "M") return "♂ only";
+  if (s.gender === "F") return "♀ only";
+  const r = s.genderRatio;
+  if (!r) return "—";
+  return `♂ ${+(r.M * 100).toFixed(1)}% / ♀ ${+(r.F * 100).toFixed(1)}%`;
+}
+
+/** Look up display extras for a species by its fixture name. Null if unknown. */
+export function speciesMeta(name: string, fixtureAbilities: string[]): SpeciesMeta | null {
+  const s = Dex.species.get(name);
+  if (!s.exists) return null;
+
+  const hiddenName = s.abilities.H;
+  const abilities: AbilityMeta[] = fixtureAbilities.map((a) => {
+    const ab = Dex.abilities.get(a);
+    return {
+      name: a,
+      hidden: !!hiddenName && ab.exists && ab.name === hiddenName,
+      effect: ab.exists ? ab.shortDesc || ab.desc || null : null,
+    };
+  });
+
+  return {
+    num: s.num,
+    spriteId: s.id,
+    genderLabel: genderLabel(s.id),
+    abilities,
+  };
+}
+
+/** Sprite served by Showdown's CDN (loads in the user's browser). The dex set
+ *  covers every generation, unlike the gen-specific folders. */
+export function spriteUrl(spriteId: string): string {
+  return `https://play.pokemonshowdown.com/sprites/dex/${spriteId}.png`;
+}
+
+/** PP + one-line effect for a move by name. Null fields if unknown. */
+export function moveMeta(name: string): MoveMeta {
+  const m = Dex.moves.get(name);
+  if (!m.exists) return { pp: null, effect: null };
+  return { pp: m.pp ?? null, effect: m.shortDesc || m.desc || null };
+}
+
+export interface GenChange {
+  gen: number;
+  changes: string[];
+}
+
+const STAT_ORDER = ["hp", "atk", "def", "spa", "spd", "spe"] as const;
+const STAT_LABEL: Record<(typeof STAT_ORDER)[number], string> = {
+  hp: "HP",
+  atk: "Atk",
+  def: "Def",
+  spa: "SpA",
+  spd: "SpD",
+  spe: "Spe",
+};
+
+/**
+ * Competitively relevant cross-generation changes for a species: base-stat,
+ * typing, and ability revisions. Diffed from the generation the species was
+ * introduced (earlier gens return modern data in @pkmn/dex, so they're skipped)
+ * up to the current one.
+ */
+export function changeHistory(name: string): GenChange[] {
+  const base = Dex.species.get(name);
+  if (!base.exists) return [];
+
+  const out: GenChange[] = [];
+  let prev: ReturnType<typeof Dex.species.get> | null = null;
+
+  for (let g = base.gen; g <= 9; g++) {
+    let dex;
+    try {
+      dex = Dex.forGen(g);
+    } catch {
+      continue;
+    }
+    const s = dex.species.get(name);
+    if (!s.exists) continue;
+
+    if (prev) {
+      const changes: string[] = [];
+
+      for (const k of STAT_ORDER) {
+        const a = prev.baseStats[k];
+        const b = s.baseStats[k];
+        if (a !== b) {
+          changes.push(`${STAT_LABEL[k]} ${a}→${b} (${b > a ? "+" : ""}${b - a})`);
+        }
+      }
+
+      const prevTypes = prev.types.join("/");
+      const nowTypes = s.types.join("/");
+      if (prevTypes !== nowTypes) changes.push(`Type ${prevTypes} → ${nowTypes}`);
+
+      const prevAb = new Set(Object.values(prev.abilities));
+      const nowAb = Object.values(s.abilities);
+      const added = nowAb.filter((a) => !prevAb.has(a));
+      const removed = [...prevAb].filter((a) => !nowAb.includes(a));
+      if (added.length) changes.push(`Gained ability ${added.join(", ")}`);
+      if (removed.length) changes.push(`Lost ability ${removed.join(", ")}`);
+
+      if (changes.length) out.push({ gen: g, changes });
+    }
+    prev = s;
+  }
+
+  return out;
+}

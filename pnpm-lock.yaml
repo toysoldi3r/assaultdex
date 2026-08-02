@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@pkmn/data':
+        specifier: ^0.10.11
+        version: 0.10.11
       '@prisma/client':
         specifier: 6.3.1
         version: 6.3.1(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3)
@@ -653,6 +656,9 @@ packages:
   '@nolyfill/is-core-module@1.0.39':
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
+
+  '@pkmn/data@0.10.11':
+    resolution: {integrity: sha512-WZiOOZEdIJybC1M2EJVazx+OKH5Hh544cPhNnjgNjn3B0LORP82YkL4jpZqkww+NoIHIXMvJBYLKg3GZBNm4kQ==}
 
   '@pkmn/dex-types@0.10.11':
     resolution: {integrity: sha512-6hvvi/iHCdBbUGK7RmWPCKuZGujEC+1elvxcLK2BpL/j7Q0roSuC33xrodDsyg2EuyJ5szGunzRtFztyrtb7aQ==}
@@ -2935,6 +2941,10 @@ snapshots:
       fastq: 1.20.1
 
   '@nolyfill/is-core-module@1.0.39': {}
+
+  '@pkmn/data@0.10.11':
+    dependencies:
+      '@pkmn/dex-types': 0.10.11
 
   '@pkmn/dex-types@0.10.11':
     dependencies:
