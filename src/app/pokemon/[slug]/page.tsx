@@ -218,7 +218,7 @@ export default async function PokemonPage({
           </ul>
           <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
             Share of this Pokémon&rsquo;s ranked teams that also ran each
-            partner (MunchStats replay data, refreshed hourly).
+            partner (aggregated from competitive ladder replays).
           </p>
         </Panel>
       )}

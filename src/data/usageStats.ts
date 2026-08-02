@@ -1,31 +1,20 @@
-// Competitive usage stats for the Pokémon Champions format, aggregated from
-// MunchStats' public replay-data branch on GitHub.
+// Competitive usage stats for the Pokémon Champions format.
 //
-// Freshness: MunchStats regenerates that branch ~every 6h. We fetch the raw
-// team-rankings file with a 1-hour revalidate (Next.js data cache: cold boot
-// pulls fresh, then background-revalidates hourly, stale-while-revalidate). If
-// the fetch ever fails we fall back to a snapshot committed in the repo, so the
-// cards never break. The raw file is team compositions + battle counts + wins,
-// so we can derive per-Pokémon usage %, win rate, and teammates — but not
-// per-move/item/ability/EV data (that lives behind the Limitless API / Smogon
-// chaos stats, neither reachable from this build environment).
+// Privacy/reliability posture: the running app makes NO external request for
+// this data. It is served entirely from a snapshot committed inside this
+// (private) repo, so nothing is fetched at runtime, no trail leads from the
+// live site to any data source, and the aggregated data is never exposed
+// publicly. The snapshot is refreshed out-of-band by scripts/refresh-usage.mjs
+// (run on a schedule in CI, committing back to this private repo) — see
+// .github/workflows/refresh-usage.yml. The raw file it aggregates is team
+// compositions + battle counts, so we derive usage %, win rate, and teammates;
+// per-move/item/ability/EV data is not present in that source.
 
-import fallback from "./fixtures/usage/gen9championsvgc2026regmbbo3.json";
+import snapshot from "./fixtures/usage/gen9championsvgc2026regmbbo3.json";
 
 /** The Champions format these cards describe. */
 export const CHAMPIONS_FORMAT = "gen9championsvgc2026regmbbo3";
 export const CHAMPIONS_FORMAT_LABEL = "Champions VGC 2026 Reg M-B (Bo3)";
-
-const RAW_BASE =
-  process.env.USAGE_DATA_URL ||
-  "https://raw.githubusercontent.com/PizzaTimeJoshua/munchstats/replay-data/stats/replays/";
-
-// The raw team-rankings file is several MB — past Next.js's 2MB fetch-cache
-// ceiling — so we can't lean on `revalidate`. Instead we memoise the small
-// aggregated result in-process and re-fetch when it ages past this TTL: the
-// first request after a cold boot (or after an hour) pulls fresh, the rest
-// reuse the ~90KB aggregate. Upstream itself only regenerates every ~6h.
-const TTL_MS = 60 * 60 * 1000;
 
 /** Cross-source join key: "Urshifu-Rapid-Strike" → "urshifurapidstrike" (== @pkmn id). */
 export function usageKey(name: string): string {
@@ -57,7 +46,11 @@ interface RankingRow {
   total_battles?: number;
 }
 
-/** Aggregate raw team-ranking rows into per-Pokémon usage, win rate, teammates. */
+/**
+ * Aggregate raw team-ranking rows into per-Pokémon usage, win rate, teammates.
+ * Pure (no I/O) — the refresh script feeds it fetched rows; runtime never calls
+ * it (runtime serves the pre-aggregated snapshot only).
+ */
 export function aggregateRankings(rows: RankingRow[]): UsageData {
   const names: Record<string, string> = {};
   const acc: Record<
@@ -105,32 +98,14 @@ export function aggregateRankings(rows: RankingRow[]): UsageData {
   return { format: CHAMPIONS_FORMAT, totalBattles, mons };
 }
 
-let cache: { data: UsageData; at: number } | null = null;
+const data = snapshot as UsageData;
 
-/** Load usage data: fresh from GitHub (hourly TTL), stale cache, else snapshot. */
+/** The bundled usage snapshot (no network access). */
 export async function loadUsage(): Promise<UsageData> {
-  if (cache && Date.now() - cache.at < TTL_MS) return cache.data;
-  try {
-    const res = await fetch(`${RAW_BASE}team-rankings-${CHAMPIONS_FORMAT}.json`, {
-      cache: "no-store",
-    });
-    if (res.ok) {
-      const rows = (await res.json()) as RankingRow[];
-      if (Array.isArray(rows) && rows.length > 0) {
-        cache = { data: aggregateRankings(rows), at: Date.now() };
-        return cache.data;
-      }
-    }
-  } catch {
-    // fall through to stale cache / committed snapshot
-  }
-  // Prefer a previously fetched (now-stale) copy over the bundled snapshot;
-  // don't cache the snapshot so the next request retries the fetch.
-  return cache?.data ?? (fallback as UsageData);
+  return data;
 }
 
 /** Usage for one species by display name, or null if it has no recorded games. */
 export async function getMonUsage(name: string): Promise<MonUsage | null> {
-  const data = await loadUsage();
   return data.mons[usageKey(name)] ?? null;
 }
