@@ -186,6 +186,7 @@ export async function duplicateTeam(teamId: string): Promise<string | null> {
       name: `${source.name} (copy)`,
       notes: source.notes,
       collectionId: source.collectionId,
+      isBox: source.isBox,
       versions: {
         create: {
           versionNumber: 1,
