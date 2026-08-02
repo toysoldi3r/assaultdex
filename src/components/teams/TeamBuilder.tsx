@@ -8,6 +8,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { PokeIcon } from "@/components/PokeIcon";
+import { Picker, type Option } from "@/components/teams/Picker";
 import { saveTeamSnapshotAction } from "@/app/teams/actions";
 import { STAT_KEYS, type PokemonSet, type StatKey } from "@/domain/types/pokemon";
 
@@ -53,6 +54,9 @@ export function TeamBuilder({
   refs,
   pool,
   natures,
+  items,
+  abilityDesc,
+  moveDesc,
 }: {
   teamId: string;
   isBox: boolean;
@@ -60,6 +64,9 @@ export function TeamBuilder({
   refs: Record<string, MemberRef>;
   pool: { slug: string; name: string }[];
   natures: string[];
+  items: Option[];
+  abilityDesc: Record<string, string>;
+  moveDesc: Record<string, string>;
 }) {
   const [members, setMembers] = useState<PokemonSet[]>(initialMembers);
   const [tab, setTab] = useState<"team" | number>("team");
@@ -201,31 +208,34 @@ export function TeamBuilder({
                       className="w-16 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right"
                     />
                   </label>
-                  <label className="flex items-center justify-between gap-2">
-                    Item
-                    <input
-                      value={m.item ?? ""}
-                      onChange={(e) => update(i, { item: e.target.value || null })}
-                      placeholder="—"
-                      className="w-28 rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
-                    />
-                  </label>
-                  <label className="flex items-center justify-between gap-2">
-                    Ability
-                    <select
-                      value={m.ability ?? ""}
-                      onChange={(e) => update(i, { ability: e.target.value || null })}
-                      className="w-28 rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
-                    >
-                      {(r.abilities.length ? r.abilities : m.ability ? [m.ability] : []).map(
-                        (a) => (
-                          <option key={a} value={a}>
-                            {a}
-                          </option>
-                        ),
-                      )}
-                    </select>
-                  </label>
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Item</span>
+                    <div className="w-32">
+                      <Picker
+                        value={m.item}
+                        options={items}
+                        onSelect={(v) => update(i, { item: v })}
+                        allowClear
+                        label="items"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Ability</span>
+                    <div className="w-32">
+                      <Picker
+                        value={m.ability}
+                        options={(r.abilities.length
+                          ? r.abilities
+                          : m.ability
+                            ? [m.ability]
+                            : []
+                        ).map((a) => ({ name: a, desc: abilityDesc[a] }))}
+                        onSelect={(v) => update(i, { ability: v })}
+                        label="abilities"
+                      />
+                    </div>
+                  </div>
                   <label className="flex items-center justify-between gap-2">
                     Nature
                     <select
@@ -245,29 +255,28 @@ export function TeamBuilder({
                 {/* Moves */}
                 <div className="space-y-1 text-xs md:col-span-2">
                   <span className="font-semibold uppercase text-slate-500">Moves</span>
-                  {[0, 1, 2, 3].map((mi) => (
-                    <select
-                      key={mi}
-                      value={m.moves[mi] ?? ""}
-                      onChange={(e) => {
-                        const moves = [...m.moves];
-                        if (e.target.value) moves[mi] = e.target.value;
-                        else moves.splice(mi, 1);
-                        update(i, { moves: moves.filter(Boolean) });
-                      }}
-                      className="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
-                    >
-                      <option value="">— (empty)</option>
-                      {r.legalMoves.map((mv) => (
-                        <option key={mv} value={mv}>
-                          {mv}
-                        </option>
-                      ))}
-                      {m.moves[mi] && !r.legalMoves.includes(m.moves[mi]!) && (
-                        <option value={m.moves[mi]}>{m.moves[mi]} (?)</option>
-                      )}
-                    </select>
-                  ))}
+                  {[0, 1, 2, 3].map((mi) => {
+                    const moveOpts: Option[] = r.legalMoves.map((mv) => ({
+                      name: mv,
+                      desc: moveDesc[mv],
+                    }));
+                    return (
+                      <Picker
+                        key={mi}
+                        value={m.moves[mi] ?? null}
+                        options={moveOpts}
+                        onSelect={(v) => {
+                          const moves = [...m.moves];
+                          if (v) moves[mi] = v;
+                          else moves.splice(mi, 1);
+                          update(i, { moves: moves.filter(Boolean) });
+                        }}
+                        allowClear
+                        placeholder="— (empty)"
+                        label="moves"
+                      />
+                    );
+                  })}
                 </div>
 
                 {/* Stats (base + EV points; slider editor in slice D) */}

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Panel, ProvisionalTag } from "@/components/ui";
 import { TeamBuilder, type MemberRef } from "@/components/teams/TeamBuilder";
 import { NATURES } from "@/data/fixtures/natures";
+import { abilityDescOf, itemCatalog, moveDescOf } from "@/data/catalog";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import { diffSnapshots } from "@/domain/team/versionDiff";
 import { getTeam } from "@/server/repositories/teamRepo";
@@ -48,6 +49,15 @@ export default async function TeamDetailPage({
     };
   }
   const pool = allMons.map((p) => ({ slug: p.slug, name: p.name }));
+
+  // Description maps for the picker panels, over the union of pool abilities/moves.
+  const abilityDesc: Record<string, string> = {};
+  const moveDesc: Record<string, string> = {};
+  for (const p of allMons) {
+    for (const a of p.abilities) abilityDesc[a] ??= abilityDescOf(a);
+    for (const mv of p.moves) moveDesc[mv.name] ??= moveDescOf(mv.name);
+  }
+  const items = itemCatalog();
 
   const versionByNumber = new Map(team.versions.map((v) => [v.versionNumber, v]));
   const from = a ? versionByNumber.get(Number(a)) : team.versions[0];
@@ -317,6 +327,9 @@ export default async function TeamDetailPage({
           refs={memberRefs}
           pool={pool}
           natures={NATURE_NAMES}
+          items={items}
+          abilityDesc={abilityDesc}
+          moveDesc={moveDesc}
         />
       </Panel>
     </div>
