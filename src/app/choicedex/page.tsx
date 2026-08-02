@@ -22,6 +22,7 @@ export default async function ChoiceDexPage() {
   }));
 
   const savedTeams: SavedTeam[] = teams
+    .filter((t) => !t.isBox) // boxes are holding lists, not battle teams
     .map((t) => {
       const latest = t.versions[t.versions.length - 1];
       return {
