@@ -9,6 +9,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { PokeIcon } from "@/components/PokeIcon";
 import { Picker, type Option } from "@/components/teams/Picker";
+import { EvIvEditor } from "@/components/teams/EvIvEditor";
 import { saveTeamSnapshotAction } from "@/app/teams/actions";
 import { STAT_KEYS, type PokemonSet, type StatKey } from "@/domain/types/pokemon";
 
@@ -70,6 +71,7 @@ export function TeamBuilder({
 }) {
   const [members, setMembers] = useState<PokemonSet[]>(initialMembers);
   const [tab, setTab] = useState<"team" | number>("team");
+  const [spreadFor, setSpreadFor] = useState<number | null>(null);
   const [dirty, setDirty] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -296,8 +298,26 @@ export function TeamBuilder({
                       </span>
                     </div>
                   ))}
+                  <button
+                    onClick={() => setSpreadFor(spreadFor === i ? null : i)}
+                    className="mt-1 w-full rounded bg-slate-800 px-2 py-1 text-[11px] hover:bg-slate-700"
+                  >
+                    {spreadFor === i ? "Hide EV/IV" : "⚙ Edit EV/IV"}
+                  </button>
                 </div>
               </div>
+
+              {spreadFor === i && (
+                <EvIvEditor
+                  base={r.baseStats}
+                  spread={m.spread}
+                  level={m.level}
+                  nature={m.nature}
+                  natures={natures}
+                  onChange={(s) => update(i, { spread: s })}
+                  onNature={(n) => update(i, { nature: n })}
+                />
+              )}
             </div>
           );
         })}
