@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Panel, ProvisionalTag } from "@/components/ui";
-import { TeamEditor, type EditorMember } from "@/components/TeamEditor";
+import { TeamBuilder, type MemberRef } from "@/components/teams/TeamBuilder";
 import { NATURES } from "@/data/fixtures/natures";
+import { listPokemon } from "@/server/repositories/pokemonRepo";
 import { diffSnapshots } from "@/domain/team/versionDiff";
-import { getPokemonBySlug } from "@/server/repositories/pokemonRepo";
 import { getTeam } from "@/server/repositories/teamRepo";
 import { resolveTeam } from "@/server/teamResolve";
 import {
@@ -35,20 +35,19 @@ export default async function TeamDetailPage({
     latest.snapshot,
   );
 
-  // Editor needs each member's reference name + legal moves.
-  const refs = await Promise.all(
-    latest.snapshot.members.map((m) => getPokemonBySlug(m.species)),
-  );
-  const editorMembers: EditorMember[] = latest.snapshot.members.map((set, i) => {
-    const ref = refs[i];
-    return {
-      species: set.species,
-      name: ref?.name ?? set.species,
-      legalMoves: ref ? ref.moves.map((mv) => mv.name) : set.moves,
-      abilities: ref?.abilities ?? (set.ability ? [set.ability] : []),
-      set,
+  // Teambuilder needs a reference (name, abilities, legal moves, base stats) for
+  // every pool species so newly added members render too.
+  const allMons = await listPokemon();
+  const memberRefs: Record<string, MemberRef> = {};
+  for (const p of allMons) {
+    memberRefs[p.slug] = {
+      name: p.name,
+      abilities: p.abilities,
+      legalMoves: p.moves.map((mv) => mv.name),
+      baseStats: p.baseStats,
     };
-  });
+  }
+  const pool = allMons.map((p) => ({ slug: p.slug, name: p.name }));
 
   const versionByNumber = new Map(team.versions.map((v) => [v.versionNumber, v]));
   const from = a ? versionByNumber.get(Number(a)) : team.versions[0];
@@ -310,10 +309,13 @@ export default async function TeamDetailPage({
         </div>
       </details>
 
-      <Panel title="Edit sets → save as new version">
-        <TeamEditor
+      <Panel title="Teambuilder">
+        <TeamBuilder
           teamId={team.id}
-          members={editorMembers}
+          isBox={team.isBox}
+          initialMembers={latest.snapshot.members}
+          refs={memberRefs}
+          pool={pool}
           natures={NATURE_NAMES}
         />
       </Panel>

@@ -148,6 +148,8 @@ export interface StatSpread {
 export interface PokemonSet {
   /** slug of the reference Pokémon. */
   species: string;
+  /** Optional display nickname. */
+  nickname?: string;
   level: number;
   ability: string | null;
   item: string | null;

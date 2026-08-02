@@ -57,6 +57,23 @@ export async function createTeamAction(formData: FormData): Promise<void> {
   redirect(`/teams/${id}`);
 }
 
+/** Save the whole team snapshot as a new version (teambuilder save). Returns a
+ *  short status string for the client. */
+export async function saveTeamSnapshotAction(formData: FormData): Promise<string> {
+  const teamId = String(formData.get("teamId") ?? "");
+  if (!teamId) return "Missing team.";
+  let raw: unknown;
+  try {
+    raw = JSON.parse(String(formData.get("snapshot") ?? "{}"));
+  } catch {
+    return "Bad snapshot.";
+  }
+  const snapshot = teamSnapshotSchema.parse(raw);
+  const version = await addTeamVersion(teamId, snapshot, "Teambuilder edit");
+  revalidatePath(`/teams/${teamId}`);
+  return `Saved as v${version}.`;
+}
+
 /** Delete without revalidate/redirect — the homepage manages its own list state
  *  and shows an undo affordance, so a navigation here would drop it. */
 export async function deleteTeamSilentAction(formData: FormData): Promise<void> {

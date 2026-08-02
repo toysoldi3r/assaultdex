@@ -12,6 +12,7 @@ const statBlock = z.object(
 
 export const pokemonSetSchema = z.object({
   species: z.string().min(1),
+  nickname: z.string().min(1).max(30).optional(),
   level: z.number().int().min(1).max(100),
   ability: z.string().min(1).nullable(),
   item: z.string().min(1).nullable(),
