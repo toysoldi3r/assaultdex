@@ -20,6 +20,21 @@ export interface MemberRef {
   baseStats: Record<StatKey, number>;
 }
 
+interface PopEntry {
+  name: string;
+  pct: number;
+}
+export interface TournamentPopular {
+  items: PopEntry[];
+  abilities: PopEntry[];
+  moves: PopEntry[];
+}
+
+/** Join key to tournament data (matches @pkmn id): "Rotom-Heat" → "rotomheat". */
+const uKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+const asPopular = (e: PopEntry[] = []): Option[] =>
+  e.map((x) => ({ name: x.name, desc: `${x.pct}%` }));
+
 const STAT_LABELS: Record<StatKey, string> = {
   hp: "HP",
   atk: "Atk",
@@ -58,6 +73,7 @@ export function TeamBuilder({
   items,
   abilityDesc,
   moveDesc,
+  tournament = {},
 }: {
   teamId: string;
   isBox: boolean;
@@ -68,6 +84,7 @@ export function TeamBuilder({
   items: Option[];
   abilityDesc: Record<string, string>;
   moveDesc: Record<string, string>;
+  tournament?: Record<string, TournamentPopular>;
 }) {
   const [members, setMembers] = useState<PokemonSet[]>(initialMembers);
   const [tab, setTab] = useState<"team" | number>("team");
@@ -170,6 +187,7 @@ export function TeamBuilder({
         {shown.map((i) => {
           const m = members[i]!;
           const r = refOf(m.species);
+          const tm = tournament[uKey(m.species)];
           return (
             <div key={i} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
               <div className="mb-2 flex items-center justify-between gap-2">
@@ -219,6 +237,7 @@ export function TeamBuilder({
                         onSelect={(v) => update(i, { item: v })}
                         allowClear
                         label="items"
+                        popular={asPopular(tm?.items)}
                       />
                     </div>
                   </div>
@@ -235,6 +254,7 @@ export function TeamBuilder({
                         ).map((a) => ({ name: a, desc: abilityDesc[a] }))}
                         onSelect={(v) => update(i, { ability: v })}
                         label="abilities"
+                        popular={asPopular(tm?.abilities)}
                       />
                     </div>
                   </div>
@@ -276,6 +296,7 @@ export function TeamBuilder({
                         allowClear
                         placeholder="— (empty)"
                         label="moves"
+                        popular={asPopular(tm?.moves)}
                       />
                     );
                   })}

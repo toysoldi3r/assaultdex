@@ -4,6 +4,8 @@ import { Panel, ProvisionalTag } from "@/components/ui";
 import { TeamBuilder, type MemberRef } from "@/components/teams/TeamBuilder";
 import { NATURES } from "@/data/fixtures/natures";
 import { itemCatalog, poolDescMaps } from "@/data/catalog";
+import { getMonTournament } from "@/data/tournamentStats";
+import { usageKey } from "@/data/usageStats";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import { diffSnapshots } from "@/domain/team/versionDiff";
 import { getTeam } from "@/server/repositories/teamRepo";
@@ -53,6 +55,17 @@ export default async function TeamDetailPage({
   // Description maps for the picker panels (memoised — the pool is static).
   const { abilityDesc, moveDesc } = poolDescMaps(allMons);
   const items = itemCatalog();
+
+  // Tournament "Popular" lists per pool species (empty until the CI snapshot
+  // is populated). Keyed by @pkmn id to match the teambuilder lookup.
+  const tournament: Record<
+    string,
+    { items: { name: string; pct: number }[]; abilities: { name: string; pct: number }[]; moves: { name: string; pct: number }[] }
+  > = {};
+  for (const p of allMons) {
+    const t = getMonTournament(p.name);
+    if (t) tournament[usageKey(p.name)] = { items: t.items, abilities: t.abilities, moves: t.moves };
+  }
 
   const versionByNumber = new Map(team.versions.map((v) => [v.versionNumber, v]));
   const from = a ? versionByNumber.get(Number(a)) : team.versions[0];
@@ -327,6 +340,7 @@ export default async function TeamDetailPage({
           items={items}
           abilityDesc={abilityDesc}
           moveDesc={moveDesc}
+          tournament={tournament}
         />
       </Panel>
     </div>
