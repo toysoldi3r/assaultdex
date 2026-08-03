@@ -24,6 +24,7 @@ export interface MonPanelState {
   evs: Partial<Record<StatKey, number>>;
   stages: Record<Exclude<StatKey, "hp">, number>;
   crit: boolean;
+  knownMoves: string[];
 }
 
 function koLabel(d: ReturnType<typeof calculateDamage>): { text: string; cls: string } {
@@ -175,9 +176,31 @@ export function MonPanel({
                   : null;
                 const ko = d ? koLabel(d) : null;
                 const koc = dc ? koLabel(dc) : null;
+                const known = state.knownMoves.includes(m.name);
+                const toggleKnown = () =>
+                  onPatch({
+                    knownMoves: known
+                      ? state.knownMoves.filter((x) => x !== m.name)
+                      : [...state.knownMoves, m.name],
+                  });
                 return (
                   <tr key={`${m.name}:${ti}`} className="border-t border-slate-800/60">
-                    <td className="py-0.5 pr-2">{ti === 0 ? m.name : ""}</td>
+                    <td className="py-0.5 pr-2">
+                      {ti === 0 &&
+                        (foe ? (
+                          <button
+                            type="button"
+                            onClick={toggleKnown}
+                            title={known ? "Confirmed used — click to unmark" : "Mark as confirmed used"}
+                            className={known ? "font-semibold text-amber-300" : "text-slate-300 hover:text-amber-300"}
+                          >
+                            {known ? "✓ " : "○ "}
+                            {m.name}
+                          </button>
+                        ) : (
+                          m.name
+                        ))}
+                    </td>
                     <td className="py-0.5 text-center">
                       <span title={t.name}>
                         <PokeIcon species={t.name} />

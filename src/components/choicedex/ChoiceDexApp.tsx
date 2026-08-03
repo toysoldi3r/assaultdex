@@ -338,6 +338,8 @@ interface MonState {
   stages: StageStats;
   /** Treat this Pokémon's moves as critical hits in the damage readout. */
   crit: boolean;
+  /** Moves confirmed used (opponent side): now known 100%, highlighted. */
+  knownMoves: string[];
 }
 const emptyMon = (): MonState => ({
   hpPct: 100,
@@ -349,6 +351,7 @@ const emptyMon = (): MonState => ({
   evs: {},
   stages: { ...NEUTRAL_STAGES },
   crit: false,
+  knownMoves: [],
 });
 
 /** One side's field conditions: screens, Tailwind, and entry hazards. */
