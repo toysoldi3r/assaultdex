@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { TypeBadge } from "@/components/ui";
+import { PokeIcon } from "@/components/PokeIcon";
 import { NATURES, natureByName } from "@/data/fixtures/natures";
 import { calculateDamage } from "@/domain/mechanics/damage";
 import { hazardEntry, hasHazards } from "@/domain/mechanics/hazards";
@@ -73,8 +73,6 @@ export function MonPanel({
   onPatch: (p: Partial<MonPanelState>) => void;
   foe?: boolean;
 }) {
-  const [targetIdx, setTargetIdx] = useState(0);
-  const target = targets[Math.min(targetIdx, targets.length - 1)];
   const nature = natureByName(state.nature);
   const damaging = attacker.moves;
 
@@ -151,44 +149,49 @@ export function MonPanel({
         );
       })()}
 
-      {/* Moves / damage */}
+      {/* Moves / damage — one row per (move × target) so KO vs both foes is
+          visible at once (target icon column), with a dedicated crit column. */}
       <div className="mb-2">
-        <div className="mb-1 flex items-center justify-between text-[10px] uppercase text-slate-500">
-          <span>Moves · dmg</span>
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-1 normal-case">
-              <input type="checkbox" checked={state.crit} onChange={(e) => onPatch({ crit: e.target.checked })} /> crit
-            </label>
-            {targets.length > 1 && (
-              <select value={targetIdx} onChange={(e) => setTargetIdx(Number(e.target.value))}
-                className="rounded border border-slate-700 bg-slate-900 px-1 text-slate-300">
-                {targets.map((t, i) => <option key={i} value={i}>vs {t.name}</option>)}
-              </select>
-            )}
-          </div>
-        </div>
         <table className="w-full text-xs">
+          <thead>
+            <tr className="text-[10px] uppercase text-slate-500">
+              <th className="text-left font-normal">Move</th>
+              <th className="font-normal">vs</th>
+              <th className="text-right font-normal">Dmg</th>
+              <th className="text-right font-normal">KO</th>
+              <th className="text-right font-normal">Crit</th>
+            </tr>
+          </thead>
           <tbody>
-            {damaging.map((m: MoveFixture) => {
-              const d = target
-                ? calculateDamage(attacker, target.combatant, m, field, {
-                    crit: state.crit,
-                    defenderConditions,
-                    spread: m.target !== "normal",
-                  })
-                : null;
-              const isDmg = m.category !== "status" && m.power !== null;
-              const ko = d && isDmg ? koLabel(d) : null;
-              return (
-                <tr key={m.name} className="border-t border-slate-800/60">
-                  <td className="py-0.5 pr-2">{m.name}</td>
-                  <td className="py-0.5 pr-2 text-right tabular-nums text-slate-400">
-                    {d && isDmg ? `${d.minPercent} – ${d.maxPercent}%` : "—"}
-                  </td>
-                  <td className={`py-0.5 text-right ${ko?.cls ?? ""}`}>{ko?.text ?? ""}</td>
-                </tr>
-              );
-            })}
+            {damaging.flatMap((m: MoveFixture) =>
+              targets.map((t, ti) => {
+                const isDmg = m.category !== "status" && m.power !== null;
+                const opt = { defenderConditions, spread: m.target !== "normal" };
+                const d = isDmg
+                  ? calculateDamage(attacker, t.combatant, m, field, { ...opt, crit: false })
+                  : null;
+                const dc = isDmg
+                  ? calculateDamage(attacker, t.combatant, m, field, { ...opt, crit: true })
+                  : null;
+                const ko = d ? koLabel(d) : null;
+                const koc = dc ? koLabel(dc) : null;
+                return (
+                  <tr key={`${m.name}:${ti}`} className="border-t border-slate-800/60">
+                    <td className="py-0.5 pr-2">{ti === 0 ? m.name : ""}</td>
+                    <td className="py-0.5 text-center">
+                      <span title={t.name}>
+                        <PokeIcon species={t.name} />
+                      </span>
+                    </td>
+                    <td className="py-0.5 pr-2 text-right tabular-nums text-slate-400">
+                      {d ? `${d.minPercent}–${d.maxPercent}%` : "—"}
+                    </td>
+                    <td className={`py-0.5 text-right ${ko?.cls ?? ""}`}>{ko?.text ?? ""}</td>
+                    <td className={`py-0.5 text-right ${koc?.cls ?? ""}`}>{koc?.text ?? ""}</td>
+                  </tr>
+                );
+              }),
+            )}
           </tbody>
         </table>
       </div>
