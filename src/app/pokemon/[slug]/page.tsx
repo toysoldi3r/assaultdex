@@ -6,6 +6,7 @@ import { PokeIcon } from "@/components/PokeIcon";
 import { getDexSpecies, getSpeciesForms } from "@/data/pokedexSource";
 import { CHAMPIONS_FORMAT_LABEL, getMonUsage } from "@/data/usageStats";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
+import { statColor } from "@/domain/mechanics/statColor";
 import { POKEMON_TYPES, STAT_KEYS } from "@/domain/types/pokemon";
 
 export const dynamic = "force-dynamic";
@@ -26,14 +27,6 @@ function multiplierLabel(m: number): { text: string; cls: string } {
   return { text: `${m}×`, cls: "text-rose-400" };
 }
 
-/** Colour a base stat by tier: red low → light-blue extremely high. */
-function statBarColor(v: number): string {
-  if (v < 60) return "bg-red-500"; // low
-  if (v < 80) return "bg-yellow-500"; // normal but low
-  if (v < 100) return "bg-green-500"; // average
-  if (v < 130) return "bg-green-700"; // high
-  return "bg-sky-400"; // extremely high
-}
 
 export default async function PokemonPage({
   params,
@@ -131,8 +124,11 @@ export default async function PokemonPage({
                 <span className="w-10 tabular-nums">{p.baseStats[k]}</span>
                 <span className="h-2 flex-1 overflow-hidden rounded bg-slate-800">
                   <span
-                    className={`block h-full ${statBarColor(p.baseStats[k])}`}
-                    style={{ width: `${Math.min(100, (p.baseStats[k] / 255) * 100)}%` }}
+                    className="block h-full"
+                    style={{
+                      width: `${Math.min(100, (p.baseStats[k] / 255) * 100)}%`,
+                      backgroundColor: statColor(p.baseStats[k]),
+                    }}
                   />
                 </span>
               </li>

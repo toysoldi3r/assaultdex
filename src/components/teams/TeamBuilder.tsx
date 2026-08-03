@@ -10,6 +10,7 @@ import { useMemo, useState, useTransition } from "react";
 import { PokeIcon } from "@/components/PokeIcon";
 import { Picker, type Option } from "@/components/teams/Picker";
 import { EvIvEditor } from "@/components/teams/EvIvEditor";
+import { statColor } from "@/domain/mechanics/statColor";
 import { saveTeamSnapshotAction } from "@/app/teams/actions";
 import { STAT_KEYS, type PokemonSet, type StatKey } from "@/domain/types/pokemon";
 
@@ -55,13 +56,6 @@ function fd(entries: Record<string, string>): FormData {
   return f;
 }
 
-function statBarColor(v: number): string {
-  if (v < 60) return "bg-red-500";
-  if (v < 80) return "bg-yellow-500";
-  if (v < 100) return "bg-green-500";
-  if (v < 130) return "bg-green-700";
-  return "bg-sky-400";
-}
 
 export function TeamBuilder({
   teamId,
@@ -310,8 +304,11 @@ export function TeamBuilder({
                       <span className="w-8 text-slate-400">{STAT_LABELS[k]}</span>
                       <span className="h-2 flex-1 overflow-hidden rounded bg-slate-800">
                         <span
-                          className={`block h-full ${statBarColor(r.baseStats[k])}`}
-                          style={{ width: `${Math.min(100, (r.baseStats[k] / 255) * 100)}%` }}
+                          className="block h-full"
+                          style={{
+                            width: `${Math.min(100, (r.baseStats[k] / 255) * 100)}%`,
+                            backgroundColor: statColor(r.baseStats[k]),
+                          }}
                         />
                       </span>
                       <span className="w-8 text-right tabular-nums text-slate-500">
