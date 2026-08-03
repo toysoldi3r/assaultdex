@@ -1,11 +1,41 @@
+import { Dex } from "@pkmn/dex";
 import { Panel, ProvisionalTag } from "@/components/ui";
 import { ChoiceDexApp, type KnownSet, type SavedTeam } from "@/components/choicedex/ChoiceDexApp";
-import { HitInference } from "@/components/choicedex/HitInference";
+import { HitInference, type Variant } from "@/components/choicedex/HitInference";
 import { OpponentInference } from "@/components/choicedex/OpponentInference";
 import { Simulator } from "@/components/choicedex/Simulator";
 import type { PokemonRef } from "@/lib/choicedexBuild";
+import { POKEMON_TYPES, type PokemonType, type StatKey } from "@/domain/types/pokemon";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import { listTeams } from "@/server/repositories/teamRepo";
+
+const STAT_KEYS_ORDER: StatKey[] = ["hp", "atk", "def", "spa", "spd", "spe"];
+
+/** Battle formes (Mega / Primal / Aegislash-Blade …) per pool species. */
+function buildVariants(refs: PokemonRef[]): Record<string, Variant[]> {
+  const mapTypes = (arr: readonly string[]): PokemonType[] =>
+    arr
+      .map((t) => t.toLowerCase())
+      .filter((t): t is PokemonType => (POKEMON_TYPES as readonly string[]).includes(t));
+  const bs = (b: Record<StatKey, number>) =>
+    Object.fromEntries(STAT_KEYS_ORDER.map((k) => [k, b[k]])) as Record<StatKey, number>;
+
+  const out: Record<string, Variant[]> = {};
+  for (const p of refs) {
+    const s = Dex.species.get(p.slug);
+    if (!s.exists) continue;
+    const extra: Variant[] = [];
+    for (const fn of s.otherFormes ?? []) {
+      const f = Dex.species.get(fn);
+      if (!f.exists) continue;
+      if (/Mega|Primal/.test(f.forme) || f.battleOnly) {
+        extra.push({ label: f.forme, baseStats: bs(f.baseStats), types: mapTypes(f.types) });
+      }
+    }
+    if (extra.length) out[p.slug] = [{ label: "Base", baseStats: p.baseStats, types: p.types }, ...extra];
+  }
+  return out;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -72,7 +102,7 @@ export default async function ChoiceDexPage() {
             <div className="space-y-6 border-t border-slate-800 p-4">
               <section>
                 <h3 className="mb-2 text-sm font-semibold text-slate-400">Opponent stats from a hit</h3>
-                <HitInference pokemon={refs} />
+                <HitInference pokemon={refs} variants={buildVariants(refs)} />
               </section>
               <section>
                 <h3 className="mb-2 text-sm font-semibold text-slate-400">Opponent Speed inference</h3>
