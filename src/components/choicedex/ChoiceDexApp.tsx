@@ -28,10 +28,18 @@ import {
   type TurnForm,
 } from "@/lib/choicedexBuild";
 
+export interface KnownSet {
+  evs: Partial<Record<StatKey, number>>;
+  nature: string;
+  item: string;
+  ability: string;
+}
 export interface SavedTeam {
   id: string;
   name: string;
   members: string[]; // species slugs
+  /** Known sets by species slug, so our own mons prefill their EVs/nature/item. */
+  sets?: Record<string, KnownSet>;
 }
 
 type Side = "user" | "opponent";
@@ -64,6 +72,8 @@ export function ChoiceDexApp({
   const [phase, setPhase] = useState<"preview" | "battle">("preview");
   const [userTeam, setUserTeam] = useState<(string | null)[]>(emptyTeam());
   const [oppTeam, setOppTeam] = useState<(string | null)[]>(emptyTeam());
+  // Known sets for mons loaded from a saved team, keyed `side:slug` — prefill.
+  const [loadedSets, setLoadedSets] = useState<Record<string, KnownSet>>({});
 
   const userCount = userTeam.filter(Boolean).length;
   const oppCount = oppTeam.filter(Boolean).length;
@@ -77,6 +87,13 @@ export function ChoiceDexApp({
     const t = teams.find((x) => x.id === teamId);
     const filled = emptyTeam().map((_, i) => t?.members[i] ?? null);
     (side === "user" ? setUserTeam : setOppTeam)(filled);
+    if (t?.sets) {
+      setLoadedSets((prev) => {
+        const next = { ...prev };
+        for (const [slug, set] of Object.entries(t.sets!)) next[`${side}:${slug}`] = set;
+        return next;
+      });
+    }
   };
 
   // ---- Preview / lead phase (hooks must run every render) -------------------
@@ -102,6 +119,7 @@ export function ChoiceDexApp({
         allAbilities={allAbilities}
         userTeam={userTeam.filter((s): s is string => !!s)}
         oppTeam={oppTeam.filter((s): s is string => !!s)}
+        loadedSets={loadedSets}
         onBack={() => setPhase("preview")}
       />
     );
@@ -355,17 +373,31 @@ const emptyCond = (): SideCond => ({
   stickyWeb: false,
 });
 
+function monFromSet(set: KnownSet | undefined): MonState {
+  const base = emptyMon();
+  if (!set) return base;
+  return {
+    ...base,
+    evs: set.evs ?? {},
+    nature: set.nature || base.nature,
+    item: set.item || base.item,
+    ability: set.ability || base.ability,
+  };
+}
+
 function BattleView({
   bySlug,
   allAbilities,
   userTeam,
   oppTeam,
+  loadedSets,
   onBack,
 }: {
   bySlug: Map<string, PokemonRef>;
   allAbilities: string[];
   userTeam: string[];
   oppTeam: string[];
+  loadedSets: Record<string, KnownSet>;
   onBack: () => void;
 }) {
   const refBySlug = bySlug;
@@ -388,8 +420,8 @@ function BattleView({
   const monKey = (side: Side, slug: string) => `${side}:${slug}`;
   const [mon, setMon] = useState<Record<string, MonState>>(() => {
     const init: Record<string, MonState> = {};
-    for (const s of userTeam) init[monKey("user", s)] = emptyMon();
-    for (const s of oppTeam) init[monKey("opponent", s)] = emptyMon();
+    for (const s of userTeam) init[monKey("user", s)] = monFromSet(loadedSets[`user:${s}`]);
+    for (const s of oppTeam) init[monKey("opponent", s)] = monFromSet(loadedSets[`opponent:${s}`]);
     return init;
   });
   const [weather, setWeather] = useState<Weather>("none");
