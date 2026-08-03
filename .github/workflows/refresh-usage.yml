@@ -35,15 +35,25 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Showdown-ladder usage (teammates, win rate) from MunchStats replay-data.
       - run: pnpm refresh:usage
 
-      - name: Commit snapshot if changed
+      # Tournament usage (items/abilities/moves/tera/natures) from the Limitless
+      # API. Reachable from CI; skipped gracefully if it fails so a Limitless
+      # outage never fails the whole job. Set LIMITLESS_FORMAT / LIMITLESS_API_KEY
+      # as repo secrets (the first run prints the available format ids).
+      - run: pnpm refresh:tournaments || echo "tournament refresh skipped"
+        env:
+          LIMITLESS_API_KEY: ${{ secrets.LIMITLESS_API_KEY }}
+          LIMITLESS_FORMAT: ${{ vars.LIMITLESS_FORMAT }}
+
+      - name: Commit snapshots if changed
         run: |
           if [ -n "$(git status --porcelain src/data/fixtures/usage)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add src/data/fixtures/usage
-            git commit -m "chore: refresh usage snapshot [skip ci]"
+            git commit -m "chore: refresh usage snapshots [skip ci]"
             git push
           else
             echo "no change"
