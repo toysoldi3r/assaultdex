@@ -2,7 +2,6 @@ import { Panel, ProvisionalTag } from "@/components/ui";
 import { ChoiceDexApp, type SavedTeam } from "@/components/choicedex/ChoiceDexApp";
 import { HitInference } from "@/components/choicedex/HitInference";
 import { OpponentInference } from "@/components/choicedex/OpponentInference";
-import { Practice } from "@/components/choicedex/Practice";
 import { Simulator } from "@/components/choicedex/Simulator";
 import type { PokemonRef } from "@/lib/choicedexBuild";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
@@ -71,10 +70,6 @@ export default async function ChoiceDexPage() {
               <section>
                 <h3 className="mb-2 text-sm font-semibold text-slate-400">Simulation mode</h3>
                 <Simulator pokemon={refs} />
-              </section>
-              <section>
-                <h3 className="mb-2 text-sm font-semibold text-slate-400">Practice opponent</h3>
-                <Practice pokemon={refs} />
               </section>
             </div>
           </details>
