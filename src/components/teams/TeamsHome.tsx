@@ -201,14 +201,23 @@ export function TeamsHome({
         </div>
 
         {deleted && (
-          <div className="flex items-center justify-between rounded border border-rose-700 bg-rose-950/60 px-3 py-2 text-sm text-rose-200">
+          <div className="flex items-center justify-between gap-2 rounded border border-rose-700 bg-rose-950/60 px-3 py-2 text-sm text-rose-200">
             <span>Deleted “{deleted.name}”.</span>
-            <button
-              onClick={undoDelete}
-              className="rounded bg-rose-700 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-600"
-            >
-              Undo
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={undoDelete}
+                className="rounded bg-rose-700 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-600"
+              >
+                Undo
+              </button>
+              <button
+                onClick={() => setDeleted(null)}
+                aria-label="Dismiss"
+                className="rounded px-1.5 py-1 text-xs text-rose-300 hover:bg-rose-900/60"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
 

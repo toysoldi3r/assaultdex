@@ -35,7 +35,7 @@ export default async function TeamsPage({
 
       <details className="rounded-lg border border-slate-800 bg-slate-900/40">
         <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-300">
-          Import a team (Showdown format)
+          Import a team
         </summary>
         <div className="border-t border-slate-800 p-4">
           {importError && IMPORT_MESSAGES[importError] && (
@@ -50,7 +50,7 @@ export default async function TeamsPage({
             <textarea
               name="text"
               rows={8}
-              placeholder={"Paste a Showdown export, e.g.\n\nPelipper @ Damp Rock\nAbility: Drizzle\nLevel: 50\nEVs: 252 HP / 252 SpD\nCalm Nature\n- Hurricane\n- Hydro Pump\n- Tailwind\n- Protect"}
+              placeholder={"Pelipper @ Damp Rock\nAbility: Drizzle\nLevel: 50\nEVs: 252 HP / 252 SpD\nCalm Nature\n- Hurricane\n- Hydro Pump\n- Tailwind\n- Protect"}
               className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-xs"
             />
             <button className="rounded border border-slate-600 px-3 py-1 text-sm hover:border-amber-500">

@@ -51,15 +51,43 @@ function write(key: string, items: NavItem[]): void {
   }
 }
 
+const COLLAPSE_KEY = "assaultdex.navCollapsed";
+
 export function RecentNav() {
   const pathname = usePathname();
   const [recent, setRecent] = useState<NavItem[]>([]);
   const [pinned, setPinned] = useState<NavItem[]>([]);
+  const [collapsed, setCollapsed] = useState(false);
+
+  const toggleCollapse = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      try {
+        localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
+  const removeRecent = (href: string) => {
+    setRecent((prev) => {
+      const next = prev.filter((r) => r.href !== href);
+      write(RECENT_KEY, next);
+      return next;
+    });
+  };
 
   // Load persisted state once on mount.
   useEffect(() => {
     setRecent(read(RECENT_KEY));
     setPinned(read(PIN_KEY));
+    try {
+      setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1");
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   // Record the current route on every navigation.
@@ -101,6 +129,17 @@ export function RecentNav() {
   return (
     <aside className="fixed right-4 top-24 z-30 hidden w-56 xl:block">
       <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-3 text-sm backdrop-blur">
+        <button
+          onClick={toggleCollapse}
+          className="mb-2 flex w-full items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-300"
+          aria-expanded={!collapsed}
+        >
+          <span>Navigation</span>
+          <span>{collapsed ? "▸" : "▾"}</span>
+        </button>
+
+        {collapsed ? null : (
+        <>
         {pinned.length > 0 && (
           <div className="mb-3">
             <h2 className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
@@ -152,9 +191,18 @@ export function RecentNav() {
                 >
                   ☆
                 </button>
+                <button
+                  onClick={() => removeRecent(r.href)}
+                  aria-label={`Remove ${r.label}`}
+                  className="text-slate-600 hover:text-rose-300"
+                >
+                  ✕
+                </button>
               </li>
             ))}
           </ul>
+        )}
+        </>
         )}
       </div>
     </aside>

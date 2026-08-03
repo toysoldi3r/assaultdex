@@ -1,8 +1,7 @@
 import { Panel, ProvisionalTag } from "@/components/ui";
-import { ChoiceDexApp, type SavedTeam } from "@/components/choicedex/ChoiceDexApp";
+import { ChoiceDexApp, type KnownSet, type SavedTeam } from "@/components/choicedex/ChoiceDexApp";
 import { HitInference } from "@/components/choicedex/HitInference";
 import { OpponentInference } from "@/components/choicedex/OpponentInference";
-import { Practice } from "@/components/choicedex/Practice";
 import { Simulator } from "@/components/choicedex/Simulator";
 import type { PokemonRef } from "@/lib/choicedexBuild";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
@@ -25,10 +24,21 @@ export default async function ChoiceDexPage() {
     .filter((t) => !t.isBox) // boxes are holding lists, not battle teams
     .map((t) => {
       const latest = t.versions[t.versions.length - 1];
+      const members = latest?.snapshot.members ?? [];
+      const sets: Record<string, KnownSet> = {};
+      for (const m of members) {
+        sets[m.species] ??= {
+          evs: m.spread.evs,
+          nature: m.nature,
+          item: m.item ?? "None",
+          ability: m.ability ?? "",
+        };
+      }
       return {
         id: t.id,
         name: t.name,
-        members: latest ? latest.snapshot.members.map((m) => m.species) : [],
+        members: members.map((m) => m.species),
+        sets,
       };
     })
     .filter((t) => t.members.length > 0);
@@ -71,10 +81,6 @@ export default async function ChoiceDexPage() {
               <section>
                 <h3 className="mb-2 text-sm font-semibold text-slate-400">Simulation mode</h3>
                 <Simulator pokemon={refs} />
-              </section>
-              <section>
-                <h3 className="mb-2 text-sm font-semibold text-slate-400">Practice opponent</h3>
-                <Practice pokemon={refs} />
               </section>
             </div>
           </details>
