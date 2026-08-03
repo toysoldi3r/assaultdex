@@ -378,11 +378,14 @@ function BattleView({
     oppTeam[0] ?? null,
     oppTeam[1] ?? null,
   ]);
-  // Per-Pokémon battle state, keyed by species slug, so HP/status/item/ability
-  // persist across switches — exactly as a Pokémon keeps them in a real battle.
+  // Per-Pokémon battle state, keyed by SIDE + species slug so the user's and the
+  // opponent's copy of the same species are independent (a mirror match keeps two
+  // separate HP bars), while HP/status/item persist across that side's switches.
+  const monKey = (side: Side, slug: string) => `${side}:${slug}`;
   const [mon, setMon] = useState<Record<string, MonState>>(() => {
     const init: Record<string, MonState> = {};
-    for (const s of [...userTeam, ...oppTeam]) init[s] = emptyMon();
+    for (const s of userTeam) init[monKey("user", s)] = emptyMon();
+    for (const s of oppTeam) init[monKey("opponent", s)] = emptyMon();
     return init;
   });
   const [weather, setWeather] = useState<Weather>("none");
@@ -392,10 +395,12 @@ function BattleView({
   const [uCond, setUCond] = useState<SideCond>(emptyCond());
   const [oCond, setOCond] = useState<SideCond>(emptyCond());
 
-  const monOf = (slug: string | null): MonState => (slug && mon[slug]) || emptyMon();
-  const patchMon = (slug: string | null, p: Partial<MonState>) => {
+  const monOf = (side: Side, slug: string | null): MonState =>
+    (slug && mon[monKey(side, slug)]) || emptyMon();
+  const patchMon = (side: Side, slug: string | null, p: Partial<MonState>) => {
     if (!slug) return;
-    setMon((m) => ({ ...m, [slug]: { ...(m[slug] ?? emptyMon()), ...p } }));
+    const k = monKey(side, slug);
+    setMon((m) => ({ ...m, [k]: { ...(m[k] ?? emptyMon()), ...p } }));
   };
   const setActive = (side: Side, idx: 0 | 1, slug: string | null) =>
     (side === "user" ? setActiveUser : setActiveOpp)((a) => {
@@ -404,8 +409,8 @@ function BattleView({
       return next;
     });
 
-  const toSlot = (slug: string): SlotForm => {
-    const s = monOf(slug);
+  const toSlot = (side: Side, slug: string): SlotForm => {
+    const s = monOf(side, slug);
     // A consumed item no longer applies to damage/speed.
     return {
       ...emptySlot(slug),
@@ -426,13 +431,13 @@ function BattleView({
     const [u0, u1] = activeUser;
     const [o0, o1] = activeOpp;
     if (!u0 || !u1 || !o0 || !o1) return null;
-    const side = (slugs: [string, string], c: SideCond): SideForm => ({
-      slots: [toSlot(slugs[0]), toSlot(slugs[1])],
+    const side = (sd: Side, slugs: [string, string], c: SideCond): SideForm => ({
+      slots: [toSlot(sd, slugs[0]), toSlot(sd, slugs[1])],
       ...c,
     });
     const form: TurnForm = {
-      user: side([u0, u1], uCond),
-      opponent: side([o0, o1], oCond),
+      user: side("user", [u0, u1], uCond),
+      opponent: side("opponent", [o0, o1], oCond),
       weather,
       terrain,
       trickRoom,
@@ -451,10 +456,18 @@ function BattleView({
   const abilitiesFor = (slug: string | null) => (slug ? refBySlug.get(slug)?.abilities ?? [] : []);
   // Legal options for a spot: the side's team minus whoever is in the OTHER spot
   // (a Pokémon can't be in both active spots at once).
-  const optionsFor = (team: string[], active: [string | null, string | null], idx: 0 | 1) => {
+  const optionsFor = (
+    side: Side,
+    team: string[],
+    active: [string | null, string | null],
+    idx: 0 | 1,
+  ) => {
     const sibling = active[idx === 0 ? 1 : 0];
+    const current = active[idx];
     return team
-      .filter((s) => s !== sibling)
+      // Exclude the sibling (can't be in both spots) and fainted Pokémon — but
+      // always keep whoever currently occupies this spot so it stays visible.
+      .filter((s) => s !== sibling && (s === current || monOf(side, s).hpPct > 0))
       .map((s) => ({ slug: s, name: refBySlug.get(s)?.name ?? s }));
   };
 
@@ -477,12 +490,12 @@ function BattleView({
                   label="Opp"
                   foe
                   slug={slug}
-                  state={monOf(slug)}
-                  options={optionsFor(oppTeam, activeOpp, i as 0 | 1)}
+                  state={monOf("opponent", slug)}
+                  options={optionsFor("opponent", oppTeam, activeOpp, i as 0 | 1)}
                   abilities={allAbilities}
                   defaultAbility={abilitiesFor(slug)[0] ?? ""}
                   onSelect={(s) => setActive("opponent", i as 0 | 1, s)}
-                  onPatch={(p) => patchMon(slug, p)}
+                  onPatch={(p) => patchMon("opponent", slug, p)}
                 />
               );
             })}
@@ -495,12 +508,12 @@ function BattleView({
                   key={i}
                   label="You"
                   slug={slug}
-                  state={monOf(slug)}
-                  options={optionsFor(userTeam, activeUser, i as 0 | 1)}
+                  state={monOf("user", slug)}
+                  options={optionsFor("user", userTeam, activeUser, i as 0 | 1)}
                   abilities={allAbilities}
                   defaultAbility={abilitiesFor(slug)[0] ?? ""}
                   onSelect={(s) => setActive("user", i as 0 | 1, s)}
-                  onPatch={(p) => patchMon(slug, p)}
+                  onPatch={(p) => patchMon("user", slug, p)}
                 />
               );
             })}
@@ -580,8 +593,8 @@ function BattleView({
                 field={built.state.field}
                 defenderConditions={spec.enemies.conditions}
                 ownConditions={spec.own.conditions}
-                state={monOf(spec.slug)}
-                onPatch={(p) => patchMon(spec.slug, p)}
+                state={monOf(spec.foe ? "opponent" : "user", spec.slug)}
+                onPatch={(p) => patchMon(spec.foe ? "opponent" : "user", spec.slug, p)}
                 foe={spec.foe}
               />
             );
@@ -589,17 +602,44 @@ function BattleView({
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-500">
-          Enter the round&apos;s HP/status/field above, then advance.
-        </p>
-        <button
-          onClick={() => setRound((r) => r + 1)}
-          className="rounded bg-amber-500 px-4 py-1.5 text-sm font-semibold text-black hover:bg-amber-400"
-        >
-          Next round →
-        </button>
-      </div>
+      {(() => {
+        const userAlive = userTeam.filter((s) => monOf("user", s).hpPct > 0).length;
+        const oppAlive = oppTeam.filter((s) => monOf("opponent", s).hpPct > 0).length;
+        const over = userAlive === 0 || oppAlive === 0;
+        return (
+          <div className="flex items-center justify-between">
+            {over ? (
+              <>
+                <p className="text-sm font-semibold text-amber-300">
+                  🏆 {userAlive === 0 && oppAlive === 0
+                    ? "Both sides fainted — draw."
+                    : userAlive === 0
+                      ? "Opponent wins — your team fainted."
+                      : "You win — opponent team fainted."}
+                </p>
+                <button
+                  onClick={onBack}
+                  className="rounded bg-amber-500 px-4 py-1.5 text-sm font-semibold text-black hover:bg-amber-400"
+                >
+                  New battle
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-slate-500">
+                  {userAlive} vs {oppAlive} alive · enter HP/status/field above, then advance.
+                </p>
+                <button
+                  onClick={() => setRound((r) => r + 1)}
+                  className="rounded bg-amber-500 px-4 py-1.5 text-sm font-semibold text-black hover:bg-amber-400"
+                >
+                  Next round →
+                </button>
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       <div>
         <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Best options</h3>
