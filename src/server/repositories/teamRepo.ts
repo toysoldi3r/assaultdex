@@ -167,6 +167,15 @@ export async function deleteTeam(teamId: string) {
   await prisma.team.delete({ where: { id: teamId } });
 }
 
+/** Whether a team is a box (unbounded), or null if it does not exist. */
+export async function getTeamIsBox(teamId: string): Promise<boolean | null> {
+  const t = await prisma.team.findUnique({
+    where: { id: teamId },
+    select: { isBox: true },
+  });
+  return t?.isBox ?? null;
+}
+
 /** Copy a team (and its latest snapshot) into a new team. */
 export async function duplicateTeam(teamId: string): Promise<string | null> {
   const source = await getTeam(teamId);
@@ -177,6 +186,7 @@ export async function duplicateTeam(teamId: string): Promise<string | null> {
       name: `${source.name} (copy)`,
       notes: source.notes,
       collectionId: source.collectionId,
+      isBox: source.isBox,
       versions: {
         create: {
           versionNumber: 1,

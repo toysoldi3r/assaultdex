@@ -35,8 +35,20 @@ function genderLabel(spriteId: string): string {
   return `♂ ${+(r.M * 100).toFixed(1)}% / ♀ ${+(r.F * 100).toFixed(1)}%`;
 }
 
-/** Look up display extras for a species by its fixture name. Null if unknown. */
+const metaCache = new Map<string, SpeciesMeta | null>();
+
+/** Look up display extras for a species by its fixture name. Null if unknown.
+ *  Memoised — @pkmn/dex data is constant for the process. */
 export function speciesMeta(name: string, fixtureAbilities: string[]): SpeciesMeta | null {
+  const key = `${name}|${fixtureAbilities.join(",")}`;
+  const cached = metaCache.get(key);
+  if (cached !== undefined) return cached;
+  const value = computeSpeciesMeta(name, fixtureAbilities);
+  metaCache.set(key, value);
+  return value;
+}
+
+function computeSpeciesMeta(name: string, fixtureAbilities: string[]): SpeciesMeta | null {
   const s = Dex.species.get(name);
   if (!s.exists) return null;
 
@@ -86,7 +98,18 @@ const STAT_LABEL: Record<(typeof STAT_ORDER)[number], string> = {
  * introduced (earlier gens return modern data in @pkmn/dex, so they're skipped)
  * up to the current one.
  */
+const historyCache = new Map<string, GenChange[]>();
+
+/** Memoised wrapper — the 9-generation diff is deterministic per species. */
 export function changeHistory(name: string): GenChange[] {
+  const cached = historyCache.get(name);
+  if (cached) return cached;
+  const value = computeChangeHistory(name);
+  historyCache.set(name, value);
+  return value;
+}
+
+function computeChangeHistory(name: string): GenChange[] {
   const base = Dex.species.get(name);
   if (!base.exists) return [];
 

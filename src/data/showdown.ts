@@ -37,7 +37,12 @@ function statLine(label: string, block: Record<StatKey, number>, skip: number): 
 /** Format one set in Showdown syntax. `displayName` is the species name. */
 export function formatShowdownSet(set: PokemonSet, displayName: string): string {
   const lines: string[] = [];
-  lines.push(set.item ? `${displayName} @ ${set.item}` : displayName);
+  // Showdown syntax: "Nickname (Species) @ Item" when a nickname is set.
+  const head =
+    set.nickname && set.nickname !== displayName
+      ? `${set.nickname} (${displayName})`
+      : displayName;
+  lines.push(set.item ? `${head} @ ${set.item}` : head);
   if (set.ability) lines.push(`Ability: ${set.ability}`);
   if (set.level && set.level !== 100) lines.push(`Level: ${set.level}`);
   const evLine = statLine("EVs", set.spread.evs, 0);

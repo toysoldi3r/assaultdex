@@ -20,6 +20,7 @@ export function Picker({
   placeholder = "—",
   allowClear = false,
   label,
+  popular = [],
 }: {
   value: string | null;
   options: Option[];
@@ -27,6 +28,8 @@ export function Picker({
   placeholder?: string;
   allowClear?: boolean;
   label?: string;
+  /** Most-used options in competitive play (tournament data), shown on top. */
+  popular?: Option[];
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -97,10 +100,38 @@ export function Picker({
             </button>
           </div>
 
-          {/* Popular section — wired, filled once usage data is available. */}
-          <div className="border-b border-slate-800 px-2 py-1 text-[10px] uppercase tracking-wide text-slate-600">
-            Popular (needs usage data)
-          </div>
+          {/* Popular (tournament usage). Empty until the CI snapshot is populated. */}
+          {!q && popular.length > 0 && (
+            <div className="border-b border-slate-800">
+              <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-slate-600">
+                Popular in tournaments
+              </div>
+              <ul>
+                {popular.map((o) => (
+                  <li key={`pop-${o.name}`}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelect(o.name);
+                        setOpen(false);
+                        setQ("");
+                      }}
+                      className={`flex w-full items-center justify-between gap-2 px-2 py-1 text-left hover:bg-slate-800 ${
+                        o.name === value ? "bg-slate-800/60" : ""
+                      }`}
+                    >
+                      <span className="text-xs font-medium text-slate-100">{o.name}</span>
+                      {o.desc && (
+                        <span className="shrink-0 text-[10px] tabular-nums text-amber-400">
+                          {o.desc}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <ul className="max-h-64 overflow-y-auto">
             {filtered.length === 0 ? (

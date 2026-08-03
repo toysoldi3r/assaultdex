@@ -45,7 +45,15 @@ export default async function PokemonPage({
   const { slug } = await params;
   const { form } = await searchParams;
   const forms = getSpeciesForms(slug);
-  const target = form && forms.some((f) => f.id === form) ? form : slug;
+  // The route may arrive as a base id or a forme id (e.g. a teammate deep-link).
+  // Anchor the switcher to the true base and resolve which form to render.
+  const baseSlug = forms.find((f) => f.isBase)?.id ?? slug;
+  const target =
+    form && forms.some((f) => f.id === form)
+      ? form
+      : forms.some((f) => f.id === slug)
+        ? slug
+        : baseSlug;
   const p = await getDexSpecies(target);
   if (!p) notFound();
 
@@ -93,7 +101,9 @@ export default async function PokemonPage({
         <div className="flex flex-wrap gap-1">
           {forms.map((f) => {
             const active = target === f.id;
-            const href = f.isBase ? `/pokemon/${slug}` : `/pokemon/${slug}?form=${f.id}`;
+            const href = f.isBase
+              ? `/pokemon/${baseSlug}`
+              : `/pokemon/${baseSlug}?form=${f.id}`;
             return (
               <Link
                 key={f.id}

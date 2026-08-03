@@ -4,6 +4,8 @@ import { Panel, ProvisionalTag } from "@/components/ui";
 import { TeamBuilder, type MemberRef } from "@/components/teams/TeamBuilder";
 import { NATURES } from "@/data/fixtures/natures";
 import { itemCatalog, poolDescMaps } from "@/data/catalog";
+import { getMonTournament } from "@/data/tournamentStats";
+import { usageKey } from "@/data/usageStats";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import { diffSnapshots } from "@/domain/team/versionDiff";
 import { getTeam } from "@/server/repositories/teamRepo";
@@ -32,9 +34,9 @@ export default async function TeamDetailPage({
   if (!team) notFound();
 
   const latest = team.versions[team.versions.length - 1]!;
-  const { validation, analysis, missingSpecies } = await resolveTeam(
-    latest.snapshot,
-  );
+  // Legality/analysis only apply to real teams; a box is an unbounded holding
+  // list, so running the 6-member team rules over it is meaningless.
+  const resolved = team.isBox ? null : await resolveTeam(latest.snapshot);
 
   // Teambuilder needs a reference (name, abilities, legal moves, base stats) for
   // every pool species so newly added members render too.
@@ -53,6 +55,17 @@ export default async function TeamDetailPage({
   // Description maps for the picker panels (memoised — the pool is static).
   const { abilityDesc, moveDesc } = poolDescMaps(allMons);
   const items = itemCatalog();
+
+  // Tournament "Popular" lists per pool species (empty until the CI snapshot
+  // is populated). Keyed by @pkmn id to match the teambuilder lookup.
+  const tournament: Record<
+    string,
+    { items: { name: string; pct: number }[]; abilities: { name: string; pct: number }[]; moves: { name: string; pct: number }[] }
+  > = {};
+  for (const p of allMons) {
+    const t = getMonTournament(p.name);
+    if (t) tournament[usageKey(p.name)] = { items: t.items, abilities: t.abilities, moves: t.moves };
+  }
 
   const versionByNumber = new Map(team.versions.map((v) => [v.versionNumber, v]));
   const from = a ? versionByNumber.get(Number(a)) : team.versions[0];
@@ -89,46 +102,48 @@ export default async function TeamDetailPage({
         </div>
       </div>
 
-      {/* Validation of the latest version */}
-      <Panel title="Legality">
-        {missingSpecies.length > 0 && (
-          <p className="mb-2 text-xs text-amber-300">
-            Missing from Pokédex: {missingSpecies.join(", ")}
-          </p>
-        )}
-        {validation.valid ? (
-          <p className="text-sm text-emerald-400">
-            Latest version (v{latest.versionNumber}) is legal.
-          </p>
-        ) : (
-          <div>
-            <p className="text-sm text-rose-400">
-              Latest version has {validation.errors.length} error(s).
+      {/* Validation of the latest version (teams only, not boxes) */}
+      {resolved && (
+        <Panel title="Legality">
+          {resolved.missingSpecies.length > 0 && (
+            <p className="mb-2 text-xs text-amber-300">
+              Missing from Pokédex: {resolved.missingSpecies.join(", ")}
             </p>
-            <ul className="mt-1 list-disc pl-5 text-xs text-rose-400">
-              {validation.errors.map((e, i) => (
+          )}
+          {resolved.validation.valid ? (
+            <p className="text-sm text-emerald-400">
+              Latest version (v{latest.versionNumber}) is legal.
+            </p>
+          ) : (
+            <div>
+              <p className="text-sm text-rose-400">
+                Latest version has {resolved.validation.errors.length} error(s).
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-xs text-rose-400">
+                {resolved.validation.errors.map((e, i) => (
+                  <li key={i}>
+                    {e.species ? `${e.species}: ` : ""}
+                    {e.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {resolved.validation.warnings.length > 0 && (
+            <ul className="mt-1 list-disc pl-5 text-xs text-amber-300">
+              {resolved.validation.warnings.map((w, i) => (
                 <li key={i}>
-                  {e.species ? `${e.species}: ` : ""}
-                  {e.message}
+                  {w.species ? `${w.species}: ` : ""}
+                  {w.message}
                 </li>
               ))}
             </ul>
-          </div>
-        )}
-        {validation.warnings.length > 0 && (
-          <ul className="mt-1 list-disc pl-5 text-xs text-amber-300">
-            {validation.warnings.map((w, i) => (
-              <li key={i}>
-                {w.species ? `${w.species}: ` : ""}
-                {w.message}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
+          )}
+        </Panel>
+      )}
 
       {/* Basic team analysis */}
-      {analysis && (
+      {resolved?.analysis && (
         <Panel title="Team analysis">
           <div className="mb-3">
             <ProvisionalTag />
@@ -139,7 +154,7 @@ export default async function TeamDetailPage({
                 Defensive weaknesses
               </h3>
               <ul className="mt-1 space-y-0.5 text-xs">
-                {analysis.weaknesses.slice(0, 8).map((w) => (
+                {resolved.analysis.weaknesses.slice(0, 8).map((w) => (
                   <li
                     key={w.type}
                     className={w.shared ? "text-rose-300" : "text-slate-400"}
@@ -156,15 +171,15 @@ export default async function TeamDetailPage({
                 Offensive coverage gaps
               </h3>
               <p className="mt-1 text-xs text-slate-400">
-                {analysis.offensiveGaps.length === 0
+                {resolved.analysis.offensiveGaps.length === 0
                   ? "No super-effective gaps against single types."
-                  : `No super-effective answer to: ${analysis.offensiveGaps.join(", ")}.`}
+                  : `No super-effective answer to: ${resolved.analysis.offensiveGaps.join(", ")}.`}
               </p>
               <h3 className="mt-3 text-xs font-semibold uppercase text-slate-500">
                 Speed tiers
               </h3>
               <ul className="mt-1 text-xs text-slate-400">
-                {analysis.speedTiers.map((s) => (
+                {resolved.analysis.speedTiers.map((s) => (
                   <li key={s.name}>
                     {s.name}: {s.speed}
                   </li>
@@ -174,20 +189,20 @@ export default async function TeamDetailPage({
                 Speed control
               </h3>
               <p className="mt-1 text-xs text-slate-400">
-                {analysis.speedControl.missing
+                {resolved.analysis.speedControl.missing
                   ? "None detected (no priority or speed-control moves)."
                   : [
-                      analysis.speedControl.hasPriority ? "priority moves" : null,
-                      analysis.speedControl.controlMoves.length
-                        ? `${analysis.speedControl.controlMoves.length} control move(s)`
+                      resolved.analysis.speedControl.hasPriority ? "priority moves" : null,
+                      resolved.analysis.speedControl.controlMoves.length
+                        ? `${resolved.analysis.speedControl.controlMoves.length} control move(s)`
                         : null,
                     ]
                       .filter(Boolean)
                       .join(", ")}
               </p>
-              {analysis.dependence.note && (
+              {resolved.analysis.dependence.note && (
                 <p className="mt-2 text-xs text-amber-300">
-                  {analysis.dependence.note}
+                  {resolved.analysis.dependence.note}
                 </p>
               )}
             </div>
@@ -325,6 +340,7 @@ export default async function TeamDetailPage({
           items={items}
           abilityDesc={abilityDesc}
           moveDesc={moveDesc}
+          tournament={tournament}
         />
       </Panel>
     </div>

@@ -99,7 +99,17 @@ export interface SpeciesForm {
  * id used as the ?form= value; `label` is the forme name ("Mega", "Alola") or
  * "Base".
  */
+const formsCache = new Map<string, SpeciesForm[]>();
+
 export function getSpeciesForms(anySlug: string): SpeciesForm[] {
+  const cached = formsCache.get(anySlug);
+  if (cached) return cached;
+  const value = computeSpeciesForms(anySlug);
+  formsCache.set(anySlug, value);
+  return value;
+}
+
+function computeSpeciesForms(anySlug: string): SpeciesForm[] {
   const s = Dex.species.get(anySlug);
   if (!s.exists) return [];
   const base = Dex.species.get(s.baseSpecies);
@@ -134,8 +144,18 @@ export interface DexSpecies {
   moves: DexMoveRow[];
 }
 
-/** Detail for one species by slug (@pkmn id). Null if unknown. */
+const speciesCache = new Map<string, DexSpecies | null>();
+
+/** Detail for one species by slug (@pkmn id). Null if unknown. Memoised — the
+ *  learnset + dex data are constant for the process. */
 export async function getDexSpecies(slug: string): Promise<DexSpecies | null> {
+  if (speciesCache.has(slug)) return speciesCache.get(slug)!;
+  const value = await computeDexSpecies(slug);
+  speciesCache.set(slug, value);
+  return value;
+}
+
+async function computeDexSpecies(slug: string): Promise<DexSpecies | null> {
   const s = Dex.species.get(slug);
   if (!s.exists || !inShowdown(s)) return null;
 
