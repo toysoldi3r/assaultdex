@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { assumptionsFor } from "@/domain/mechanics/assumptions";
 import { inferDefense, inferOffense } from "@/domain/choicedex/spreadInference";
 import type { NatureSign } from "@/domain/choicedex/speedInference";
-import type { MoveFixture } from "@/domain/types/pokemon";
+import type { MoveFixture, PokemonType, StatKey } from "@/domain/types/pokemon";
 import {
   combatantFromRef,
   emptySlot,
@@ -34,12 +34,26 @@ function screenConditions(s: Screen) {
   };
 }
 
-export function HitInference({ pokemon }: { pokemon: PokemonRef[] }) {
+export interface Variant {
+  label: string;
+  baseStats: Record<StatKey, number>;
+  types: PokemonType[];
+}
+
+export function HitInference({
+  pokemon,
+  variants = {},
+}: {
+  pokemon: PokemonRef[];
+  /** Battle formes (Mega / Primal / Aegislash-Blade) per species, with stats. */
+  variants?: Record<string, Variant[]>;
+}) {
   const bySlug = useMemo(() => new Map(pokemon.map((p) => [p.slug, p])), [pokemon]);
   const d = (i: number) => pokemon[i % pokemon.length]?.slug ?? "";
 
   const [mode, setMode] = useState<Mode>("took");
   const [oppSlug, setOppSlug] = useState(d(2));
+  const [variantIdx, setVariantIdx] = useState(0);
   const [mySlug, setMySlug] = useState(d(0));
   const [moveName, setMoveName] = useState("");
   const [hpBefore, setHpBefore] = useState(100);
@@ -50,13 +64,22 @@ export function HitInference({ pokemon }: { pokemon: PokemonRef[] }) {
 
   const opp = bySlug.get(oppSlug);
   const mine = bySlug.get(mySlug);
+  // Selected battle forme (Mega / Aegislash-Blade …) overrides the opponent's
+  // base stats and types for the inference; index 0 is the base forme.
+  const oppVariants = variants[oppSlug] ?? [];
+  const oppVar = oppVariants[variantIdx];
+  const oppBase = oppVar?.baseStats ?? opp?.baseStats;
+  const oppTypes = (oppVar?.types ?? opp?.types) as
+    | [PokemonType]
+    | [PokemonType, PokemonType]
+    | undefined;
   // In "took" mode the mover is the opponent; in "dealt" mode it's your mon.
   const moverRef = mode === "took" ? opp : mine;
   const moves = damagingMoves(moverRef);
   const move = moves.find((m) => m.name === moveName) ?? moves[0];
 
   const result = useMemo(() => {
-    if (!opp || !mine || !move) return null;
+    if (!opp || !mine || !move || !oppBase || !oppTypes) return null;
     const field = { weather, terrain: "none" as const, trickRoom: false };
     const dmgFrac = Math.max(0, (hpBefore - hpAfter) / 100);
 
@@ -65,9 +88,9 @@ export function HitInference({ pokemon }: { pokemon: PokemonRef[] }) {
       const which = move.category === "physical" ? "atk" : "spa";
       const observedDamage = Math.round(defender.stats.hp * dmgFrac);
       const inf = inferOffense({
-        baseStat: which === "atk" ? opp.baseStats.atk : opp.baseStats.spa,
+        baseStat: which === "atk" ? oppBase.atk : oppBase.spa,
         which,
-        attackerTypes: opp.types,
+        attackerTypes: oppTypes,
         level: 50,
         move,
         defender,
@@ -82,10 +105,10 @@ export function HitInference({ pokemon }: { pokemon: PokemonRef[] }) {
     const attacker = combatantFromRef(mine, emptySlot(mine.slug));
     const which = move.category === "physical" ? "def" : "spd";
     const inf = inferDefense({
-      baseHp: opp.baseStats.hp,
-      baseDef: which === "def" ? opp.baseStats.def : opp.baseStats.spd,
+      baseHp: oppBase.hp,
+      baseDef: which === "def" ? oppBase.def : oppBase.spd,
       which,
-      defenderTypes: opp.types,
+      defenderTypes: oppTypes,
       level: 50,
       move,
       attacker,
@@ -95,7 +118,7 @@ export function HitInference({ pokemon }: { pokemon: PokemonRef[] }) {
       spread,
     });
     return { kind: "defense" as const, inf, which };
-  }, [mode, opp, mine, move, hpBefore, hpAfter, weather, screen, spread]);
+  }, [mode, opp, mine, move, oppBase, oppTypes, hpBefore, hpAfter, weather, screen, spread]);
 
   const statLabel =
     result?.kind === "offense"
@@ -127,7 +150,7 @@ export function HitInference({ pokemon }: { pokemon: PokemonRef[] }) {
           Opponent
           <select
             value={oppSlug}
-            onChange={(e) => { setOppSlug(e.target.value); setMoveName(""); }}
+            onChange={(e) => { setOppSlug(e.target.value); setVariantIdx(0); setMoveName(""); }}
             className="mt-0.5 block rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
           >
             {pokemon.map((p) => (
@@ -135,6 +158,21 @@ export function HitInference({ pokemon }: { pokemon: PokemonRef[] }) {
             ))}
           </select>
         </label>
+        {oppVariants.length > 1 && (
+          <label>
+            Variant
+            <select
+              value={variantIdx}
+              onChange={(e) => setVariantIdx(Number(e.target.value))}
+              title="Mega / battle forme (e.g. Aegislash-Blade) — uses that forme's stats"
+              className="mt-0.5 block rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
+            >
+              {oppVariants.map((v, i) => (
+                <option key={v.label} value={i}>{v.label}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <label>
           Your Pokémon
           <select
