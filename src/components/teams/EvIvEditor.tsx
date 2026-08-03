@@ -59,6 +59,13 @@ export function EvIvEditor({
   const setIv = (k: StatKey, raw: number) =>
     onChange({ ...spread, ivs: { ...spread.ivs, [k]: clamp(0, 31, Math.round(raw)) } });
 
+  // Nature by its (boosted, lowered) pair — natures never touch HP.
+  const natureFor = (boost: StatKey, lower: StatKey) =>
+    Object.values(NATURES).find((n) => n.boosted === boost && n.lowered === lower)?.name ??
+    "Serious";
+  const setBoost = (k: StatKey) => k !== "hp" && onNature(natureFor(k, nat.lowered));
+  const setLower = (k: StatKey) => k !== "hp" && onNature(natureFor(nat.boosted, k));
+
   return (
     <div className="mt-3 space-y-2 rounded border border-slate-800 bg-slate-950/40 p-3 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -108,6 +115,7 @@ export function EvIvEditor({
             <th className="text-right">Base</th>
             <th className="text-right">IV</th>
             <th className="text-right">EV</th>
+            <th className="text-center">±</th>
             <th></th>
             <th className="text-right">Total</th>
           </tr>
@@ -147,6 +155,36 @@ export function EvIvEditor({
                     onChange={(e) => setEv(k, Number(e.target.value))}
                     className="w-14 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right"
                   />
+                </td>
+                <td className="text-center">
+                  {k !== "hp" && (
+                    <span className="inline-flex overflow-hidden rounded border border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setBoost(k)}
+                        title="Boost with nature (+10%)"
+                        className={`px-1 leading-none ${
+                          k === nat.boosted && nat.boosted !== nat.lowered
+                            ? "bg-emerald-600 text-white"
+                            : "hover:bg-slate-800"
+                        }`}
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLower(k)}
+                        title="Lower with nature (−10%)"
+                        className={`border-l border-slate-700 px-1 leading-none ${
+                          k === nat.lowered && nat.boosted !== nat.lowered
+                            ? "bg-rose-600 text-white"
+                            : "hover:bg-slate-800"
+                        }`}
+                      >
+                        −
+                      </button>
+                    </span>
+                  )}
                 </td>
                 <td className="px-2">
                   <input

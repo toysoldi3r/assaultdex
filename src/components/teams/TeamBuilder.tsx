@@ -6,9 +6,10 @@
 // Rich searchable item/move/ability lists (with a Popular section) and the
 // slider EV/IV editor arrive in slices C and D; the click-to-edit seams are here.
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PokeIcon } from "@/components/PokeIcon";
-import { Picker, type Option } from "@/components/teams/Picker";
+import { type Option } from "@/components/teams/Picker";
+import { SelectorPanel } from "@/components/teams/SelectorPanel";
 import { EvIvEditor } from "@/components/teams/EvIvEditor";
 import { statColor } from "@/domain/mechanics/statColor";
 import { saveTeamSnapshotAction } from "@/app/teams/actions";
@@ -30,6 +31,8 @@ export interface TournamentPopular {
   abilities: PopEntry[];
   moves: PopEntry[];
 }
+
+type PanelKind = "item" | "ability" | "species" | "spread" | `move${number}`;
 
 /** Join key to tournament data (matches @pkmn id): "Rotom-Heat" → "rotomheat". */
 const uKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -82,10 +85,14 @@ export function TeamBuilder({
 }) {
   const [members, setMembers] = useState<PokemonSet[]>(initialMembers);
   const [tab, setTab] = useState<"team" | number>("team");
-  const [spreadFor, setSpreadFor] = useState<number | null>(null);
+  // One inline panel open at a time. member -1 = "add Pokémon".
+  const [panel, setPanel] = useState<{ member: number; kind: PanelKind } | null>(null);
+  const openPanel = (member: number, kind: PanelKind) =>
+    setPanel((p) => (p && p.member === member && p.kind === kind ? null : { member, kind }));
+  const closePanel = () => setPanel(null);
   const [dirty, setDirty] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [saving, setSaving] = useState(false);
   const limit = isBox ? 60 : 6;
 
   const refOf = (species: string): MemberRef =>
@@ -101,21 +108,36 @@ export function TeamBuilder({
     setDirty(true);
   };
 
+  const defaultSet = (slug: string): PokemonSet => {
+    const r = refOf(slug);
+    return {
+      species: slug,
+      level: 50,
+      ability: r.abilities[0] ?? null,
+      item: null,
+      nature: "Serious",
+      moves: r.legalMoves.slice(0, 4),
+      spread: { ivs: maxIvs(), evs: zeroEvs() },
+    };
+  };
+
   const addMember = (slug: string) => {
     if (!slug || members.length >= limit) return;
-    const r = refOf(slug);
-    setMembers((prev) => [
-      ...prev,
-      {
-        species: slug,
-        level: 50,
-        ability: r.abilities[0] ?? null,
-        item: null,
-        nature: "Serious",
-        moves: r.legalMoves.slice(0, 4),
-        spread: { ivs: maxIvs(), evs: zeroEvs() },
-      },
-    ]);
+    setMembers((prev) => [...prev, defaultSet(slug)]);
+    setDirty(true);
+  };
+
+  // Change a member's species, keeping display bits (nickname/level/nature/spread)
+  // and resetting ability + moves to the new species' legal defaults.
+  const changeSpecies = (i: number, slug: string) => {
+    if (!slug) return;
+    setMembers((prev) =>
+      prev.map((m, idx) => {
+        if (idx !== i) return m;
+        const base = defaultSet(slug);
+        return { ...base, nickname: m.nickname, level: m.level, nature: m.nature, spread: m.spread };
+      }),
+    );
     setDirty(true);
   };
 
@@ -125,20 +147,130 @@ export function TeamBuilder({
     setDirty(true);
   };
 
-  const save = () => {
-    startTransition(async () => {
-      const msg = await saveTeamSnapshotAction(
-        fd({ teamId, snapshot: JSON.stringify({ members }) }),
-      );
-      setStatus(msg);
-      setDirty(false);
-    });
-  };
+  // Autosave: debounce after edits and flush on exit (unmount / tab hide).
+  const membersRef = useRef(members);
+  membersRef.current = members;
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+
+  const flush = useCallback(() => {
+    if (!dirtyRef.current) return;
+    dirtyRef.current = false;
+    setDirty(false);
+    setSaving(true);
+    saveTeamSnapshotAction(fd({ teamId, snapshot: JSON.stringify({ members: membersRef.current }) }))
+      .then((msg) => setStatus(msg))
+      .catch(() => setStatus("Save failed"))
+      .finally(() => setSaving(false));
+  }, [teamId]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(flush, 1200);
+    return () => clearTimeout(t);
+  }, [members, dirty, flush]);
+
+  useEffect(() => {
+    const onHide = () => flush();
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      flush(); // save on unmount (navigating away)
+    };
+  }, [flush]);
 
   const shown = useMemo(
     () => (tab === "team" ? members.map((_, i) => i) : [tab as number]),
     [tab, members],
   );
+
+  // Species options for the change/add panels: name-keyed, mapped back to slug.
+  const poolOptions = useMemo<Option[]>(() => pool.map((p) => ({ name: p.name })), [pool]);
+  const slugByName = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of pool) map[p.name] = p.slug;
+    return map;
+  }, [pool]);
+
+  const setMove = (i: number, mi: number, v: string | null) => {
+    const moves = [...members[i]!.moves];
+    if (v) moves[mi] = v;
+    else moves.splice(mi, 1);
+    update(i, { moves: moves.filter(Boolean) });
+  };
+
+  function renderPanel(
+    i: number,
+    m: PokemonSet,
+    r: MemberRef,
+    tm: TournamentPopular | undefined,
+  ) {
+    const kind = panel!.kind;
+    if (kind === "spread") {
+      return (
+        <EvIvEditor
+          base={r.baseStats}
+          spread={m.spread}
+          level={m.level}
+          nature={m.nature}
+          natures={natures}
+          onChange={(s) => update(i, { spread: s })}
+          onNature={(n) => update(i, { nature: n })}
+        />
+      );
+    }
+    if (kind === "item") {
+      return (
+        <SelectorPanel
+          title="Item"
+          options={items}
+          popular={asPopular(tm?.items)}
+          value={m.item}
+          allowClear
+          onSelect={(v) => update(i, { item: v })}
+          onClose={closePanel}
+        />
+      );
+    }
+    if (kind === "ability") {
+      const opts = (r.abilities.length ? r.abilities : m.ability ? [m.ability] : []).map(
+        (a) => ({ name: a, desc: abilityDesc[a] }),
+      );
+      return (
+        <SelectorPanel
+          title="Ability"
+          options={opts}
+          popular={asPopular(tm?.abilities)}
+          value={m.ability}
+          onSelect={(v) => update(i, { ability: v })}
+          onClose={closePanel}
+        />
+      );
+    }
+    if (kind === "species") {
+      return (
+        <SelectorPanel
+          title="Change Pokémon"
+          options={poolOptions}
+          value={r.name}
+          onSelect={(v) => v && changeSpecies(i, slugByName[v] ?? "")}
+          onClose={closePanel}
+        />
+      );
+    }
+    const mi = Number(kind.slice(4));
+    return (
+      <SelectorPanel
+        title={`Move ${mi + 1}`}
+        options={r.legalMoves.map((mv) => ({ name: mv, desc: moveDesc[mv] }))}
+        popular={asPopular(tm?.moves)}
+        value={m.moves[mi] ?? null}
+        allowClear
+        onSelect={(v) => setMove(i, mi, v)}
+        onClose={closePanel}
+      />
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -164,15 +296,10 @@ export function TeamBuilder({
             <span className="max-w-[6rem] truncate">{refOf(m.species).name}</span>
           </button>
         ))}
-        <div className="ml-auto flex items-center gap-2">
-          {status && <span className="text-xs text-emerald-400">{status}</span>}
-          <button
-            onClick={save}
-            disabled={!dirty || pending}
-            className="rounded bg-emerald-600 px-3 py-1 text-sm font-semibold text-white disabled:opacity-40 hover:bg-emerald-500"
-          >
-            {pending ? "Saving…" : dirty ? "Save version" : "Saved"}
-          </button>
+        <div className="ml-auto flex items-center gap-2 text-xs">
+          <span className={dirty || saving ? "text-slate-400" : "text-emerald-400"}>
+            {saving ? "Saving…" : dirty ? "Unsaved changes" : status || "All changes saved"}
+          </span>
         </div>
       </div>
 
@@ -193,7 +320,13 @@ export function TeamBuilder({
                     placeholder={r.name}
                     className="w-40 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm font-semibold"
                   />
-                  <span className="text-xs text-slate-500">{r.name}</span>
+                  <button
+                    onClick={() => openPanel(i, "species")}
+                    className="rounded px-1 text-xs text-amber-400 underline decoration-dotted hover:text-amber-300"
+                    title="Change Pokémon"
+                  >
+                    {r.name} ✎
+                  </button>
                 </div>
                 <button
                   onClick={() => removeMember(i)}
@@ -224,33 +357,21 @@ export function TeamBuilder({
                   </label>
                   <div className="flex items-center justify-between gap-2">
                     <span>Item</span>
-                    <div className="w-32">
-                      <Picker
-                        value={m.item}
-                        options={items}
-                        onSelect={(v) => update(i, { item: v })}
-                        allowClear
-                        label="items"
-                        popular={asPopular(tm?.items)}
-                      />
-                    </div>
+                    <button
+                      onClick={() => openPanel(i, "item")}
+                      className="w-32 truncate rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-left hover:border-amber-500"
+                    >
+                      {m.item || <span className="text-slate-600">—</span>}
+                    </button>
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <span>Ability</span>
-                    <div className="w-32">
-                      <Picker
-                        value={m.ability}
-                        options={(r.abilities.length
-                          ? r.abilities
-                          : m.ability
-                            ? [m.ability]
-                            : []
-                        ).map((a) => ({ name: a, desc: abilityDesc[a] }))}
-                        onSelect={(v) => update(i, { ability: v })}
-                        label="abilities"
-                        popular={asPopular(tm?.abilities)}
-                      />
-                    </div>
+                    <button
+                      onClick={() => openPanel(i, "ability")}
+                      className="w-32 truncate rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-left hover:border-amber-500"
+                    >
+                      {m.ability || <span className="text-slate-600">—</span>}
+                    </button>
                   </div>
                   <label className="flex items-center justify-between gap-2">
                     Nature
@@ -271,29 +392,15 @@ export function TeamBuilder({
                 {/* Moves */}
                 <div className="space-y-1 text-xs md:col-span-2">
                   <span className="font-semibold uppercase text-slate-500">Moves</span>
-                  {[0, 1, 2, 3].map((mi) => {
-                    const moveOpts: Option[] = r.legalMoves.map((mv) => ({
-                      name: mv,
-                      desc: moveDesc[mv],
-                    }));
-                    return (
-                      <Picker
-                        key={mi}
-                        value={m.moves[mi] ?? null}
-                        options={moveOpts}
-                        onSelect={(v) => {
-                          const moves = [...m.moves];
-                          if (v) moves[mi] = v;
-                          else moves.splice(mi, 1);
-                          update(i, { moves: moves.filter(Boolean) });
-                        }}
-                        allowClear
-                        placeholder="— (empty)"
-                        label="moves"
-                        popular={asPopular(tm?.moves)}
-                      />
-                    );
-                  })}
+                  {[0, 1, 2, 3].map((mi) => (
+                    <button
+                      key={mi}
+                      onClick={() => openPanel(i, `move${mi}`)}
+                      className="block w-full truncate rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-left hover:border-amber-500"
+                    >
+                      {m.moves[mi] || <span className="text-slate-600">— (empty)</span>}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Stats (base + EV points; slider editor in slice D) */}
@@ -317,25 +424,17 @@ export function TeamBuilder({
                     </div>
                   ))}
                   <button
-                    onClick={() => setSpreadFor(spreadFor === i ? null : i)}
+                    onClick={() => openPanel(i, "spread")}
                     className="mt-1 w-full rounded bg-slate-800 px-2 py-1 text-[11px] hover:bg-slate-700"
                   >
-                    {spreadFor === i ? "Hide EV/IV" : "⚙ Edit EV/IV"}
+                    {panel?.member === i && panel.kind === "spread"
+                      ? "Hide EV/IV"
+                      : "⚙ Edit EV/IV"}
                   </button>
                 </div>
               </div>
 
-              {spreadFor === i && (
-                <EvIvEditor
-                  base={r.baseStats}
-                  spread={m.spread}
-                  level={m.level}
-                  nature={m.nature}
-                  natures={natures}
-                  onChange={(s) => update(i, { spread: s })}
-                  onNature={(n) => update(i, { nature: n })}
-                />
-              )}
+              {panel?.member === i && renderPanel(i, m, r, tm)}
             </div>
           );
         })}
@@ -345,29 +444,33 @@ export function TeamBuilder({
         )}
       </div>
 
-      {/* Add member */}
+      {/* Add member — searchable panel */}
       {members.length < limit && (
-        <div className="flex items-center gap-2">
-          <select
-            defaultValue=""
-            onChange={(e) => {
-              addMember(e.target.value);
-              e.currentTarget.value = "";
-            }}
-            className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm"
-          >
-            <option value="">＋ Add Pokémon…</option>
-            {pool.map((p) => (
-              <option key={p.slug} value={p.slug}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <span className="text-xs text-slate-500">
-            {members.length}/{limit}
-          </span>
+        <div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => openPanel(-1, "species")}
+              className="rounded bg-amber-500 px-3 py-1.5 text-sm font-semibold text-black hover:bg-amber-400"
+            >
+              ＋ Add Pokémon
+            </button>
+            <span className="text-xs text-slate-500">
+              {members.length}/{limit}
+            </span>
+          </div>
+          {panel?.member === -1 && panel.kind === "species" && (
+            <SelectorPanel
+              title="Add Pokémon"
+              options={poolOptions}
+              onSelect={(v) => v && addMember(slugByName[v] ?? "")}
+              onClose={closePanel}
+            />
+          )}
         </div>
       )}
+
+      {/* Extra bottom whitespace so an open panel never sits against the edge. */}
+      <div className="h-32" />
     </div>
   );
 }
