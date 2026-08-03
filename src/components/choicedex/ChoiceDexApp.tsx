@@ -16,6 +16,7 @@ import {
 } from "@/domain/types/battle";
 import type { PokemonType, StatKey } from "@/domain/types/pokemon";
 import { TypeBadge } from "@/components/ui";
+import { PokeIcon } from "@/components/PokeIcon";
 import {
   buildStateWithEntry,
   combatantFromRef,
@@ -369,6 +370,9 @@ function BattleView({
 }) {
   const refBySlug = bySlug;
   const [round, setRound] = useState(1);
+  // Teams are held in state so "swap sides" can flip perspective mid-battle.
+  const [uTeam, setUTeam] = useState<string[]>(userTeam);
+  const [oTeam, setOTeam] = useState<string[]>(oppTeam);
   // Which team member occupies each of the two active spots per side.
   const [activeUser, setActiveUser] = useState<[string | null, string | null]>([
     userTeam[0] ?? null,
@@ -426,6 +430,24 @@ function BattleView({
 
   const allySwitch = (side: Side) =>
     (side === "user" ? setActiveUser : setActiveOpp)((a) => [a[1], a[0]]);
+
+  // Swap which team is "yours": flip teams, active spots, side conditions, and
+  // re-key each mon's battle state so HP/status follow its Pokémon.
+  const swapSides = () => {
+    setUTeam(oTeam);
+    setOTeam(uTeam);
+    setActiveUser(activeOpp);
+    setActiveOpp(activeUser);
+    setUCond(oCond);
+    setOCond(uCond);
+    setMon((m) => {
+      const next: Record<string, MonState> = {};
+      for (const [k, v] of Object.entries(m)) {
+        next[k.startsWith("user:") ? "opponent:" + k.slice(5) : "user:" + k.slice(10)] = v;
+      }
+      return next;
+    });
+  };
 
   const built = useMemo(() => {
     const [u0, u1] = activeUser;
@@ -491,10 +513,13 @@ function BattleView({
                   foe
                   slug={slug}
                   state={monOf("opponent", slug)}
-                  options={optionsFor("opponent", oppTeam, activeOpp, i as 0 | 1)}
+                  options={optionsFor("opponent", oTeam, activeOpp, i as 0 | 1)}
                   abilities={allAbilities}
                   defaultAbility={abilitiesFor(slug)[0] ?? ""}
-                  onSelect={(s) => setActive("opponent", i as 0 | 1, s)}
+                  onSelect={(s) => {
+                    setActive("opponent", i as 0 | 1, s);
+                    if (s && s !== slug) patchMon("opponent", s, { stages: NEUTRAL_STAGES });
+                  }}
                   onPatch={(p) => patchMon("opponent", slug, p)}
                 />
               );
@@ -509,10 +534,13 @@ function BattleView({
                   label="You"
                   slug={slug}
                   state={monOf("user", slug)}
-                  options={optionsFor("user", userTeam, activeUser, i as 0 | 1)}
+                  options={optionsFor("user", uTeam, activeUser, i as 0 | 1)}
                   abilities={allAbilities}
                   defaultAbility={abilitiesFor(slug)[0] ?? ""}
-                  onSelect={(s) => setActive("user", i as 0 | 1, s)}
+                  onSelect={(s) => {
+                    setActive("user", i as 0 | 1, s);
+                    if (s && s !== slug) patchMon("user", s, { stages: NEUTRAL_STAGES });
+                  }}
                   onPatch={(p) => patchMon("user", slug, p)}
                 />
               );
@@ -557,12 +585,54 @@ function BattleView({
               </button>
             </div>
             <p className="mt-1 text-[10px] leading-snug text-slate-600">
-              Switch moves (Volt Switch, U-turn, Roar, Whirlwind, Dragon Tail,
+              Switch: change a spot&apos;s Pokémon in the field card — the
+              incoming mon enters fresh, so its stat stages reset (entry effects
+              like Intimidate apply on entry). Switch moves (Volt Switch, U-turn,
+              Roar, Whirlwind, Dragon Tail,
               Parting Shot): change that spot&apos;s Pokémon above. Ability moves
               (Skill Swap, Simple Beam, Worry Seed, Entrainment, Gastro Acid): set
               the new ability on a card. Item used up: tick “used”.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Remaining Pokémon per side (yours left, opponent right) + swap sides. */}
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/40 p-2">
+        <div className="flex flex-wrap gap-1">
+          {uTeam.map((s) => {
+            const st = monOf("user", s);
+            return (
+              <span
+                key={s}
+                className={st.hpPct <= 0 ? "opacity-30 grayscale" : ""}
+                title={`${refBySlug.get(s)?.name ?? s} — ${st.hpPct}% HP${st.status !== "none" ? ` · ${st.status}` : ""}`}
+              >
+                <PokeIcon species={s} />
+              </span>
+            );
+          })}
+        </div>
+        <button
+          onClick={swapSides}
+          title="Swap which side is yours"
+          className="shrink-0 rounded border border-slate-700 px-2 py-1 text-xs hover:border-amber-500"
+        >
+          ⇄ Swap
+        </button>
+        <div className="flex flex-wrap justify-end gap-1">
+          {oTeam.map((s) => {
+            const st = monOf("opponent", s);
+            return (
+              <span
+                key={s}
+                className={st.hpPct <= 0 ? "opacity-30 grayscale" : ""}
+                title={`${refBySlug.get(s)?.name ?? s} — ${st.hpPct}% HP${st.status !== "none" ? ` · ${st.status}` : ""}`}
+              >
+                <PokeIcon species={s} />
+              </span>
+            );
+          })}
         </div>
       </div>
 
@@ -603,8 +673,8 @@ function BattleView({
       )}
 
       {(() => {
-        const userAlive = userTeam.filter((s) => monOf("user", s).hpPct > 0).length;
-        const oppAlive = oppTeam.filter((s) => monOf("opponent", s).hpPct > 0).length;
+        const userAlive = uTeam.filter((s) => monOf("user", s).hpPct > 0).length;
+        const oppAlive = oTeam.filter((s) => monOf("opponent", s).hpPct > 0).length;
         const over = userAlive === 0 || oppAlive === 0;
         return (
           <div className="flex items-center justify-between">
@@ -676,7 +746,10 @@ function ActiveCard({
 }) {
   return (
     <div className={`w-36 rounded-lg border p-2 text-xs backdrop-blur ${foe ? "border-rose-800/60 bg-slate-900/70" : "border-emerald-800/60 bg-slate-900/70"}`}>
-      <span className="mb-1 block text-[10px] uppercase text-slate-500">{label}</span>
+      <div className="mb-1 flex items-center gap-1">
+        {slug && <PokeIcon species={slug} />}
+        <span className="text-[10px] uppercase text-slate-500">{label}</span>
+      </div>
       <select
         value={slug ?? ""}
         onChange={(e) => onSelect(e.target.value || null)}
