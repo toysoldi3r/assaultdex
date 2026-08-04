@@ -33,6 +33,8 @@ export interface KnownSet {
   nature: string;
   item: string;
   ability: string;
+  /** The team's confirmed moves for this species (restricts the readout). */
+  moves?: string[];
 }
 export interface SavedTeam {
   id: string;
@@ -54,16 +56,49 @@ function emptyTeam(): (string | null)[] {
   return [null, null, null, null, null, null];
 }
 
-/** Selectable battle-stage backgrounds. */
-const BACKGROUNDS: { id: string; label: string; className: string }[] = [
-  { id: "meadow", label: "Meadow", className: "bg-gradient-to-b from-sky-900/30 to-emerald-900/20" },
-  { id: "ocean", label: "Ocean", className: "bg-gradient-to-b from-cyan-900/40 to-blue-950/50" },
-  { id: "volcano", label: "Volcano", className: "bg-gradient-to-b from-orange-900/40 to-red-950/50" },
-  { id: "cave", label: "Cave", className: "bg-gradient-to-b from-slate-700/50 to-slate-950/70" },
-  { id: "night", label: "Night sky", className: "bg-gradient-to-b from-indigo-950/70 to-slate-950/70" },
-  { id: "stadium", label: "Stadium", className: "bg-gradient-to-b from-fuchsia-900/30 to-slate-900/50" },
+/** Selectable battle-stage backgrounds — a sky band over a ground band with a
+ *  soft horizon glow, evoking in-game stages without any external image. */
+const BACKGROUNDS: { id: string; label: string; background: string }[] = [
+  {
+    id: "meadow",
+    label: "Meadow",
+    background:
+      "radial-gradient(120% 60% at 50% 38%, rgba(255,255,255,.18), transparent 60%), linear-gradient(to bottom, #38bdf8 0%, #7dd3fc 42%, #4ade80 52%, #15803d 100%)",
+  },
+  {
+    id: "ocean",
+    label: "Ocean",
+    background:
+      "radial-gradient(120% 55% at 50% 40%, rgba(255,255,255,.15), transparent 60%), linear-gradient(to bottom, #7dd3fc 0%, #38bdf8 45%, #0e7490 55%, #0c4a6e 100%)",
+  },
+  {
+    id: "volcano",
+    label: "Volcano",
+    background:
+      "radial-gradient(120% 55% at 50% 65%, rgba(249,115,22,.5), transparent 55%), linear-gradient(to bottom, #7f1d1d 0%, #450a0a 50%, #1c1917 100%)",
+  },
+  {
+    id: "cave",
+    label: "Cave",
+    background:
+      "radial-gradient(90% 50% at 50% 30%, rgba(148,163,184,.25), transparent 60%), linear-gradient(to bottom, #334155 0%, #1e293b 55%, #020617 100%)",
+  },
+  {
+    id: "night",
+    label: "Night sky",
+    background:
+      "radial-gradient(1px 1px at 20% 25%, #fff, transparent), radial-gradient(1px 1px at 70% 15%, #fff, transparent), radial-gradient(1px 1px at 45% 35%, #cbd5e1, transparent), linear-gradient(to bottom, #1e1b4b 0%, #0f172a 55%, #020617 100%)",
+  },
+  {
+    id: "stadium",
+    label: "Stadium",
+    background:
+      "radial-gradient(120% 60% at 50% 30%, rgba(217,70,239,.25), transparent 60%), linear-gradient(to bottom, #4a044e 0%, #1e1b4b 48%, #14532d 56%, #052e16 100%)",
+  },
 ];
-const bgClass = (id: string) => BACKGROUNDS.find((b) => b.id === id)?.className ?? BACKGROUNDS[0]!.className;
+const bgStyle = (id: string) => ({
+  background: (BACKGROUNDS.find((b) => b.id === id) ?? BACKGROUNDS[0]!).background,
+});
 
 const SESSION_KEY = "choicedex.session.v1";
 const BATTLE_KEY = "choicedex.battle.v1";
@@ -667,7 +702,7 @@ function BattleView({
 
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         {/* Battle screen: opponent top-right, you bottom-left */}
-        <div className={`relative min-h-[240px] overflow-hidden rounded-lg border border-slate-800 p-3 ${bgClass(background)}`}>
+        <div className="relative min-h-[280px] overflow-hidden rounded-lg border border-slate-800 p-3" style={bgStyle(background)}>
           <div className="absolute right-3 top-3 flex gap-2">
             {[0, 1].map((i) => {
               const slug = activeOpp[i as 0 | 1];
@@ -814,13 +849,21 @@ function BattleView({
             const targets = spec.enemies.active
               .filter((c): c is Combatant => c !== null)
               .map((c) => ({ name: c.name, combatant: c }));
+            // For OUR mons, restrict the move readout to the team's confirmed set.
+            const known = !spec.foe
+              ? loadedSets[`user:${spec.slug}`]?.moves ?? loadedSets[`opponent:${spec.slug}`]?.moves
+              : undefined;
+            const attacker =
+              known && known.length
+                ? { ...spec.attacker, moves: spec.attacker.moves.filter((mv) => known.includes(mv.name)) }
+                : spec.attacker;
             return (
               <MonPanel
                 key={spec.key}
                 name={ref.name}
                 types={ref.types}
                 baseStats={ref.baseStats}
-                attacker={spec.attacker}
+                attacker={attacker}
                 targets={targets}
                 abilities={allAbilities}
                 defaultAbility={abilitiesFor(spec.slug)[0] ?? ""}
@@ -863,19 +906,34 @@ function BattleView({
   );
 }
 
-/** Team-overview chip: icon + HP/status warning badges (yellow ≤50%, red <20%). */
+/** Coloured status badge classes, echoing the in-game status colours. */
+const STATUS_COLOR: Record<string, string> = {
+  burn: "bg-orange-600 text-white",
+  paralysis: "bg-yellow-500 text-black",
+  poison: "bg-fuchsia-700 text-white",
+  toxic: "bg-fuchsia-900 text-white",
+  sleep: "bg-slate-500 text-white",
+  freeze: "bg-cyan-500 text-black",
+};
+
+/** Team-overview chip: bigger icon + HP/status warning badges + coloured status. */
 function MonChip({ name, slug, state }: { name: string; slug: string; state: MonState }) {
   const fainted = state.hpPct <= 0;
   const warn = !fainted && state.hpPct < 20 ? "red" : !fainted && state.hpPct <= 50 ? "yellow" : null;
+  const title =
+    `${name} — ${state.hpPct}% HP` +
+    (state.status !== "none" ? ` · ${state.status}` : "") +
+    (state.ability ? ` · ${state.ability}` : "") +
+    (state.item && state.item !== "None" ? ` · ${state.item}` : "");
   return (
     <span
-      className={`relative inline-flex ${fainted ? "opacity-30 grayscale" : ""}`}
-      title={`${name} — ${state.hpPct}% HP${state.status !== "none" ? ` · ${state.status}` : ""}`}
+      className={`relative inline-flex h-12 w-12 items-center justify-center overflow-hidden ${fainted ? "opacity-30 grayscale" : ""}`}
+      title={title}
     >
-      <PokeIcon species={slug} />
+      <PokeIcon species={slug} className="scale-[1.35]" />
       {warn && (
         <span
-          className={`absolute -right-1 -top-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-bold text-black ${
+          className={`absolute right-0 top-0 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-black ${
             warn === "red" ? "bg-red-500" : "bg-amber-400"
           }`}
         >
@@ -883,7 +941,11 @@ function MonChip({ name, slug, state }: { name: string; slug: string; state: Mon
         </span>
       )}
       {!fainted && state.status !== "none" && (
-        <span className="absolute -bottom-1 left-0 rounded bg-slate-800 px-0.5 text-[7px] uppercase text-slate-200">
+        <span
+          className={`absolute bottom-0 left-0 rounded px-0.5 text-[8px] font-semibold uppercase ${
+            STATUS_COLOR[state.status] ?? "bg-slate-700 text-slate-200"
+          }`}
+        >
           {state.status.slice(0, 3)}
         </span>
       )}
@@ -912,10 +974,23 @@ function ActiveCard({
   onSelect: (slug: string | null) => void;
   onPatch: (p: Partial<MonState>) => void;
 }) {
+  const hoverInfo = slug
+    ? `${slug} — ${state.hpPct}% HP` +
+      (state.status !== "none" ? ` · ${state.status}` : "") +
+      (state.ability ? ` · ${state.ability}` : "") +
+      (state.item && state.item !== "None" ? ` · ${state.item}` : "")
+    : undefined;
   return (
-    <div className={`w-36 rounded-lg border p-2 text-xs backdrop-blur ${foe ? "border-rose-800/60 bg-slate-900/70" : "border-emerald-800/60 bg-slate-900/70"}`}>
+    <div
+      title={hoverInfo}
+      className={`w-40 rounded-lg border p-2 text-xs backdrop-blur ${foe ? "border-rose-800/60 bg-slate-900/70" : "border-emerald-800/60 bg-slate-900/70"}`}
+    >
       <div className="mb-1 flex items-center gap-1">
-        {slug && <PokeIcon species={slug} />}
+        {slug && (
+          <span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden">
+            <PokeIcon species={slug} className="scale-[1.3]" />
+          </span>
+        )}
         <span className="text-[10px] uppercase text-slate-500">{label}</span>
       </div>
       <select
