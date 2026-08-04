@@ -35,7 +35,7 @@ export default function RootLayout({
             <Nav />
           </div>
         </header>
-        <main id="content" className="mx-auto max-w-5xl px-4 py-8">
+        <main id="content" className="mx-auto max-w-5xl px-4 pt-8 pb-[40vh]">
           {children}
         </main>
         <RecentNav />

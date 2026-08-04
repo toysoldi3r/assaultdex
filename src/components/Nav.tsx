@@ -7,6 +7,7 @@ const NAV = [
   { href: "/pokemon", label: "Pokédex" },
   { href: "/teams", label: "Teams" },
   { href: "/choicedex", label: "ChoiceDex" },
+  { href: "/database", label: "Database" },
   { href: "/battles", label: "Battles" },
 ];
 
