@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { TypeBadge } from "@/components/ui";
 import { PokeIcon } from "@/components/PokeIcon";
 import { NATURES, natureByName } from "@/data/fixtures/natures";
@@ -76,6 +77,9 @@ export function MonPanel({
 }) {
   const nature = natureByName(state.nature);
   const damaging = attacker.moves;
+  // Which target the KO readout reflects; click a target icon to switch.
+  const [tgt, setTgt] = useState(0);
+  const activeTarget = Math.min(tgt, Math.max(0, targets.length - 1));
 
   const natureCls = (k: StatKey): string => {
     if (k === "hp" || nature.boosted === nature.lowered) return "text-slate-400";
@@ -115,7 +119,10 @@ export function MonPanel({
         </select>
         <select value={state.item} onChange={(e) => onPatch({ item: e.target.value })}
           className={`rounded border border-slate-700 bg-slate-900 px-1 py-0.5 ${state.itemUsed ? "text-slate-500 line-through" : ""}`} aria-label="Item">
-          {COMMON_ITEMS.map((it) => <option key={it} value={it}>{it}</option>)}
+          {(state.item && !(COMMON_ITEMS as readonly string[]).includes(state.item)
+            ? [state.item, ...COMMON_ITEMS]
+            : COMMON_ITEMS
+          ).map((it) => <option key={it} value={it}>{it}</option>)}
         </select>
       </div>
 
@@ -150,71 +157,79 @@ export function MonPanel({
         );
       })()}
 
-      {/* Moves / damage — one row per (move × target) so KO vs both foes is
-          visible at once (target icon column), with a dedicated crit column. */}
+      {/* Moves / damage — one row per move against the SELECTED target. The "vs"
+          column holds both target icons; click one to switch the KO readout. */}
       <div className="mb-2">
         <table className="w-full text-xs">
           <thead>
             <tr className="text-[10px] uppercase text-slate-500">
               <th className="text-left font-normal">Move</th>
-              <th className="font-normal">vs</th>
               <th className="text-right font-normal">Dmg</th>
               <th className="text-right font-normal">KO</th>
               <th className="text-right font-normal">Crit</th>
+              <th className="text-center font-normal">vs</th>
             </tr>
           </thead>
           <tbody>
-            {damaging.flatMap((m: MoveFixture) =>
-              targets.map((t, ti) => {
-                const isDmg = m.category !== "status" && m.power !== null;
-                const opt = { defenderConditions, spread: m.target !== "normal" };
-                const d = isDmg
-                  ? calculateDamage(attacker, t.combatant, m, field, { ...opt, crit: false })
-                  : null;
-                const dc = isDmg
-                  ? calculateDamage(attacker, t.combatant, m, field, { ...opt, crit: true })
-                  : null;
-                const ko = d ? koLabel(d) : null;
-                const koc = dc ? koLabel(dc) : null;
-                const known = state.knownMoves.includes(m.name);
-                const toggleKnown = () =>
-                  onPatch({
-                    knownMoves: known
-                      ? state.knownMoves.filter((x) => x !== m.name)
-                      : [...state.knownMoves, m.name],
-                  });
-                return (
-                  <tr key={`${m.name}:${ti}`} className="border-t border-slate-800/60">
-                    <td className="py-0.5 pr-2">
-                      {ti === 0 &&
-                        (foe ? (
-                          <button
-                            type="button"
-                            onClick={toggleKnown}
-                            title={known ? "Confirmed used — click to unmark" : "Mark as confirmed used"}
-                            className={known ? "font-semibold text-amber-300" : "text-slate-300 hover:text-amber-300"}
-                          >
-                            {known ? "✓ " : "○ "}
-                            {m.name}
-                          </button>
-                        ) : (
-                          m.name
-                        ))}
-                    </td>
-                    <td className="py-0.5 text-center">
-                      <span title={t.name}>
-                        <PokeIcon species={t.name} />
-                      </span>
-                    </td>
-                    <td className="py-0.5 pr-2 text-right tabular-nums text-slate-400">
-                      {d ? `${d.minPercent}–${d.maxPercent}%` : "—"}
-                    </td>
-                    <td className={`py-0.5 text-right ${ko?.cls ?? ""}`}>{ko?.text ?? ""}</td>
-                    <td className={`py-0.5 text-right ${koc?.cls ?? ""}`}>{koc?.text ?? ""}</td>
-                  </tr>
-                );
-              }),
-            )}
+            {damaging.map((m: MoveFixture) => {
+              const t = targets[activeTarget];
+              const isDmg = m.category !== "status" && m.power !== null && !!t;
+              const opt = { defenderConditions, spread: m.target !== "normal" };
+              const d = isDmg
+                ? calculateDamage(attacker, t!.combatant, m, field, { ...opt, crit: false })
+                : null;
+              const dc = isDmg
+                ? calculateDamage(attacker, t!.combatant, m, field, { ...opt, crit: true })
+                : null;
+              const ko = d ? koLabel(d) : null;
+              const koc = dc ? koLabel(dc) : null;
+              const known = state.knownMoves.includes(m.name);
+              const toggleKnown = () =>
+                onPatch({
+                  knownMoves: known
+                    ? state.knownMoves.filter((x) => x !== m.name)
+                    : [...state.knownMoves, m.name],
+                });
+              return (
+                <tr key={m.name} className="border-t border-slate-800/60">
+                  <td className="py-0.5 pr-2">
+                    {foe ? (
+                      <button
+                        type="button"
+                        onClick={toggleKnown}
+                        title={known ? "Confirmed used — click to unmark" : "Mark as confirmed used"}
+                        className={known ? "font-semibold text-amber-300" : "text-slate-300 hover:text-amber-300"}
+                      >
+                        {known ? "✓ " : "○ "}
+                        {m.name}
+                      </button>
+                    ) : (
+                      m.name
+                    )}
+                  </td>
+                  <td className="py-0.5 pr-2 text-right tabular-nums text-slate-400">
+                    {d ? `${d.minPercent}–${d.maxPercent}%` : "—"}
+                  </td>
+                  <td className={`py-0.5 text-right ${ko?.cls ?? ""}`}>{ko?.text ?? ""}</td>
+                  <td className={`py-0.5 text-right ${koc?.cls ?? ""}`}>{koc?.text ?? ""}</td>
+                  <td className="py-0.5 text-center">
+                    <span className="inline-flex gap-0.5">
+                      {targets.map((tt, ti) => (
+                        <button
+                          key={tt.name}
+                          type="button"
+                          onClick={() => setTgt(ti)}
+                          title={`Show KO vs ${tt.name}`}
+                          className={`rounded ${ti === activeTarget ? "ring-1 ring-amber-400" : "opacity-50 hover:opacity-100"}`}
+                        >
+                          <PokeIcon species={tt.name} />
+                        </button>
+                      ))}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

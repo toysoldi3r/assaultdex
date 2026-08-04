@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MonPanel } from "./MonPanel";
 import { Recommendations } from "./Recommendations";
 import { analyzeLeads } from "@/domain/choicedex/leads";
@@ -54,6 +54,28 @@ function emptyTeam(): (string | null)[] {
   return [null, null, null, null, null, null];
 }
 
+/** Selectable battle-stage backgrounds. */
+const BACKGROUNDS: { id: string; label: string; className: string }[] = [
+  { id: "meadow", label: "Meadow", className: "bg-gradient-to-b from-sky-900/30 to-emerald-900/20" },
+  { id: "ocean", label: "Ocean", className: "bg-gradient-to-b from-cyan-900/40 to-blue-950/50" },
+  { id: "volcano", label: "Volcano", className: "bg-gradient-to-b from-orange-900/40 to-red-950/50" },
+  { id: "cave", label: "Cave", className: "bg-gradient-to-b from-slate-700/50 to-slate-950/70" },
+  { id: "night", label: "Night sky", className: "bg-gradient-to-b from-indigo-950/70 to-slate-950/70" },
+  { id: "stadium", label: "Stadium", className: "bg-gradient-to-b from-fuchsia-900/30 to-slate-900/50" },
+];
+const bgClass = (id: string) => BACKGROUNDS.find((b) => b.id === id)?.className ?? BACKGROUNDS[0]!.className;
+
+const SESSION_KEY = "choicedex.session.v1";
+const BATTLE_KEY = "choicedex.battle.v1";
+
+/** Item dropdown options: the common list plus the current value if unlisted,
+ *  so a saved-team item outside COMMON_ITEMS still displays as selected. */
+function itemOptions(current: string): string[] {
+  return current && !(COMMON_ITEMS as readonly string[]).includes(current)
+    ? [current, ...COMMON_ITEMS]
+    : [...COMMON_ITEMS];
+}
+
 export function ChoiceDexApp({
   pokemon,
   teams,
@@ -74,6 +96,32 @@ export function ChoiceDexApp({
   const [oppTeam, setOppTeam] = useState<(string | null)[]>(emptyTeam());
   // Known sets for mons loaded from a saved team, keyed `side:slug` — prefill.
   const [loadedSets, setLoadedSets] = useState<Record<string, KnownSet>>({});
+
+  // Persist the preview/session so switching tabs and returning reopens it.
+  const sessionFirst = useRef(true);
+  useEffect(() => {
+    if (sessionFirst.current) {
+      sessionFirst.current = false;
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (raw) {
+          const s = JSON.parse(raw);
+          if (Array.isArray(s.userTeam)) setUserTeam(s.userTeam);
+          if (Array.isArray(s.oppTeam)) setOppTeam(s.oppTeam);
+          if (s.loadedSets) setLoadedSets(s.loadedSets);
+          if (s.phase === "battle") setPhase("battle");
+        }
+      } catch {
+        /* ignore corrupt storage */
+      }
+      return;
+    }
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ phase, userTeam, oppTeam, loadedSets }));
+    } catch {
+      /* ignore quota */
+    }
+  }, [phase, userTeam, oppTeam, loadedSets]);
 
   const userCount = userTeam.filter(Boolean).length;
   const oppCount = oppTeam.filter(Boolean).length;
@@ -375,6 +423,8 @@ const emptyCond = (): SideCond => ({
   toxicSpikes: 0,
   stickyWeb: false,
 });
+const hasHazards = (c: SideCond): boolean =>
+  c.stealthRock || c.spikes > 0 || c.toxicSpikes > 0 || c.stickyWeb;
 
 function monFromSet(set: KnownSet | undefined): MonState {
   const base = emptyMon();
@@ -433,6 +483,53 @@ function BattleView({
   const [gravity, setGravity] = useState(false);
   const [uCond, setUCond] = useState<SideCond>(emptyCond());
   const [oCond, setOCond] = useState<SideCond>(emptyCond());
+  const [background, setBackground] = useState<string>("meadow");
+
+  // Stable signature of the battle's Pokémon (order/side-independent), so a saved
+  // battle is only resumed when it is the same battle — not after picking new teams.
+  const teamSig = useMemo(
+    () => [...userTeam, ...oppTeam].slice().sort().join("|"),
+    [userTeam, oppTeam],
+  );
+
+  // Persist the whole battle so leaving and returning to the tab reopens it.
+  const battleFirst = useRef(true);
+  useEffect(() => {
+    if (battleFirst.current) {
+      battleFirst.current = false;
+      try {
+        const raw = localStorage.getItem(BATTLE_KEY);
+        if (raw) {
+          const s = JSON.parse(raw);
+          if (s.sig !== teamSig) return; // stale battle for different teams
+          if (Array.isArray(s.uTeam)) setUTeam(s.uTeam);
+          if (Array.isArray(s.oTeam)) setOTeam(s.oTeam);
+          if (s.activeUser) setActiveUser(s.activeUser);
+          if (s.activeOpp) setActiveOpp(s.activeOpp);
+          if (s.mon) setMon(s.mon);
+          if (s.weather) setWeather(s.weather);
+          if (s.terrain) setTerrain(s.terrain);
+          if (typeof s.trickRoom === "boolean") setTrickRoom(s.trickRoom);
+          if (typeof s.gravity === "boolean") setGravity(s.gravity);
+          if (s.uCond) setUCond(s.uCond);
+          if (s.oCond) setOCond(s.oCond);
+          if (typeof s.round === "number") setRound(s.round);
+          if (s.background) setBackground(s.background);
+        }
+      } catch {
+        /* ignore corrupt storage */
+      }
+      return;
+    }
+    try {
+      localStorage.setItem(
+        BATTLE_KEY,
+        JSON.stringify({ sig: teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background }),
+      );
+    } catch {
+      /* ignore quota */
+    }
+  }, [teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background]);
 
   const monOf = (side: Side, slug: string | null): MonState =>
     (slug && mon[monKey(side, slug)]) || emptyMon();
@@ -528,16 +625,49 @@ function BattleView({
       .map((s) => ({ slug: s, name: refBySlug.get(s)?.name ?? s }));
   };
 
+  const userAlive = uTeam.filter((s) => monOf("user", s).hpPct > 0).length;
+  const oppAlive = oTeam.filter((s) => monOf("opponent", s).hpPct > 0).length;
+  const battleOver = userAlive === 0 || oppAlive === 0;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      {/* Top bar: back, round, background picker, and the Next Round action so it
+          is always reachable without scrolling. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <button onClick={onBack} className="text-sm text-amber-400 hover:underline">← Team preview</button>
-        <span className="text-xs uppercase tracking-wide text-slate-500">Round {round}</span>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="uppercase tracking-wide text-slate-500">Round {round}</span>
+          <label className="flex items-center gap-1 text-slate-400">
+            Stage
+            <select
+              value={background}
+              onChange={(e) => setBackground(e.target.value)}
+              className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
+            >
+              {BACKGROUNDS.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
+            </select>
+          </label>
+          {battleOver ? (
+            <button
+              onClick={() => {
+                try { localStorage.removeItem(BATTLE_KEY); } catch { /* ignore */ }
+                onBack();
+              }}
+              className="rounded bg-amber-500 px-3 py-1 font-semibold text-black hover:bg-amber-400"
+            >
+              New battle
+            </button>
+          ) : (
+            <button onClick={() => setRound((r) => r + 1)} className="rounded bg-amber-500 px-3 py-1 font-semibold text-black hover:bg-amber-400">
+              Next round →
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         {/* Battle screen: opponent top-right, you bottom-left */}
-        <div className="relative min-h-[240px] overflow-hidden rounded-lg border border-slate-800 bg-gradient-to-b from-sky-900/30 to-emerald-900/20 p-3">
+        <div className={`relative min-h-[240px] overflow-hidden rounded-lg border border-slate-800 p-3 ${bgClass(background)}`}>
           <div className="absolute right-3 top-3 flex gap-2">
             {[0, 1].map((i) => {
               const slug = activeOpp[i as 0 | 1];
@@ -583,95 +713,94 @@ function BattleView({
           </div>
         </div>
 
-        {/* Tools */}
-        <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs text-slate-300">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Field &amp; tools</h3>
-          <label className="flex items-center justify-between gap-2">
-            Weather
-            <select value={weather} onChange={(e) => setWeather(e.target.value as Weather)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1">
-              {WEATHERS.map((w) => <option key={w}>{w}</option>)}
-            </select>
-          </label>
-          <label className="flex items-center justify-between gap-2">
-            Terrain
-            <select value={terrain} onChange={(e) => setTerrain(e.target.value as Terrain)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1">
-              {TERRAINS.map((t) => <option key={t}>{t}</option>)}
-            </select>
-          </label>
-          <div className="flex flex-wrap gap-3">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" checked={trickRoom} onChange={(e) => setTrickRoom(e.target.checked)} /> Trick Room
+        {/* Field & per-side tools, split so each side is unmistakable. */}
+        <div className="space-y-3 text-xs text-slate-300">
+          {/* Shared field */}
+          <div className="space-y-2 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Field (both sides)</h3>
+            <label className="flex items-center justify-between gap-2">
+              Weather
+              <select value={weather} onChange={(e) => setWeather(e.target.value as Weather)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1">
+                {WEATHERS.map((w) => <option key={w}>{w}</option>)}
+              </select>
             </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" checked={gravity} onChange={(e) => setGravity(e.target.checked)} /> Gravity
+            <label className="flex items-center justify-between gap-2">
+              Terrain
+              <select value={terrain} onChange={(e) => setTerrain(e.target.value as Terrain)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1">
+                {TERRAINS.map((t) => <option key={t}>{t}</option>)}
+              </select>
             </label>
-          </div>
-          <ConditionRow label="Your side" cond={uCond} onChange={setUCond} />
-          <ConditionRow label="Opponent side" cond={oCond} onChange={setOCond} />
-
-          <div className="border-t border-slate-800 pt-2">
-            <p className="mb-1 text-[10px] uppercase text-slate-500">Battle moves</p>
-            <div className="flex flex-wrap gap-1">
-              <button onClick={() => allySwitch("user")} className="rounded border border-slate-700 px-2 py-0.5 hover:border-amber-500">
-                Ally Switch (you)
-              </button>
-              <button onClick={() => allySwitch("opponent")} className="rounded border border-slate-700 px-2 py-0.5 hover:border-amber-500">
-                Ally Switch (opp)
-              </button>
+            <div className="flex flex-wrap gap-3">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={trickRoom} onChange={(e) => setTrickRoom(e.target.checked)} /> Trick Room
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={gravity} onChange={(e) => setGravity(e.target.checked)} /> Gravity
+              </label>
             </div>
-            <p className="mt-1 text-[10px] leading-snug text-slate-600">
-              Switch: change a spot&apos;s Pokémon in the field card — the
-              incoming mon enters fresh, so its stat stages reset (entry effects
-              like Intimidate apply on entry). Switch moves (Volt Switch, U-turn,
-              Roar, Whirlwind, Dragon Tail,
-              Parting Shot): change that spot&apos;s Pokémon above. Ability moves
-              (Skill Swap, Simple Beam, Worry Seed, Entrainment, Gastro Acid): set
-              the new ability on a card. Item used up: tick “used”.
-            </p>
+          </div>
+
+          {/* Your side */}
+          <div className="space-y-2 rounded-lg border border-emerald-800/60 bg-emerald-950/20 p-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
+              🟢 Your side
+              {hasHazards(uCond) && <span className="text-[10px] text-amber-300">⚠ hazards up</span>}
+            </h3>
+            <ConditionRow label="Screens &amp; hazards" cond={uCond} onChange={setUCond} />
+            <button onClick={() => allySwitch("user")} className="rounded border border-emerald-700 px-2 py-0.5 hover:border-emerald-400">
+              Ally Switch
+            </button>
+          </div>
+
+          {/* Opponent side */}
+          <div className="space-y-2 rounded-lg border border-rose-800/60 bg-rose-950/20 p-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-rose-300">
+              🔴 Opponent side
+              {hasHazards(oCond) && <span className="text-[10px] text-amber-300">⚠ hazards up</span>}
+            </h3>
+            <ConditionRow label="Screens &amp; hazards" cond={oCond} onChange={setOCond} />
+            <button onClick={() => allySwitch("opponent")} className="rounded border border-rose-700 px-2 py-0.5 hover:border-rose-400">
+              Ally Switch
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Remaining Pokémon per side (yours left, opponent right) + swap sides. */}
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/40 p-2">
-        <div className="flex flex-wrap gap-1">
-          {uTeam.map((s) => {
-            const st = monOf("user", s);
-            return (
-              <span
-                key={s}
-                className={st.hpPct <= 0 ? "opacity-30 grayscale" : ""}
-                title={`${refBySlug.get(s)?.name ?? s} — ${st.hpPct}% HP${st.status !== "none" ? ` · ${st.status}` : ""}`}
-              >
-                <PokeIcon species={s} />
-              </span>
-            );
-          })}
+      {/* Remaining Pokémon per side, clearly labelled, with HP/status warnings. */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+        <div>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">🟢 Your team</p>
+          <div className="flex flex-wrap gap-1.5">
+            {uTeam.map((s) => (
+              <MonChip key={s} name={refBySlug.get(s)?.name ?? s} slug={s} state={monOf("user", s)} />
+            ))}
+          </div>
         </div>
         <button
           onClick={swapSides}
           title="Swap which side is yours"
-          className="shrink-0 rounded border border-slate-700 px-2 py-1 text-xs hover:border-amber-500"
+          className="mt-4 shrink-0 rounded border border-slate-700 px-2 py-1 text-xs hover:border-amber-500"
         >
           ⇄ Swap
         </button>
-        <div className="flex flex-wrap justify-end gap-1">
-          {oTeam.map((s) => {
-            const st = monOf("opponent", s);
-            return (
-              <span
-                key={s}
-                className={st.hpPct <= 0 ? "opacity-30 grayscale" : ""}
-                title={`${refBySlug.get(s)?.name ?? s} — ${st.hpPct}% HP${st.status !== "none" ? ` · ${st.status}` : ""}`}
-              >
-                <PokeIcon species={s} />
-              </span>
-            );
-          })}
+        <div className="text-right">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-rose-300">🔴 Opponent&apos;s team</p>
+          <div className="flex flex-wrap justify-end gap-1.5">
+            {oTeam.map((s) => (
+              <MonChip key={s} name={refBySlug.get(s)?.name ?? s} slug={s} state={monOf("opponent", s)} />
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Showdex-style detail panels: per-move damage/KO + full stat table */}
+      {/* Showdex-style detail panels: per-move damage/KO + full stat table.
+          Top row = your active (green), bottom row = opponent active (red). */}
+      {built?.state && (
+        <div className="flex items-center gap-3 text-[10px] uppercase tracking-wide">
+          <span className="text-emerald-300">🟢 Your active</span>
+          <span className="text-rose-300">🔴 Opponent active</span>
+        </div>
+      )}
       {built?.state && (
         <div className="grid gap-3 md:grid-cols-2">
           {([
@@ -707,44 +836,20 @@ function BattleView({
         </div>
       )}
 
-      {(() => {
-        const userAlive = uTeam.filter((s) => monOf("user", s).hpPct > 0).length;
-        const oppAlive = oTeam.filter((s) => monOf("opponent", s).hpPct > 0).length;
-        const over = userAlive === 0 || oppAlive === 0;
-        return (
-          <div className="flex items-center justify-between">
-            {over ? (
-              <>
-                <p className="text-sm font-semibold text-amber-300">
-                  🏆 {userAlive === 0 && oppAlive === 0
-                    ? "Both sides fainted — draw."
-                    : userAlive === 0
-                      ? "Opponent wins — your team fainted."
-                      : "You win — opponent team fainted."}
-                </p>
-                <button
-                  onClick={onBack}
-                  className="rounded bg-amber-500 px-4 py-1.5 text-sm font-semibold text-black hover:bg-amber-400"
-                >
-                  New battle
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="text-xs text-slate-500">
-                  {userAlive} vs {oppAlive} alive · enter HP/status/field above, then advance.
-                </p>
-                <button
-                  onClick={() => setRound((r) => r + 1)}
-                  className="rounded bg-amber-500 px-4 py-1.5 text-sm font-semibold text-black hover:bg-amber-400"
-                >
-                  Next round →
-                </button>
-              </>
-            )}
-          </div>
-        );
-      })()}
+      {battleOver ? (
+        <p className="text-sm font-semibold text-amber-300">
+          🏆 {userAlive === 0 && oppAlive === 0
+            ? "Both sides fainted — draw."
+            : userAlive === 0
+              ? "Opponent wins — your team fainted."
+              : "You win — opponent team fainted."}{" "}
+          Use “New battle” above to restart.
+        </p>
+      ) : (
+        <p className="text-xs text-slate-500">
+          {userAlive} vs {oppAlive} alive · enter HP/status/field, then “Next round →” at the top.
+        </p>
+      )}
 
       <div>
         <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Best options</h3>
@@ -755,6 +860,34 @@ function BattleView({
         )}
       </div>
     </div>
+  );
+}
+
+/** Team-overview chip: icon + HP/status warning badges (yellow ≤50%, red <20%). */
+function MonChip({ name, slug, state }: { name: string; slug: string; state: MonState }) {
+  const fainted = state.hpPct <= 0;
+  const warn = !fainted && state.hpPct < 20 ? "red" : !fainted && state.hpPct <= 50 ? "yellow" : null;
+  return (
+    <span
+      className={`relative inline-flex ${fainted ? "opacity-30 grayscale" : ""}`}
+      title={`${name} — ${state.hpPct}% HP${state.status !== "none" ? ` · ${state.status}` : ""}`}
+    >
+      <PokeIcon species={slug} />
+      {warn && (
+        <span
+          className={`absolute -right-1 -top-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-bold text-black ${
+            warn === "red" ? "bg-red-500" : "bg-amber-400"
+          }`}
+        >
+          !
+        </span>
+      )}
+      {!fainted && state.status !== "none" && (
+        <span className="absolute -bottom-1 left-0 rounded bg-slate-800 px-0.5 text-[7px] uppercase text-slate-200">
+          {state.status.slice(0, 3)}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -827,7 +960,7 @@ function ActiveCard({
         onChange={(e) => onPatch({ item: e.target.value })}
         className={`mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs ${state.itemUsed ? "text-slate-500 line-through" : ""}`}
       >
-        {COMMON_ITEMS.map((it) => <option key={it} value={it}>{it}</option>)}
+        {itemOptions(state.item).map((it) => <option key={it} value={it}>{it}</option>)}
       </select>
       {slug && state.item !== "None" && (
         <label className="mt-1 flex items-center gap-1 text-[10px] text-slate-400">
