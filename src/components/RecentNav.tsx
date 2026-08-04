@@ -3,7 +3,7 @@
 // Right-rail card tracking where you've been. Recent routes are recorded on
 // every navigation (localStorage-backed, capped); any entry can be pinned so it
 // survives out of the recents rotation. Fixed to the right gutter on wide
-// screens where it won't overlap the centred max-w-5xl main column.
+// screens where it won't overlap the centred max-w-7xl main column.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";

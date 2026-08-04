@@ -11,8 +11,8 @@ import {
 } from "@/data/usageStats";
 
 export default function HomePage() {
-  const meta = topMeta(30);
-  const winrate = topWinRate(30, 3);
+  const meta = topMeta(20);
+  const winrate = topWinRate(20, 3);
   const teams = getTopTeams(10);
   const cores2 = getCores(2, 8);
   const cores3 = getCores(3, 8);
@@ -20,6 +20,23 @@ export default function HomePage() {
 
   return (
     <div className="space-y-6">
+      {/* Experimental + GenAI content labels */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300">
+          ⚠ Experimental — data and mechanics may be inaccurate
+        </span>
+        <a
+          href="https://mmmlabel.tech/"
+          target="_blank"
+          rel="noreferrer noopener"
+          title="Made together with generative AI — mmmlabel.tech content transparency label"
+          className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-300 hover:bg-sky-500/20"
+        >
+          <span aria-hidden>🤖</span> Made with GenAI
+          <span className="text-sky-500/70">· mmm</span>
+        </a>
+      </div>
+
       <div>
         <h1 className="text-3xl font-bold">AssaultDex</h1>
         <p className="mt-2 max-w-2xl text-slate-300">
@@ -28,18 +45,6 @@ export default function HomePage() {
           and version teams, and run the ChoiceDex battle calculator on a live
           battle state.
         </p>
-      </div>
-
-      <div>
-        <h2 className="mb-1 text-lg font-semibold">Metagame — {CHAMPIONS_FORMAT_LABEL}</h2>
-        <MetaCards
-          meta={meta}
-          winrate={winrate}
-          teams={teams}
-          cores2={cores2}
-          cores3={cores3}
-          cores4={cores4}
-        />
       </div>
 
       <Panel title="What's here">
@@ -69,13 +74,30 @@ export default function HomePage() {
         </ul>
       </Panel>
 
+      <div>
+        <h2 className="mb-1 text-lg font-semibold">Metagame — {CHAMPIONS_FORMAT_LABEL}</h2>
+        <p className="mb-2 text-xs text-slate-500">
+          Usage is battle-weighted from the MunchStats Champions ladder ({" "}
+          share of recorded battles a Pokémon appears in). Other sites may weight
+          differently, so exact percentages vary by source.
+        </p>
+        <MetaCards
+          meta={meta}
+          winrate={winrate}
+          teams={teams}
+          cores2={cores2}
+          cores3={cores3}
+          cores4={cores4}
+        />
+      </div>
+
       <Panel title="Honesty notes">
         <p className="text-sm text-slate-400">
           Mechanics status is <strong>{MECHANICS_STATUS}</strong>. Pokémon
           Champions mechanics are not publicly documented, so every formula
           (type chart, speed, damage) is a mainline-derived placeholder flagged
-          as unverified. Statistics, usage data, and later modules are not part
-          of this slice and are not fabricated.
+          as unverified. Usage statistics come from a committed snapshot of the
+          MunchStats ladder and are not fabricated.
         </p>
       </Panel>
     </div>

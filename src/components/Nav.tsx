@@ -18,7 +18,7 @@ function isActive(pathname: string, href: string): boolean {
 export function Nav() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Primary" className="flex gap-4 text-sm">
+    <nav aria-label="Primary" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
       {NAV.map((n) => {
         const active = isActive(pathname, n.href);
         return (
