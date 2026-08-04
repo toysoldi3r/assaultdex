@@ -77,6 +77,4 @@ export const rawPokemonDatasetSchema = z.object({
 });
 
 export type RawMove = z.infer<typeof rawMoveSchema>;
-export type RawBaseStats = z.infer<typeof rawBaseStatsSchema>;
 export type RawPokemon = z.infer<typeof rawPokemonSchema>;
-export type RawPokemonDataset = z.infer<typeof rawPokemonDatasetSchema>;

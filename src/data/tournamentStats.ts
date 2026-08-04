@@ -34,20 +34,6 @@ export interface TournData {
 
 const data = snapshot as TournData;
 
-/** Whether the snapshot has been populated by a CI refresh yet. */
-export function hasTournamentData(): boolean {
-  return data.teams > 0;
-}
-
-export function tournamentMeta(): { label: string; teams: number; tournaments: number; updated: string } {
-  return {
-    label: data.label,
-    teams: data.teams,
-    tournaments: data.tournaments,
-    updated: data.updated,
-  };
-}
-
 /** Tournament usage for one species by display name, or null. */
 export function getMonTournament(name: string): TournMon | null {
   return data.mons[usageKey(name)] ?? null;

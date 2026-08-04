@@ -25,6 +25,15 @@ export interface AnalysisMember {
   ivs: BaseStats;
   evs: BaseStats;
   nature: Nature;
+  ability?: string | null;
+}
+
+export interface WeatherSetter {
+  member: string;
+  /** The exact ability or move that sets the weather. */
+  source: string;
+  kind: "ability" | "move";
+  weather: string;
 }
 
 export interface WeaknessEntry {
@@ -55,6 +64,10 @@ export interface TeamAnalysis {
     controlMoves: { member: string; move: string }[];
     missing: boolean;
   };
+  weatherControl: {
+    setters: WeatherSetter[];
+    missing: boolean;
+  };
   dependence: {
     soleProviderCounts: { member: string; types: number }[];
     note: string | null;
@@ -71,6 +84,24 @@ const SPEED_CONTROL_MOVES = new Set([
   "Sticky Web",
   "Scary Face",
 ]);
+
+const WEATHER_ABILITIES: Record<string, string> = {
+  Drought: "sun",
+  "Orichalcum Pulse": "sun",
+  Drizzle: "rain",
+  "Sand Stream": "sand",
+  "Sand Spit": "sand",
+  "Snow Warning": "snow",
+};
+
+const WEATHER_MOVES: Record<string, string> = {
+  "Sunny Day": "sun",
+  "Rain Dance": "rain",
+  Sandstorm: "sand",
+  Snowscape: "snow",
+  Hail: "snow",
+  "Chilly Reception": "snow",
+};
 
 function memberWeakTo(
   types: [PokemonType] | [PokemonType, PokemonType],
@@ -144,6 +175,17 @@ export function analyzeTeam(members: AnalysisMember[]): TeamAnalysis {
   const hasPriority = priorityMoves.length > 0;
   const missing = controlMoves.length === 0 && !hasPriority;
 
+  // Weather control: abilities (Drought, Drizzle, …) and moves (Sunny Day, …).
+  const setters: WeatherSetter[] = [];
+  for (const m of members) {
+    const wa = m.ability ? WEATHER_ABILITIES[m.ability] : undefined;
+    if (wa) setters.push({ member: m.name, source: m.ability!, kind: "ability", weather: wa });
+    for (const mv of m.moves) {
+      const wm = WEATHER_MOVES[mv.name];
+      if (wm) setters.push({ member: m.name, source: mv.name, kind: "move", weather: wm });
+    }
+  }
+
   // Dependence: defending types only one member can hit super-effectively.
   const soleCounts = new Map<string, number>();
   for (const c of coverage) {
@@ -168,6 +210,7 @@ export function analyzeTeam(members: AnalysisMember[]): TeamAnalysis {
     coverage,
     speedTiers,
     speedControl: { hasPriority, priorityMoves, controlMoves, missing },
+    weatherControl: { setters, missing: setters.length === 0 },
     dependence: { soleProviderCounts, note },
     assumptions: ["typeChart", "statFormula", "moveData"],
   };

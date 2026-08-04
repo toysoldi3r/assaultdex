@@ -138,5 +138,3 @@ export const replaySchema = z.object({
   turns: z.array(replayTurnSchema).min(1),
 });
 
-export type ReplayInput = z.infer<typeof replaySchema>;
-export type ReplayTurnInput = z.infer<typeof replayTurnSchema>;

@@ -6,6 +6,13 @@
   color-scheme: dark;
 }
 
+/* Always reserve the vertical scrollbar gutter. Without this, opening an inline
+   panel that grows the page past the viewport makes the scrollbar appear, which
+   narrows the viewport and shifts the whole centered layout sideways. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   @apply bg-slate-950 text-slate-100;
 }

@@ -5,8 +5,12 @@
 // "Popular in tournaments" section, and a scrollable list with descriptions.
 // Used for item / ability / move / species pickers and adding Pokémon.
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { Option } from "@/components/teams/Picker";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+
+export interface Option {
+  name: string;
+  desc?: string;
+}
 
 export function SelectorPanel({
   title,
@@ -16,6 +20,7 @@ export function SelectorPanel({
   onSelect,
   onClose,
   allowClear = false,
+  leading,
 }: {
   title: string;
   options: Option[];
@@ -24,6 +29,8 @@ export function SelectorPanel({
   onSelect: (value: string | null) => void;
   onClose: () => void;
   allowClear?: boolean;
+  /** Optional leading node (icon / type badge) rendered before each option. */
+  leading?: (o: Option) => ReactNode;
 }) {
   const [q, setQ] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -56,11 +63,14 @@ export function SelectorPanel({
           o.name === value ? "bg-slate-800/60" : ""
         }`}
       >
-        <span className="min-w-0">
-          <span className="text-sm font-medium text-slate-100">{o.name}</span>
-          {o.desc && !accent && (
-            <span className="block truncate text-[11px] text-slate-500">{o.desc}</span>
-          )}
+        <span className="flex min-w-0 items-center gap-1.5">
+          {leading?.(o)}
+          <span className="min-w-0">
+            <span className="text-sm font-medium text-slate-100">{o.name}</span>
+            {o.desc && !accent && (
+              <span className="block truncate text-[11px] text-slate-500">{o.desc}</span>
+            )}
+          </span>
         </span>
         {accent && o.desc && (
           <span className="shrink-0 text-[10px] tabular-nums text-amber-400">{o.desc}</span>

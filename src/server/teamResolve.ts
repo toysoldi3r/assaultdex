@@ -69,6 +69,7 @@ export async function resolveTeam(
       ivs: set.spread.ivs,
       evs: set.spread.evs,
       nature: natureByName(set.nature),
+      ability: set.ability,
     });
   });
 

@@ -8,18 +8,60 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PokeIcon } from "@/components/PokeIcon";
-import { type Option } from "@/components/teams/Picker";
+import { ItemIcon } from "@/components/ItemIcon";
+import { TypeBadge } from "@/components/ui";
+import { type Option } from "@/components/teams/SelectorPanel";
 import { SelectorPanel } from "@/components/teams/SelectorPanel";
 import { EvIvEditor } from "@/components/teams/EvIvEditor";
 import { statColor } from "@/domain/mechanics/statColor";
 import { saveTeamSnapshotAction } from "@/app/teams/actions";
-import { STAT_KEYS, type PokemonSet, type StatKey } from "@/domain/types/pokemon";
+import {
+  STAT_KEYS,
+  STAT_LABELS,
+  type PokemonSet,
+  type PokemonType,
+  type StatKey,
+} from "@/domain/types/pokemon";
+
+export type MoveCategory = "physical" | "special" | "status";
+export interface MoveMeta {
+  type: PokemonType;
+  category: MoveCategory;
+  power: number | null;
+}
 
 export interface MemberRef {
   name: string;
+  types: PokemonType[];
   abilities: string[];
   legalMoves: string[];
   baseStats: Record<StatKey, number>;
+}
+
+const CAT_ABBR: Record<MoveCategory, string> = {
+  physical: "Phys",
+  special: "Spec",
+  status: "Sta",
+};
+const CAT_COLOR: Record<MoveCategory, string> = {
+  physical: "bg-red-800 text-red-100",
+  special: "bg-indigo-800 text-indigo-100",
+  status: "bg-slate-700 text-slate-200",
+};
+
+function MoveTag({ meta }: { meta?: MoveMeta }) {
+  if (!meta) return null;
+  return (
+    <span className="flex items-center gap-1">
+      <TypeBadge type={meta.type} />
+      <span className={`rounded px-1 text-[9px] font-semibold uppercase ${CAT_COLOR[meta.category]}`}>
+        {CAT_ABBR[meta.category]}
+      </span>
+      {meta.power != null && (
+        <span className="text-[10px] tabular-nums text-slate-400">{meta.power}</span>
+      )}
+    </span>
+  );
 }
 
 interface PopEntry {
@@ -38,15 +80,6 @@ type PanelKind = "item" | "ability" | "species" | "spread" | `move${number}`;
 const uKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 const asPopular = (e: PopEntry[] = []): Option[] =>
   e.map((x) => ({ name: x.name, desc: `${x.pct}%` }));
-
-const STAT_LABELS: Record<StatKey, string> = {
-  hp: "HP",
-  atk: "Atk",
-  def: "Def",
-  spa: "SpA",
-  spd: "SpD",
-  spe: "Spe",
-};
 
 const zeroEvs = (): Record<StatKey, number> =>
   Object.fromEntries(STAT_KEYS.map((k) => [k, 0])) as Record<StatKey, number>;
@@ -70,6 +103,7 @@ export function TeamBuilder({
   items,
   abilityDesc,
   moveDesc,
+  moveMeta = {},
   tournament = {},
 }: {
   teamId: string;
@@ -81,6 +115,7 @@ export function TeamBuilder({
   items: Option[];
   abilityDesc: Record<string, string>;
   moveDesc: Record<string, string>;
+  moveMeta?: Record<string, MoveMeta>;
   tournament?: Record<string, TournamentPopular>;
 }) {
   const [members, setMembers] = useState<PokemonSet[]>(initialMembers);
@@ -98,6 +133,7 @@ export function TeamBuilder({
   const refOf = (species: string): MemberRef =>
     refs[species] ?? {
       name: species,
+      types: [],
       abilities: [],
       legalMoves: [],
       baseStats: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
@@ -108,16 +144,40 @@ export function TeamBuilder({
     setDirty(true);
   };
 
+  // Auto-fill a new member from the highest-rated meta set where available:
+  // popular item/ability/moves from tournament data, plus a standard offensive
+  // EV spread + nature inferred from the species' better attacking stat.
   const defaultSet = (slug: string): PokemonSet => {
     const r = refOf(slug);
+    const tm = tournament[uKey(slug)];
+
+    const ability = tm?.abilities[0]?.name ?? r.abilities[0] ?? null;
+    const item = tm?.items[0]?.name ?? null;
+
+    const legal = new Set(r.legalMoves);
+    const popularMoves = (tm?.moves ?? [])
+      .map((x) => x.name)
+      .filter((n) => legal.has(n));
+    const moves = (popularMoves.length ? popularMoves : r.legalMoves).slice(0, 4);
+
+    // Offensive spread: max the better attacking stat + Speed, boosting nature.
+    const physical = (r.baseStats.atk ?? 0) >= (r.baseStats.spa ?? 0);
+    const evs = zeroEvs();
+    evs[physical ? "atk" : "spa"] = 252;
+    evs.spe = 252;
+    evs.hp = 4;
+    const ivs = maxIvs();
+    if (!physical) ivs.atk = 0; // special attacker: minimise Foul Play / confusion
+    const nature = physical ? "Adamant" : "Modest";
+
     return {
       species: slug,
       level: 50,
-      ability: r.abilities[0] ?? null,
-      item: null,
-      nature: "Serious",
-      moves: r.legalMoves.slice(0, 4),
-      spread: { ivs: maxIvs(), evs: zeroEvs() },
+      ability,
+      item,
+      nature,
+      moves,
+      spread: { ivs, evs },
     };
   };
 
@@ -134,8 +194,9 @@ export function TeamBuilder({
     setMembers((prev) =>
       prev.map((m, idx) => {
         if (idx !== i) return m;
+        // Full meta auto-fill for the new species; keep only nickname + level.
         const base = defaultSet(slug);
-        return { ...base, nickname: m.nickname, level: m.level, nature: m.nature, spread: m.spread };
+        return { ...base, nickname: m.nickname, level: m.level };
       }),
     );
     setDirty(true);
@@ -227,6 +288,7 @@ export function TeamBuilder({
           popular={asPopular(tm?.items)}
           value={m.item}
           allowClear
+          leading={(o) => <ItemIcon item={o.name} />}
           onSelect={(v) => update(i, { item: v })}
           onClose={closePanel}
         />
@@ -266,6 +328,7 @@ export function TeamBuilder({
         popular={asPopular(tm?.moves)}
         value={m.moves[mi] ?? null}
         allowClear
+        leading={(o) => <MoveTag meta={moveMeta[o.name]} />}
         onSelect={(v) => setMove(i, mi, v)}
         onClose={closePanel}
       />
@@ -287,7 +350,11 @@ export function TeamBuilder({
         {members.map((m, i) => (
           <button
             key={i}
-            onClick={() => setTab(i)}
+            onClick={() => {
+              setTab(i);
+              // Fold out the first move selector immediately on selecting a mon.
+              setPanel({ member: i, kind: "move0" });
+            }}
             className={`flex items-center gap-1 rounded px-2 py-1 text-sm ${
               tab === i ? "bg-amber-500 text-black" : "bg-slate-800 hover:bg-slate-700"
             }`}
@@ -310,8 +377,8 @@ export function TeamBuilder({
           const r = refOf(m.species);
           const tm = tournament[uKey(m.species)];
           return (
-            <div key={i} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
+            <div key={i} className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <PokeIcon species={m.species} />
                   <input
@@ -327,6 +394,9 @@ export function TeamBuilder({
                   >
                     {r.name} ✎
                   </button>
+                  <span className="flex gap-1">
+                    {r.types.map((t) => <TypeBadge key={t} type={t} />)}
+                  </span>
                 </div>
                 <button
                   onClick={() => removeMember(i)}
@@ -336,9 +406,9 @@ export function TeamBuilder({
                 </button>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-4">
+              <div className="grid gap-5 md:grid-cols-4">
                 {/* Details */}
-                <div className="space-y-1 text-xs">
+                <div className="space-y-2 text-xs">
                   <span className="font-semibold uppercase text-slate-500">Details</span>
                   <label className="flex items-center justify-between gap-2">
                     Level
@@ -359,9 +429,16 @@ export function TeamBuilder({
                     <span>Item</span>
                     <button
                       onClick={() => openPanel(i, "item")}
-                      className="w-32 truncate rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-left hover:border-amber-500"
+                      className="flex w-32 items-center gap-1 truncate rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-left hover:border-amber-500"
                     >
-                      {m.item || <span className="text-slate-600">—</span>}
+                      {m.item ? (
+                        <>
+                          <ItemIcon item={m.item} />
+                          <span className="truncate">{m.item}</span>
+                        </>
+                      ) : (
+                        <span className="text-slate-600">—</span>
+                      )}
                     </button>
                   </div>
                   <div className="flex items-center justify-between gap-2">
@@ -392,15 +469,21 @@ export function TeamBuilder({
                 {/* Moves */}
                 <div className="space-y-1 text-xs md:col-span-2">
                   <span className="font-semibold uppercase text-slate-500">Moves</span>
-                  {[0, 1, 2, 3].map((mi) => (
-                    <button
-                      key={mi}
-                      onClick={() => openPanel(i, `move${mi}`)}
-                      className="block w-full truncate rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-left hover:border-amber-500"
-                    >
-                      {m.moves[mi] || <span className="text-slate-600">— (empty)</span>}
-                    </button>
-                  ))}
+                  {[0, 1, 2, 3].map((mi) => {
+                    const mv = m.moves[mi];
+                    return (
+                      <button
+                        key={mi}
+                        onClick={() => openPanel(i, `move${mi}`)}
+                        className="flex w-full items-center justify-between gap-2 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-left hover:border-amber-500"
+                      >
+                        <span className="truncate">
+                          {mv || <span className="text-slate-600">— (empty)</span>}
+                        </span>
+                        {mv && <MoveTag meta={moveMeta[mv]} />}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Stats (base + EV points; slider editor in slice D) */}

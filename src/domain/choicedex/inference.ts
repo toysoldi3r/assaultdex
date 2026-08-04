@@ -50,9 +50,6 @@ export function createDistribution<T>(
   };
 }
 
-/** @deprecated use createDistribution. Kept for the Phase 1 call site. */
-export const withPriors = createDistribution;
-
 /** Renormalize `current` over non-eliminated candidates and set confidence. */
 function renormalize<T>(dist: PossibilityDistribution<T>): void {
   const live = dist.candidates.filter((c) => !c.eliminated);

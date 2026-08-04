@@ -34,10 +34,46 @@ export interface MonUsage {
   teammates: Teammate[];
 }
 
+export interface TeamRank {
+  members: string[];
+  battles: number;
+  winRate: number;
+}
+
+export interface CoreEntry {
+  members: string[];
+  size: number;
+  battles: number;
+  winRate: number;
+}
+
 export interface UsageData {
   format: string;
   totalBattles: number;
   mons: Record<string, MonUsage>;
+  /** Highest-battle exact team compositions (populated by newer refreshes). */
+  topTeams?: TeamRank[];
+  /** Common 2/3/4-Pokémon cores (populated by newer refreshes). */
+  cores?: CoreEntry[];
+}
+
+/** All k-sized combinations of a sorted list (small k, small lists). */
+function combinations<T>(arr: T[], k: number): T[][] {
+  const res: T[][] = [];
+  const combo: T[] = [];
+  const rec = (start: number) => {
+    if (combo.length === k) {
+      res.push([...combo]);
+      return;
+    }
+    for (let i = start; i < arr.length; i++) {
+      combo.push(arr[i]!);
+      rec(i + 1);
+      combo.pop();
+    }
+  };
+  rec(0);
+  return res;
 }
 
 interface RankingRow {
@@ -95,17 +131,120 @@ export function aggregateRankings(rows: RankingRow[]): UsageData {
     };
   }
 
-  return { format: CHAMPIONS_FORMAT, totalBattles, mons };
+  // --- Top exact teams -----------------------------------------------------
+  const teamAcc: Record<string, { members: string[]; battles: number; wins: number }> = {};
+  for (const row of rows) {
+    const members = [...row.team].sort();
+    const key = members.map(usageKey).join("|");
+    const t = (teamAcc[key] ??= { members, battles: 0, wins: 0 });
+    t.battles += row.total_battles || 0;
+    t.wins += row.wins || 0;
+  }
+  const topTeams: TeamRank[] = Object.values(teamAcc)
+    .filter((t) => t.battles > 0)
+    .sort((a, b) => b.battles - a.battles)
+    .slice(0, 10)
+    .map((t) => ({
+      members: t.members,
+      battles: t.battles,
+      winRate: +((100 * t.wins) / t.battles).toFixed(1),
+    }));
+
+  // --- Common cores (2/3/4) ------------------------------------------------
+  const coreAcc: Record<string, { members: string[]; size: number; battles: number; wins: number }> = {};
+  for (const row of rows) {
+    const battles = row.total_battles || 0;
+    const wins = row.wins || 0;
+    if (battles === 0) continue;
+    const members = [...row.team].sort();
+    for (const size of [2, 3, 4]) {
+      for (const combo of combinations(members, size)) {
+        const key = combo.map(usageKey).join("|");
+        const c = (coreAcc[key] ??= { members: combo, size, battles: 0, wins: 0 });
+        c.battles += battles;
+        c.wins += wins;
+      }
+    }
+  }
+  const minCoreBattles = Math.max(20, totalBattles * 0.02);
+  const cores: CoreEntry[] = Object.values(coreAcc)
+    .filter((c) => c.battles >= minCoreBattles)
+    .sort((a, b) => a.size - b.size || b.battles - a.battles)
+    .reduce<CoreEntry[]>((out, c) => {
+      // keep top 8 per size
+      if (out.filter((x) => x.size === c.size).length < 8) {
+        out.push({
+          members: c.members,
+          size: c.size,
+          battles: c.battles,
+          winRate: +((100 * c.wins) / c.battles).toFixed(1),
+        });
+      }
+      return out;
+    }, []);
+
+  return { format: CHAMPIONS_FORMAT, totalBattles, mons, topTeams, cores };
 }
 
 const data = snapshot as UsageData;
 
-/** The bundled usage snapshot (no network access). */
-export async function loadUsage(): Promise<UsageData> {
-  return data;
-}
-
 /** Usage for one species by display name, or null if it has no recorded games. */
 export async function getMonUsage(name: string): Promise<MonUsage | null> {
   return data.mons[usageKey(name)] ?? null;
+}
+
+const allMons = (): MonUsage[] => Object.values(data.mons);
+
+/** Top N Pokémon by raw usage %. */
+export function topMeta(n = 30): MonUsage[] {
+  return [...allMons()].sort((a, b) => b.usage - a.usage).slice(0, n);
+}
+
+/** Top N Pokémon by win rate, filtered to a minimum usage for sample size. */
+export function topWinRate(n = 30, minUsage = 1): MonUsage[] {
+  return allMons()
+    .filter((m) => m.usage >= minUsage)
+    .sort((a, b) => b.winRate - a.winRate)
+    .slice(0, n);
+}
+
+/** Top exact teams, if the snapshot carries them (newer refreshes). */
+export function getTopTeams(n = 10): TeamRank[] {
+  return (data.topTeams ?? []).slice(0, n);
+}
+
+/**
+ * Common cores of a given size. Uses the snapshot's precomputed cores when
+ * present; otherwise falls back to deriving 2-cores from the pairwise teammate
+ * graph so the homepage card is never empty.
+ */
+export function getCores(size: 2 | 3 | 4, n = 6): CoreEntry[] {
+  const stored = (data.cores ?? []).filter((c) => c.size === size);
+  if (stored.length) return stored.slice(0, n);
+  if (size !== 2) return [];
+  // Fallback: pair each mon with its strongest mutual teammate.
+  const seen = new Set<string>();
+  const pairs: CoreEntry[] = [];
+  for (const m of allMons()) {
+    const mk = usageKey(m.name);
+    for (const t of m.teammates) {
+      const key = [mk, t.key].sort().join("|");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      pairs.push({
+        members: [m.name, t.name],
+        size: 2,
+        battles: 0,
+        winRate: 0,
+      });
+    }
+  }
+  // Rank by combined usage of the two members as a proxy.
+  return pairs
+    .sort((a, b) => {
+      const usageOf = (c: CoreEntry) =>
+        c.members.reduce((s, n) => s + (data.mons[usageKey(n)]?.usage ?? 0), 0);
+      return usageOf(b) - usageOf(a);
+    })
+    .slice(0, n);
 }

@@ -139,9 +139,3 @@ export function legalCombinations(
 export function userLegalCombinations(state: BattleState): ActionCombination[] {
   return legalCombinations(state, "user");
 }
-
-export function opponentLegalCombinations(
-  state: BattleState,
-): ActionCombination[] {
-  return legalCombinations(state, "opponent");
-}
