@@ -8,12 +8,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PokeIcon } from "@/components/PokeIcon";
-import { type Option } from "@/components/teams/Picker";
+import { type Option } from "@/components/teams/SelectorPanel";
 import { SelectorPanel } from "@/components/teams/SelectorPanel";
 import { EvIvEditor } from "@/components/teams/EvIvEditor";
 import { statColor } from "@/domain/mechanics/statColor";
 import { saveTeamSnapshotAction } from "@/app/teams/actions";
-import { STAT_KEYS, type PokemonSet, type StatKey } from "@/domain/types/pokemon";
+import { STAT_KEYS, STAT_LABELS, type PokemonSet, type StatKey } from "@/domain/types/pokemon";
 
 export interface MemberRef {
   name: string;
@@ -38,15 +38,6 @@ type PanelKind = "item" | "ability" | "species" | "spread" | `move${number}`;
 const uKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 const asPopular = (e: PopEntry[] = []): Option[] =>
   e.map((x) => ({ name: x.name, desc: `${x.pct}%` }));
-
-const STAT_LABELS: Record<StatKey, string> = {
-  hp: "HP",
-  atk: "Atk",
-  def: "Def",
-  spa: "SpA",
-  spd: "SpD",
-  spe: "Spe",
-};
 
 const zeroEvs = (): Record<StatKey, number> =>
   Object.fromEntries(STAT_KEYS.map((k) => [k, 0])) as Record<StatKey, number>;

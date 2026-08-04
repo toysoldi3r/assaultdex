@@ -6,6 +6,7 @@
 // @pkmn doesn't know simply return no extras.
 
 import { Dex } from "@pkmn/dex";
+import { STAT_KEYS, STAT_LABELS } from "@/domain/types/pokemon";
 
 export interface AbilityMeta {
   name: string;
@@ -18,11 +19,6 @@ export interface SpeciesMeta {
   spriteId: string;
   genderLabel: string;
   abilities: AbilityMeta[];
-}
-
-export interface MoveMeta {
-  pp: number | null;
-  effect: string | null;
 }
 
 function genderLabel(spriteId: string): string {
@@ -70,27 +66,11 @@ function computeSpeciesMeta(name: string, fixtureAbilities: string[]): SpeciesMe
   };
 }
 
-/** PP + one-line effect for a move by name. Null fields if unknown. */
-export function moveMeta(name: string): MoveMeta {
-  const m = Dex.moves.get(name);
-  if (!m.exists) return { pp: null, effect: null };
-  return { pp: m.pp ?? null, effect: m.shortDesc || m.desc || null };
-}
-
 export interface GenChange {
   gen: number;
   changes: string[];
 }
 
-const STAT_ORDER = ["hp", "atk", "def", "spa", "spd", "spe"] as const;
-const STAT_LABEL: Record<(typeof STAT_ORDER)[number], string> = {
-  hp: "HP",
-  atk: "Atk",
-  def: "Def",
-  spa: "SpA",
-  spd: "SpD",
-  spe: "Spe",
-};
 
 /**
  * Competitively relevant cross-generation changes for a species: base-stat,
@@ -129,11 +109,11 @@ function computeChangeHistory(name: string): GenChange[] {
     if (prev) {
       const changes: string[] = [];
 
-      for (const k of STAT_ORDER) {
+      for (const k of STAT_KEYS) {
         const a = prev.baseStats[k];
         const b = s.baseStats[k];
         if (a !== b) {
-          changes.push(`${STAT_LABEL[k]} ${a}→${b} (${b > a ? "+" : ""}${b - a})`);
+          changes.push(`${STAT_LABELS[k]} ${a}→${b} (${b > a ? "+" : ""}${b - a})`);
         }
       }
 

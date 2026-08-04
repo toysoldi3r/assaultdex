@@ -30,6 +30,16 @@ export type PokemonType = (typeof POKEMON_TYPES)[number];
 export const STAT_KEYS = ["hp", "atk", "def", "spa", "spd", "spe"] as const;
 export type StatKey = (typeof STAT_KEYS)[number];
 
+/** Short stat labels (Showdown casing). Shared across dex/teambuilder UI. */
+export const STAT_LABELS: Record<StatKey, string> = {
+  hp: "HP",
+  atk: "Atk",
+  def: "Def",
+  spa: "SpA",
+  spd: "SpD",
+  spe: "Spe",
+};
+
 export type BaseStats = Record<StatKey, number>;
 
 export type MoveCategory = "physical" | "special" | "status";

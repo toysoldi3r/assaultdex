@@ -34,7 +34,6 @@ export const teamSnapshotSchema = z.object({
   members: z.array(pokemonSetSchema).min(0).max(BOX_MEMBER_LIMIT),
 });
 
-export type PokemonSetInput = z.infer<typeof pokemonSetSchema>;
 export type TeamSnapshotInput = z.infer<typeof teamSnapshotSchema>;
 
 /** Payload accepted by the create-team action. */

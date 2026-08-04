@@ -100,11 +100,6 @@ export function aggregateRankings(rows: RankingRow[]): UsageData {
 
 const data = snapshot as UsageData;
 
-/** The bundled usage snapshot (no network access). */
-export async function loadUsage(): Promise<UsageData> {
-  return data;
-}
-
 /** Usage for one species by display name, or null if it has no recorded games. */
 export async function getMonUsage(name: string): Promise<MonUsage | null> {
   return data.mons[usageKey(name)] ?? null;

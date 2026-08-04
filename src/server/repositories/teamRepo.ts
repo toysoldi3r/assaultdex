@@ -88,16 +88,6 @@ export async function addTeamVersion(
   return versionNumber;
 }
 
-export async function assignTeamToCollection(
-  teamId: string,
-  collectionId: string | null,
-) {
-  await prisma.team.update({
-    where: { id: teamId },
-    data: { collectionId },
-  });
-}
-
 export async function listTeams(): Promise<TeamView[]> {
   const teams = await prisma.team.findMany({
     orderBy: { createdAt: "desc" },

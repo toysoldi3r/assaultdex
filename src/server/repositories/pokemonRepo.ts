@@ -120,16 +120,6 @@ export async function listPokemon(): Promise<Pokemon[]> {
   return rows.map(rowToDomain);
 }
 
-export async function searchPokemon(query: string): Promise<Pokemon[]> {
-  const q = query.trim();
-  if (!q) return listPokemon();
-  const rows = await prisma.pokemon.findMany({
-    where: { name: { contains: q } },
-    orderBy: { name: "asc" },
-  });
-  return rows.map(rowToDomain);
-}
-
 export async function getPokemonBySlug(slug: string): Promise<Pokemon | null> {
   const row = await prisma.pokemon.findUnique({ where: { slug } });
   return row ? rowToDomain(row) : null;

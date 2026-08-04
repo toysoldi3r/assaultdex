@@ -6,7 +6,11 @@
 // Used for item / ability / move / species pickers and adding Pokémon.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Option } from "@/components/teams/Picker";
+
+export interface Option {
+  name: string;
+  desc?: string;
+}
 
 export function SelectorPanel({
   title,

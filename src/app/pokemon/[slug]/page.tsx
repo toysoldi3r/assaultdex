@@ -7,18 +7,9 @@ import { getDexSpecies, getSpeciesForms } from "@/data/pokedexSource";
 import { CHAMPIONS_FORMAT_LABEL, getMonUsage } from "@/data/usageStats";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { statColor } from "@/domain/mechanics/statColor";
-import { POKEMON_TYPES, STAT_KEYS } from "@/domain/types/pokemon";
+import { POKEMON_TYPES, STAT_KEYS, STAT_LABELS } from "@/domain/types/pokemon";
 
 export const dynamic = "force-dynamic";
-
-const STAT_LABELS: Record<(typeof STAT_KEYS)[number], string> = {
-  hp: "HP",
-  atk: "Atk",
-  def: "Def",
-  spa: "SpA",
-  spd: "SpD",
-  spe: "Spe",
-};
 
 function multiplierLabel(m: number): { text: string; cls: string } {
   if (m === 0) return { text: "0×", cls: "text-slate-500" };
