@@ -15,6 +15,7 @@ import {
   type PokemonRef,
   type SlotForm,
 } from "@/lib/choicedexBuild";
+import { MoveSelectorPanel, type MoveRow } from "@/components/teams/MoveSelectorPanel";
 import { calculateDamage } from "@/domain/mechanics/damage";
 import { effectiveSpeed } from "@/domain/mechanics/speed";
 import { DEFAULT_FIELD } from "@/domain/types/battle";
@@ -140,9 +141,15 @@ export function BattleCalculator({ pokemon }: { pokemon: PokemonRef[] }) {
   const [a, setA] = useState<SlotForm>(() => freshForm(refs[0]?.slug ?? ""));
   const [b, setB] = useState<SlotForm>(() => freshForm(refs[1]?.slug ?? refs[0]?.slug ?? ""));
   const [moveName, setMoveName] = useState<string>("");
+  const [movePicker, setMovePicker] = useState(false);
 
   const refA = refs.find((r) => r.slug === a.species);
   const refB = refs.find((r) => r.slug === b.species);
+
+  const moveRows: MoveRow[] = (refA?.moves ?? []).map((m) => ({
+    name: m.name,
+    meta: { type: m.type, category: m.category, power: m.power, accuracy: m.accuracy, pp: null },
+  }));
 
   const result = useMemo(() => {
     if (!refA || !refB) return null;
@@ -155,8 +162,6 @@ export function BattleCalculator({ pokemon }: { pokemon: PokemonRef[] }) {
     return { atk, def, move, dmg, spA, spB };
   }, [refA, refB, a, b, moveName]);
 
-  const damagingMoves = (refA?.moves ?? []).filter((m) => m.power);
-
   return (
     <div className="space-y-4">
       <div className="grid gap-3 md:grid-cols-2">
@@ -164,18 +169,26 @@ export function BattleCalculator({ pokemon }: { pokemon: PokemonRef[] }) {
         <MonForm label="Defender" refs={refs} form={b} onChange={setB} />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-xs text-slate-500">Move</span>
-        <select
-          value={moveName}
-          onChange={(e) => setMoveName(e.target.value)}
-          className="rounded border border-slate-700 bg-slate-900 px-2 py-1"
-        >
-          <option value="">(auto: first damaging)</option>
-          {damagingMoves.map((m) => (
-            <option key={m.name} value={m.name}>{m.name}</option>
-          ))}
-        </select>
+      {/* Move search (same table picker as the team builder), under the cards. */}
+      <div className="text-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-500">Attacker&apos;s move</span>
+          <button
+            onClick={() => setMovePicker((o) => !o)}
+            className="rounded border border-slate-700 bg-slate-900 px-3 py-1 hover:border-amber-500"
+          >
+            {moveName || "(auto: first damaging)"}
+          </button>
+        </div>
+        {movePicker && (
+          <MoveSelectorPanel
+            title={`${refA?.name ?? "Attacker"} moves`}
+            rows={moveRows}
+            value={moveName || null}
+            onSelect={(v) => setMoveName(v ?? "")}
+            onClose={() => setMovePicker(false)}
+          />
+        )}
       </div>
 
       {result && (
