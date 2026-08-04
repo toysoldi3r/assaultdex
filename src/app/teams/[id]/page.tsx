@@ -1,7 +1,9 @@
+import { Dex } from "@pkmn/dex";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Panel } from "@/components/ui";
 import { TeamBuilder, type MemberRef } from "@/components/teams/TeamBuilder";
+import type { MoveMeta } from "@/components/teams/moveTypes";
 import { NATURES } from "@/data/fixtures/natures";
 import { itemCatalog, poolDescMaps } from "@/data/catalog";
 import { getMonTournament } from "@/data/tournamentStats";
@@ -34,8 +36,11 @@ export default async function TeamDetailPage({
   // Teambuilder needs a reference (name, abilities, legal moves, base stats) for
   // every pool species so newly added members render too.
   const allMons = await listPokemon();
+  // Description maps for the picker panels (memoised — the pool is static).
+  const { abilityDesc, moveDesc } = poolDescMaps(allMons);
+
   const memberRefs: Record<string, MemberRef> = {};
-  const moveMeta: Record<string, { type: (typeof allMons)[number]["types"][number]; category: "physical" | "special" | "status"; power: number | null }> = {};
+  const moveMeta: Record<string, MoveMeta> = {};
   for (const p of allMons) {
     memberRefs[p.slug] = {
       name: p.name,
@@ -45,13 +50,18 @@ export default async function TeamDetailPage({
       baseStats: p.baseStats,
     };
     for (const mv of p.moves) {
-      moveMeta[mv.name] ??= { type: mv.type, category: mv.category, power: mv.power };
+      if (moveMeta[mv.name]) continue;
+      moveMeta[mv.name] = {
+        type: mv.type,
+        category: mv.category,
+        power: mv.power,
+        accuracy: mv.accuracy,
+        pp: Dex.moves.get(mv.name).pp ?? null,
+        desc: moveDesc[mv.name],
+      };
     }
   }
   const pool = allMons.map((p) => ({ slug: p.slug, name: p.name }));
-
-  // Description maps for the picker panels (memoised — the pool is static).
-  const { abilityDesc, moveDesc } = poolDescMaps(allMons);
   const items = itemCatalog();
 
   // Tournament "Popular" lists per pool species (empty until the CI snapshot
@@ -117,7 +127,6 @@ export default async function TeamDetailPage({
           natures={NATURE_NAMES}
           items={items}
           abilityDesc={abilityDesc}
-          moveDesc={moveDesc}
           moveMeta={moveMeta}
           tournament={tournament}
         />

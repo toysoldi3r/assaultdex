@@ -9,9 +9,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PokeIcon } from "@/components/PokeIcon";
 import { ItemIcon } from "@/components/ItemIcon";
+import { CategoryIcon } from "@/components/CategoryIcon";
 import { TypeBadge } from "@/components/ui";
 import { type Option } from "@/components/teams/SelectorPanel";
 import { SelectorPanel } from "@/components/teams/SelectorPanel";
+import { MoveSelectorPanel, type MoveRow } from "@/components/teams/MoveSelectorPanel";
+import type { MoveMeta } from "@/components/teams/moveTypes";
 import { EvIvEditor } from "@/components/teams/EvIvEditor";
 import { statColor } from "@/domain/mechanics/statColor";
 import { saveTeamSnapshotAction } from "@/app/teams/actions";
@@ -23,12 +26,7 @@ import {
   type StatKey,
 } from "@/domain/types/pokemon";
 
-export type MoveCategory = "physical" | "special" | "status";
-export interface MoveMeta {
-  type: PokemonType;
-  category: MoveCategory;
-  power: number | null;
-}
+export type { MoveMeta } from "@/components/teams/moveTypes";
 
 export interface MemberRef {
   name: string;
@@ -38,25 +36,13 @@ export interface MemberRef {
   baseStats: Record<StatKey, number>;
 }
 
-const CAT_ABBR: Record<MoveCategory, string> = {
-  physical: "Phys",
-  special: "Spec",
-  status: "Sta",
-};
-const CAT_COLOR: Record<MoveCategory, string> = {
-  physical: "bg-red-800 text-red-100",
-  special: "bg-indigo-800 text-indigo-100",
-  status: "bg-slate-700 text-slate-200",
-};
-
+/** Compact type + category + power tag for a selected move. */
 function MoveTag({ meta }: { meta?: MoveMeta }) {
   if (!meta) return null;
   return (
     <span className="flex items-center gap-1">
       <TypeBadge type={meta.type} />
-      <span className={`rounded px-1 text-[9px] font-semibold uppercase ${CAT_COLOR[meta.category]}`}>
-        {CAT_ABBR[meta.category]}
-      </span>
+      <CategoryIcon category={meta.category} />
       {meta.power != null && (
         <span className="text-[10px] tabular-nums text-slate-400">{meta.power}</span>
       )}
@@ -102,7 +88,6 @@ export function TeamBuilder({
   natures,
   items,
   abilityDesc,
-  moveDesc,
   moveMeta = {},
   tournament = {},
 }: {
@@ -114,7 +99,6 @@ export function TeamBuilder({
   natures: string[];
   items: Option[];
   abilityDesc: Record<string, string>;
-  moveDesc: Record<string, string>;
   moveMeta?: Record<string, MoveMeta>;
   tournament?: Record<string, TournamentPopular>;
 }) {
@@ -321,14 +305,18 @@ export function TeamBuilder({
       );
     }
     const mi = Number(kind.slice(4));
+    const rows: MoveRow[] = r.legalMoves.map((mv) => ({ name: mv, meta: moveMeta[mv] }));
+    const pop: MoveRow[] = (tm?.moves ?? []).map((x) => ({
+      name: x.name,
+      meta: moveMeta[x.name],
+      pct: `${x.pct}%`,
+    }));
     return (
-      <SelectorPanel
+      <MoveSelectorPanel
         title={`Move ${mi + 1}`}
-        options={r.legalMoves.map((mv) => ({ name: mv, desc: moveDesc[mv] }))}
-        popular={asPopular(tm?.moves)}
+        rows={rows}
+        popular={pop}
         value={m.moves[mi] ?? null}
-        allowClear
-        leading={(o) => <MoveTag meta={moveMeta[o.name]} />}
         onSelect={(v) => setMove(i, mi, v)}
         onClose={closePanel}
       />
@@ -352,8 +340,8 @@ export function TeamBuilder({
             key={i}
             onClick={() => {
               setTab(i);
-              // Fold out the first move selector immediately on selecting a mon.
-              setPanel({ member: i, kind: "move0" });
+              // Selecting a member opens the Pokémon list so it can be switched fast.
+              setPanel({ member: i, kind: "species" });
             }}
             className={`flex items-center gap-1 rounded px-2 py-1 text-sm ${
               tab === i ? "bg-amber-500 text-black" : "bg-slate-800 hover:bg-slate-700"
@@ -361,6 +349,17 @@ export function TeamBuilder({
           >
             <PokeIcon species={m.species} />
             <span className="max-w-[6rem] truncate">{refOf(m.species).name}</span>
+          </button>
+        ))}
+        {/* Empty slots render as add buttons in the tab bar. */}
+        {Array.from({ length: Math.max(0, limit - members.length) }).slice(0, isBox ? 1 : 6).map((_, k) => (
+          <button
+            key={`empty-${k}`}
+            onClick={() => { setTab("team"); openPanel(-1, "species"); }}
+            title="Add a Pokémon"
+            className="flex h-8 w-10 items-center justify-center rounded border border-dashed border-slate-600 text-slate-500 hover:border-amber-500 hover:text-amber-400"
+          >
+            ＋
           </button>
         ))}
         <div className="ml-auto flex items-center gap-2 text-xs">
@@ -387,13 +386,7 @@ export function TeamBuilder({
                     placeholder={r.name}
                     className="w-40 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm font-semibold"
                   />
-                  <button
-                    onClick={() => openPanel(i, "species")}
-                    className="rounded px-1 text-xs text-amber-400 underline decoration-dotted hover:text-amber-300"
-                    title="Change Pokémon"
-                  >
-                    {r.name} ✎
-                  </button>
+                  <span className="text-xs text-slate-400">{r.name}</span>
                   <span className="flex gap-1">
                     {r.types.map((t) => <TypeBadge key={t} type={t} />)}
                   </span>
@@ -472,16 +465,26 @@ export function TeamBuilder({
                   {[0, 1, 2, 3].map((mi) => {
                     const mv = m.moves[mi];
                     return (
-                      <button
-                        key={mi}
-                        onClick={() => openPanel(i, `move${mi}`)}
-                        className="flex w-full items-center justify-between gap-2 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-left hover:border-amber-500"
-                      >
-                        <span className="truncate">
-                          {mv || <span className="text-slate-600">— (empty)</span>}
-                        </span>
-                        {mv && <MoveTag meta={moveMeta[mv]} />}
-                      </button>
+                      <div key={mi} className="flex items-center gap-1">
+                        <button
+                          onClick={() => openPanel(i, `move${mi}`)}
+                          className="flex flex-1 items-center justify-between gap-2 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-left hover:border-amber-500"
+                        >
+                          <span className="truncate">
+                            {mv || <span className="text-slate-600">— (empty)</span>}
+                          </span>
+                          {mv && <MoveTag meta={moveMeta[mv]} />}
+                        </button>
+                        {mv && (
+                          <button
+                            onClick={() => setMove(i, mi, null)}
+                            title="Remove move"
+                            className="rounded px-1 text-rose-400 hover:text-rose-300"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
