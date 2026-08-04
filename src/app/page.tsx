@@ -1,8 +1,23 @@
 import Link from "next/link";
 import { Panel } from "@/components/ui";
+import { MetaCards } from "@/components/home/MetaCards";
 import { MECHANICS_STATUS } from "@/domain/mechanics/assumptions";
+import {
+  CHAMPIONS_FORMAT_LABEL,
+  getCores,
+  getTopTeams,
+  topMeta,
+  topWinRate,
+} from "@/data/usageStats";
 
 export default function HomePage() {
+  const meta = topMeta(30);
+  const winrate = topWinRate(30, 3);
+  const teams = getTopTeams(10);
+  const cores2 = getCores(2, 8);
+  const cores3 = getCores(3, 8);
+  const cores4 = getCores(4, 8);
+
   return (
     <div className="space-y-6">
       <div>
@@ -13,6 +28,18 @@ export default function HomePage() {
           and version teams, and run the ChoiceDex battle calculator on a live
           battle state.
         </p>
+      </div>
+
+      <div>
+        <h2 className="mb-1 text-lg font-semibold">Metagame — {CHAMPIONS_FORMAT_LABEL}</h2>
+        <MetaCards
+          meta={meta}
+          winrate={winrate}
+          teams={teams}
+          cores2={cores2}
+          cores3={cores3}
+          cores4={cores4}
+        />
       </div>
 
       <Panel title="What's here">
