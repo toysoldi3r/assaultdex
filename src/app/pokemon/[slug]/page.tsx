@@ -3,11 +3,14 @@ import { notFound } from "next/navigation";
 import { Panel, TypeBadge } from "@/components/ui";
 import { changeHistory, speciesMeta } from "@/data/pkmnEnrich";
 import { PokeIcon } from "@/components/PokeIcon";
+import { ItemIcon } from "@/components/ItemIcon";
 import { getDexSpecies, getSpeciesForms } from "@/data/pokedexSource";
 import { CHAMPIONS_FORMAT_LABEL, getMonUsage } from "@/data/usageStats";
+import { getMonTournament } from "@/data/tournamentStats";
+import { suggestSets } from "@/data/suggestSets";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { statColor } from "@/domain/mechanics/statColor";
-import { POKEMON_TYPES, STAT_KEYS, STAT_LABELS } from "@/domain/types/pokemon";
+import { POKEMON_TYPES, STAT_KEYS, STAT_LABELS, type PokemonType } from "@/domain/types/pokemon";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +48,14 @@ export default async function PokemonPage({
   const meta = speciesMeta(p.name, p.abilities);
   const history = changeHistory(p.name);
   const usage = await getMonUsage(p.name);
+  const sets = suggestSets(p.types, p.baseStats, p.abilities, p.moves);
+  const moveType = new Map<string, PokemonType>(
+    p.moves.flatMap((m) => (m.type ? [[m.name, m.type] as [string, PokemonType]] : [])),
+  );
+  const tournament = getMonTournament(p.name);
+  const commonItems = tournament?.items?.length
+    ? tournament.items.map((i) => i.name)
+    : [...new Set(sets.map((s) => s.item))];
 
   return (
     <div className="space-y-6">
@@ -128,22 +139,71 @@ export default async function PokemonPage({
         </Panel>
 
         <Panel title="Defensive type matchups">
-          <div className="grid grid-cols-3 gap-1 text-xs sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-1 text-xs sm:grid-cols-3">
             {POKEMON_TYPES.map((t) => {
               const l = multiplierLabel(chart[t]);
               return (
                 <div
                   key={t}
-                  className="flex items-center justify-between rounded bg-slate-800/50 px-2 py-1"
+                  className="flex items-center justify-between gap-1 rounded bg-slate-800/50 px-2 py-1"
                 >
-                  <span className="capitalize text-slate-400">{t}</span>
-                  <span className={l.cls}>{l.text}</span>
+                  <TypeBadge type={t} />
+                  <span className={`font-semibold ${l.cls}`}>{l.text}</span>
                 </div>
               );
             })}
           </div>
         </Panel>
       </div>
+
+      <Panel title="Common items">
+        <p className="mb-2 text-[10px] uppercase tracking-wide text-slate-600">
+          {tournament?.items?.length
+            ? "From tournament usage."
+            : "Suggested items (heuristic — no per-Pokémon usage dataset for Champions yet)."}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {commonItems.map((it) => (
+            <span key={it} className="flex items-center gap-1 rounded bg-slate-800/50 px-2 py-1 text-sm">
+              <ItemIcon item={it} />
+              {it}
+            </span>
+          ))}
+        </div>
+      </Panel>
+
+      <Panel title="Suggested sets">
+        <p className="mb-3 text-[10px] uppercase tracking-wide text-slate-600">
+          Archetype suggestions from base stats + movepool (heuristic, not scraped usage).
+        </p>
+        <div className="grid gap-3 md:grid-cols-3">
+          {sets.map((s) => (
+            <div key={s.label} className="rounded-lg border border-slate-800 bg-slate-800/30 p-3 text-xs">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="font-semibold text-amber-300">{s.label}</span>
+                <span className="flex items-center gap-1 text-slate-300">
+                  <ItemIcon item={s.item} />{s.item}
+                </span>
+              </div>
+              <p className="text-slate-400">
+                {s.ability} · {s.nature}
+              </p>
+              <p className="text-slate-500">
+                EVs: {Object.entries(s.evs).map(([k, v]) => `${v} ${STAT_LABELS[k as keyof typeof STAT_LABELS]}`).join(" / ")}
+                {s.ivs.atk === 0 ? " · 0 Atk IV" : ""}
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {s.moves.map((mv) => (
+                  <li key={mv} className="flex items-center gap-1">
+                    {moveType.get(mv) && <TypeBadge type={moveType.get(mv)!} />}
+                    <span>{mv}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </Panel>
 
       <Panel title="Abilities">
         {meta ? (
