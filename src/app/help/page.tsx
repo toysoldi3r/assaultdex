@@ -19,6 +19,14 @@ export default function HelpPage() {
         </p>
       </div>
 
+      <Panel title="What each tab does">
+        <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
+          <li><Link href="/guide" className="text-amber-400 hover:underline">Guide</Link> — intro to the app and to competitive doubles.</li>
+          <li><Link href="/pokemon" className="text-amber-400 hover:underline">Pokédex</Link>, <Link href="/teams" className="text-amber-400 hover:underline">Teams</Link>, <Link href="/choicedex" className="text-amber-400 hover:underline">ChoiceDex</Link> — browse, build, and battle-calculate.</li>
+          <li><Link href="/database" className="text-amber-400 hover:underline">Database</Link>, <Link href="/types" className="text-amber-400 hover:underline">Types</Link>, <Link href="/sources" className="text-amber-400 hover:underline">Sources</Link> — item/ability reference, the type chart, and external sites.</li>
+        </ul>
+      </Panel>
+
       <Panel title="The page is blank or shows “Something went wrong”">
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
           <li>
@@ -28,7 +36,7 @@ export default function HelpPage() {
           <li>
             If it persists, the database may not be set up. Stop the app and run{" "}
             <code>pnpm db:migrate</code> then <code>pnpm db:seed</code> (or just
-            re-run <code>run.bat</code> / <code>run.sh</code>).
+            re-run <code>run.bat</code>).
           </li>
         </ul>
       </Panel>
@@ -36,17 +44,26 @@ export default function HelpPage() {
       <Panel title="No Pokémon / empty Pokédex or Teams">
         <p className="text-sm text-slate-300">
           The database has not been seeded. Run <code>pnpm db:seed</code> to load
-          the 213-Pokémon pool, then refresh.
+          the Pokémon pool, then refresh.
         </p>
       </Panel>
 
-      <Panel title="The launcher (run.bat / run.sh) fails">
+      <Panel title="ChoiceDex opens an old battle / a team that no longer exists">
+        <p className="text-sm text-slate-300">
+          ChoiceDex remembers your last battle so you can switch tabs and come
+          back. It now discards a saved battle whose Pokémon no longer match a
+          real team. If you still see a stale battle, click <strong>New
+          battle</strong>, or clear this site&apos;s data in your browser
+          (Application → Local Storage).
+        </p>
+      </Panel>
+
+      <Panel title="The launcher (run.bat) fails">
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
           <li>
-            <strong>Windows:</strong> run it inside a terminal or double-click{" "}
-            <code>run.bat</code> — a <code>.sh</code> file will not double-click.
-            Node is installed automatically via winget on first run (accept the
-            UAC prompt).
+            <strong>Windows:</strong> double-click <code>run.bat</code>. Node is
+            installed automatically via winget on first run (accept the UAC
+            prompt).
           </li>
           <li>
             <strong>“node is not installed”:</strong> install Node 20+ from{" "}

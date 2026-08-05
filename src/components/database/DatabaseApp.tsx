@@ -3,16 +3,14 @@
 import { useState } from "react";
 import { ItemsTable } from "./ItemsTable";
 import { AbilitiesTable } from "./AbilitiesTable";
-import { TypeMatchup } from "./TypeMatchup";
 import { BattleCalculator } from "./BattleCalculator";
 import type { DbItem, DbAbility } from "@/data/dexDatabase";
 import type { PokemonRef } from "@/lib/choicedexBuild";
 
-type Tab = "items" | "abilities" | "types" | "calc";
+type Tab = "items" | "abilities" | "calc";
 const TABS: { id: Tab; label: string }[] = [
   { id: "items", label: "Items" },
   { id: "abilities", label: "Abilities" },
-  { id: "types", label: "Types" },
   { id: "calc", label: "Calculator" },
 ];
 
@@ -45,7 +43,6 @@ export function DatabaseApp({
       </div>
       {tab === "items" && <ItemsTable items={items} />}
       {tab === "abilities" && <AbilitiesTable abilities={abilities} />}
-      {tab === "types" && <TypeMatchup />}
       {tab === "calc" && <BattleCalculator pokemon={pokemon} />}
     </div>
   );
