@@ -64,6 +64,14 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+// Variable multi-hit moves (2–5 hits). Expected hits ≈ 3.2 normally, 5 with
+// Skill Link — so the readout doesn't assume the maximum every time.
+const VARIABLE_MULTIHIT = new Set([
+  "Bullet Seed", "Rock Blast", "Pin Missile", "Icicle Spear", "Bone Rush",
+  "Tail Slap", "Water Shuriken", "Scale Shot", "Fury Attack", "Comet Punch",
+  "Double Slap", "Spike Cannon", "Barrage", "Fury Swipes", "Arm Thrust",
+]);
+
 function zeroResult(
   effectiveness: EffectivenessResult,
   modifiers: DamageModifier[],
@@ -160,10 +168,13 @@ export function calculateDamage(
   }
 
   const level = attacker.level;
+  // Acrobatics doubles its power when the user holds no item (or it was consumed).
+  const basePower =
+    move.name === "Acrobatics" && !attacker.item ? move.power * 2 : move.power;
   const base =
     Math.floor(
       Math.floor(
-        (Math.floor((2 * level) / 5 + 2) * move.power * attack) / defense,
+        (Math.floor((2 * level) / 5 + 2) * basePower * attack) / defense,
       ) / 50,
     ) + 2;
 
@@ -246,10 +257,20 @@ export function calculateDamage(
     assumptions.add("itemEffects");
   }
 
-  // Multi-hit moves (Dragon Darts ×2, Population Bomb, …). Provisional: each hit
-  // deals the same rolled damage; total = per-hit × number of hits.
-  const hits = move.hits && move.hits > 1 ? move.hits : 1;
-  if (hits > 1) modifiers.push({ name: `${hits} hits`, multiplier: hits });
+  // Multi-hit moves. Fixed-count moves (Dragon Darts ×2) always hit that many;
+  // variable 2–5 hit moves use the expected count (~3.2, or 5 with Skill Link)
+  // instead of assuming the maximum every time.
+  const variable = VARIABLE_MULTIHIT.has(move.name);
+  const hits = variable
+    ? attacker.ability === "Skill Link"
+      ? 5
+      : 3.2
+    : move.hits && move.hits > 1
+      ? move.hits
+      : 1;
+  if (hits > 1) {
+    modifiers.push({ name: variable ? `~${hits} hits (avg)` : `${hits} hits`, multiplier: hits });
+  }
 
   const modifier =
     stab *
@@ -267,7 +288,7 @@ export function calculateDamage(
   const rolls: number[] = [];
   for (let roll = 85; roll <= 100; roll++) {
     const rolled = Math.floor((base * roll) / 100);
-    rolls.push(Math.max(0, Math.floor(rolled * modifier) * hits));
+    rolls.push(Math.max(0, Math.round(Math.floor(rolled * modifier) * hits)));
   }
   rolls.sort((a, b) => a - b);
 

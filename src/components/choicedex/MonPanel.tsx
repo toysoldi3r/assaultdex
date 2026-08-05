@@ -51,6 +51,7 @@ export function MonPanel({
   targets,
   abilities,
   defaultAbility,
+  items,
   field,
   defenderConditions,
   ownConditions,
@@ -67,6 +68,7 @@ export function MonPanel({
   targets: { name: string; combatant: Combatant }[];
   abilities: string[];
   defaultAbility: string;
+  items: string[];
   field: FieldState;
   defenderConditions: SideConditions;
   /** This Pokémon's own side conditions (entry hazards it takes on switch-in). */
@@ -119,10 +121,11 @@ export function MonPanel({
         </select>
         <select value={state.item} onChange={(e) => onPatch({ item: e.target.value })}
           className={`rounded border border-slate-700 bg-slate-900 px-1 py-0.5 ${state.itemUsed ? "text-slate-500 line-through" : ""}`} aria-label="Item">
-          {(state.item && !(COMMON_ITEMS as readonly string[]).includes(state.item)
-            ? [state.item, ...COMMON_ITEMS]
-            : COMMON_ITEMS
-          ).map((it) => <option key={it} value={it}>{it}</option>)}
+          {(() => {
+            const base = items.length ? items : (COMMON_ITEMS as readonly string[]);
+            const opts = state.item && state.item !== "None" && !base.includes(state.item) ? [state.item, ...base] : base;
+            return opts.map((it) => <option key={it} value={it}>{it}</option>);
+          })()}
         </select>
       </div>
 
