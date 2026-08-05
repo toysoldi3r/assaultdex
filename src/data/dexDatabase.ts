@@ -151,7 +151,70 @@ const ABILITY_INTERACTION: Record<string, string> = {
 };
 
 function isReal(x: { exists: boolean; isNonstandard?: string | null; name: string }): boolean {
-  return x.exists && !x.isNonstandard && x.name !== "";
+  // Keep standard + Past (megas, some legacy abilities) — only drop CAP/Future.
+  return x.exists && (!x.isNonstandard || x.isNonstandard === "Past") && x.name !== "";
+}
+
+export interface DbMove {
+  name: string;
+  type: string;
+  category: string;
+  power: number | null;
+  accuracy: number | null;
+  pp: number | null;
+  priority: number;
+  desc: string;
+}
+
+export function listDbMoves(): DbMove[] {
+  return gen.moves
+    .all()
+    .filter(isReal)
+    .map((m) => ({
+      name: m.name,
+      type: m.type,
+      category: m.category,
+      power: m.basePower || null,
+      accuracy: m.accuracy === true ? null : (m.accuracy ?? null),
+      pp: m.pp ?? null,
+      priority: m.priority ?? 0,
+      desc: m.shortDesc || m.desc || "",
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+const ITEM_INTERACTION: Record<string, string> = {
+  "Iron Ball": "Halves the holder's Speed and grounds it — a Flying-type or Levitate holder becomes hit by Ground moves and affected by Spikes/terrain. Cancels the ungrounding from Levitate/Magnet Rise for as long as it's held.",
+  "Air Balloon": "Grounds nothing — instead makes the holder immune to Ground moves until it is hit by any damaging move, which pops the balloon.",
+  "Choice Band": "Locks the holder into the first move it selects, but boosts Attack ×1.5.",
+  "Choice Specs": "Locks the holder into the first move it selects, but boosts Special Attack ×1.5.",
+  "Choice Scarf": "Locks the holder into the first move it selects, but boosts Speed ×1.5.",
+  "Life Orb": "×1.3 damage on all attacks, but the holder loses 1/10 of its max HP after each attacking move (no recoil on status moves).",
+  "Assault Vest": "×1.5 Special Defense, but the holder cannot select status moves.",
+  "Focus Sash": "If at full HP, the holder survives any single hit with 1 HP. Consumed after use.",
+  "Rocky Helmet": "Attackers that make contact lose 1/6 of their max HP.",
+  "Flame Orb": "Burns the holder at the end of the turn — used to trigger Guts/Flare Boost or self-inflict burn deliberately.",
+  "Toxic Orb": "Badly poisons the holder — used to trigger Poison Heal/Guts or Toxic Boost.",
+  "Weakness Policy": "When hit by a super-effective move, sharply raises the holder's Attack and Special Attack (+2 each). Consumed.",
+  "Booster Energy": "Activates Protosynthesis/Quark Drive without sun/Electric Terrain, boosting the holder's highest stat. Consumed.",
+  "Covert Cloak": "Protects the holder from the added (secondary) effects of moves — no flinch, no stat drops from the attack's secondary.",
+  "Clear Amulet": "Prevents other Pokémon from lowering the holder's stats (blocks Intimidate, Icy Wind's drop, etc.).",
+  "Safety Goggles": "Immune to powder/spore moves (Spore, Sleep Powder, Rage Powder) and to weather chip damage (sand/hail).",
+};
+
+/** Item by name, with description, fling, modelled calc, and interaction note. */
+export function getDbItem(nameOrId: string): (DbItem & { interaction: string | null }) | null {
+  const i = gen.items.get(nameOrId);
+  if (!isReal(i)) return null;
+  return {
+    name: i.name,
+    spritenum: (i as unknown as { spritenum?: number }).spritenum ?? 0,
+    desc: i.desc || i.shortDesc || "",
+    fling: i.fling?.basePower ?? null,
+    calc: ITEM_CALC[i.name] ?? null,
+    competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name),
+    interaction: ITEM_INTERACTION[i.name] ?? null,
+  };
 }
 
 export function listDbItems(): DbItem[] {
@@ -193,15 +256,54 @@ export function getDbAbility(nameOrId: string): DbAbility | null {
   return a.exists ? toDbAbility(a) : null;
 }
 
-/** Every species (full dex) that can have the given ability. */
+/** Every species/forme (full dex, incl. Mega/Primal) that can have the ability. */
 export function pokemonWithAbility(nameOrId: string): { name: string; slug: string }[] {
   const target = gen.abilities.get(nameOrId).name;
   if (!target) return [];
   const out: { name: string; slug: string }[] = [];
   for (const s of gen.species.all()) {
-    if (!s.exists || s.isNonstandard) continue;
+    // Include Past (megas, e.g. Parental Bond on Kangaskhan-Mega); drop CAP/Future.
+    if (!s.exists || (s.isNonstandard && s.isNonstandard !== "Past")) continue;
     const abilities = Object.values(s.abilities) as string[];
-    if (abilities.includes(target)) out.push({ name: s.name, slug: s.id });
+    if (abilities.includes(target)) {
+      // Link deep-linkable formes to their base page so the sprite/route resolves.
+      const slug = s.baseSpecies && s.baseSpecies !== s.name ? gen.species.get(s.baseSpecies).id : s.id;
+      out.push({ name: s.name, slug });
+    }
   }
-  return out.sort((a, b) => a.name.localeCompare(b.name));
+  // Deduplicate by display name.
+  const seen = new Set<string>();
+  return out
+    .filter((m) => (seen.has(m.name) ? false : (seen.add(m.name), true)))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Move names classified for an ability's interaction list (Bulletproof, …). */
+export function abilityAffectedMoves(abilityName: string): string[] {
+  const flagByAbility: Record<string, string> = {
+    Bulletproof: "bullet",
+    Soundproof: "sound",
+    "Punk Rock": "sound",
+    Dazzling: "priority",
+    "Queenly Majesty": "priority",
+    "Armor Tail": "priority",
+    Overcoat: "powder",
+    "Iron Fist": "punch",
+    "Strong Jaw": "bite",
+    "Mega Launcher": "pulse",
+    Sharpness: "slicing",
+    "Tough Claws": "contact",
+  };
+  const flag = flagByAbility[abilityName];
+  if (!flag) return [];
+  const out: string[] = [];
+  for (const m of gen.moves.all()) {
+    if (!m.exists || (m.isNonstandard && m.isNonstandard !== "Past")) continue;
+    if (flag === "priority") {
+      if ((m.priority ?? 0) > 0 && m.category !== "Status") out.push(m.name);
+    } else if (m.flags && (m.flags as Record<string, unknown>)[flag]) {
+      out.push(m.name);
+    }
+  }
+  return out.sort();
 }
