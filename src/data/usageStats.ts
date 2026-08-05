@@ -31,6 +31,8 @@ export interface MonUsage {
   name: string;
   usage: number;
   winRate: number;
+  /** Distinct team compositions this Pokémon appears in. */
+  teams: number;
   teammates: Teammate[];
 }
 
@@ -38,6 +40,8 @@ export interface TeamRank {
   members: string[];
   battles: number;
   winRate: number;
+  /** How many ladder entries share this exact composition. */
+  count: number;
 }
 
 export interface CoreEntry {
@@ -120,6 +124,7 @@ export function aggregateRankings(rows: RankingRow[]): UsageData {
       name: names[k] ?? k,
       usage: +((100 * m.battles) / totalBattles).toFixed(2),
       winRate: +((100 * m.wins) / m.battles).toFixed(1),
+      teams: 0, // filled from distinct team compositions below
       teammates: Object.entries(m.mates)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 8)
@@ -132,13 +137,21 @@ export function aggregateRankings(rows: RankingRow[]): UsageData {
   }
 
   // --- Top exact teams -----------------------------------------------------
-  const teamAcc: Record<string, { members: string[]; battles: number; wins: number }> = {};
+  const teamAcc: Record<string, { members: string[]; battles: number; wins: number; count: number }> = {};
   for (const row of rows) {
     const members = [...row.team].sort();
     const key = members.map(usageKey).join("|");
-    const t = (teamAcc[key] ??= { members, battles: 0, wins: 0 });
+    const t = (teamAcc[key] ??= { members, battles: 0, wins: 0, count: 0 });
     t.battles += row.total_battles || 0;
     t.wins += row.wins || 0;
+    t.count += 1;
+  }
+  // Distinct team compositions each Pokémon appears in.
+  for (const t of Object.values(teamAcc)) {
+    for (const name of t.members) {
+      const mk = usageKey(name);
+      if (mons[mk]) mons[mk].teams += 1;
+    }
   }
   const topTeams: TeamRank[] = Object.values(teamAcc)
     .filter((t) => t.battles > 0)
@@ -148,6 +161,7 @@ export function aggregateRankings(rows: RankingRow[]): UsageData {
       members: t.members,
       battles: t.battles,
       winRate: +((100 * t.wins) / t.battles).toFixed(1),
+      count: t.count,
     }));
 
   // --- Common cores (2/3/4) ------------------------------------------------
@@ -171,8 +185,8 @@ export function aggregateRankings(rows: RankingRow[]): UsageData {
     .filter((c) => c.battles >= minCoreBattles)
     .sort((a, b) => a.size - b.size || b.battles - a.battles)
     .reduce<CoreEntry[]>((out, c) => {
-      // keep top 8 per size
-      if (out.filter((x) => x.size === c.size).length < 8) {
+      // keep top 10 per size
+      if (out.filter((x) => x.size === c.size).length < 10) {
         out.push({
           members: c.members,
           size: c.size,
