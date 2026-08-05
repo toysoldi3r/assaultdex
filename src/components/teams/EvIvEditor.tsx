@@ -24,6 +24,27 @@ const STAT_LABELS: Record<StatKey, string> = {
 const clamp = (lo: number, hi: number, v: number) =>
   Math.max(lo, Math.min(hi, Number.isFinite(v) ? v : lo));
 
+/** Smogon-style archetype label guessed from the EV investment. */
+function guessSpread(evs: Record<StatKey, number>): string {
+  const atk = evs.atk || 0, spa = evs.spa || 0, hp = evs.hp || 0;
+  const def = evs.def || 0, spd = evs.spd || 0, spe = evs.spe || 0;
+  const physical = atk >= spa;
+  const off = physical ? atk : spa;
+  const word = physical ? "physical" : "special";
+  const cap = word[0]!.toUpperCase() + word.slice(1);
+  const fast = spe >= 100;
+  const bulky = hp >= 100;
+  if (off < 60 && bulky && (def >= 100 || spd >= 100))
+    return def >= spd ? "Physically defensive" : "Specially defensive";
+  if (off >= 100 && fast) return `Fast ${word} sweeper`;
+  if (off >= 100 && bulky) return `Bulky ${word} attacker`;
+  if (off >= 100) return `${cap} attacker`;
+  if (bulky && fast) return "Bulky pivot";
+  if (fast) return "Fast support";
+  if (bulky) return "Wall / support";
+  return "Custom spread";
+}
+
 export interface Spread {
   ivs: Record<StatKey, number>;
   evs: Record<StatKey, number>;
@@ -69,8 +90,11 @@ export function EvIvEditor({
   return (
     <div className="mt-3 space-y-2 rounded border border-slate-800 bg-slate-950/40 p-3 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-semibold uppercase tracking-wide text-slate-400">
-          EV / IV spread
+        <span className="flex items-center gap-2">
+          <span className="font-semibold uppercase tracking-wide text-slate-400">EV / IV spread</span>
+          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300" title="Guessed archetype from the EV investment">
+            {guessSpread(spread.evs)}
+          </span>
         </span>
         <span className={remaining < 0 ? "text-rose-400" : "text-slate-500"}>
           Remaining EVs: <span className="tabular-nums">{remaining}</span>

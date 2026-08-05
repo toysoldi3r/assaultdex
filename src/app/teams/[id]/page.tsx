@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Panel } from "@/components/ui";
 import { TeamBuilder, type MemberRef } from "@/components/teams/TeamBuilder";
 import type { MoveMeta } from "@/components/teams/moveTypes";
+import { POKEMON_TYPES } from "@/domain/types/pokemon";
 import { NATURES } from "@/data/fixtures/natures";
 import { itemCatalog, poolDescMaps } from "@/data/catalog";
 import { getMonTournament } from "@/data/tournamentStats";
@@ -41,24 +42,33 @@ export default async function TeamDetailPage({
 
   const memberRefs: Record<string, MemberRef> = {};
   const moveMeta: Record<string, MoveMeta> = {};
+  // Meta for any move name, sourced from @pkmn/dex so the whole legal movepool
+  // (not just the curated battle subset) has type/category/power/accuracy/PP.
+  const metaFor = (name: string): MoveMeta => {
+    const d = Dex.moves.get(name);
+    const t = d.type?.toLowerCase();
+    return {
+      type: (POKEMON_TYPES as readonly string[]).includes(t ?? "") ? (t as MoveMeta["type"]) : "normal",
+      category: (d.category?.toLowerCase() as MoveMeta["category"]) ?? "status",
+      power: d.basePower || null,
+      accuracy: d.accuracy === true ? null : (d.accuracy ?? null),
+      pp: d.pp ?? null,
+      desc: moveDesc[name] || d.shortDesc || d.desc || undefined,
+    };
+  };
   for (const p of allMons) {
+    // The full legal movepool matches what the Pokédex lists; fall back to the
+    // curated battle moves if a species has no stored movepool.
+    const legalMoves = p.movepool.length ? p.movepool : p.moves.map((mv) => mv.name);
     memberRefs[p.slug] = {
       name: p.name,
       types: p.types,
       abilities: p.abilities,
-      legalMoves: p.moves.map((mv) => mv.name),
+      legalMoves,
       baseStats: p.baseStats,
     };
-    for (const mv of p.moves) {
-      if (moveMeta[mv.name]) continue;
-      moveMeta[mv.name] = {
-        type: mv.type,
-        category: mv.category,
-        power: mv.power,
-        accuracy: mv.accuracy,
-        pp: Dex.moves.get(mv.name).pp ?? null,
-        desc: moveDesc[mv.name],
-      };
+    for (const name of legalMoves) {
+      if (!moveMeta[name]) moveMeta[name] = metaFor(name);
     }
   }
   const pool = allMons.map((p) => ({ slug: p.slug, name: p.name }));
