@@ -62,6 +62,7 @@ export default async function ChoiceDexPage() {
           nature: m.nature,
           item: m.item ?? "None",
           ability: m.ability ?? "",
+          moves: m.moves,
         };
       }
       return {

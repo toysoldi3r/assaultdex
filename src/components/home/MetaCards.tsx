@@ -58,7 +58,7 @@ export function MetaCards({
     <div className="grid gap-4 lg:grid-cols-2">
       <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Top 30 in the meta
+          Top 20 in the meta
         </h2>
         <div className="max-h-96 overflow-y-auto pr-1">
           <MonList mons={meta} metric="usage" />
@@ -67,7 +67,7 @@ export function MetaCards({
 
       <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Top 30 by win rate
+          Top 20 by win rate
         </h2>
         <div className="max-h-96 overflow-y-auto pr-1">
           <MonList mons={winrate} metric="winRate" />

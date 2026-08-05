@@ -6,17 +6,22 @@ import type { DbItem } from "@/data/dexDatabase";
 
 export function ItemsTable({ items }: { items: DbItem[] }) {
   const [q, setQ] = useState("");
-  const [modeledOnly, setModeledOnly] = useState(false);
+  const [champsOnly, setChampsOnly] = useState(true);
+  const [sortFling, setSortFling] = useState(false);
+
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return items.filter(
+    const list = items.filter(
       (i) =>
-        (!modeledOnly || i.calc) &&
+        (!champsOnly || i.competitive) &&
         (!needle ||
           i.name.toLowerCase().includes(needle) ||
           i.desc.toLowerCase().includes(needle)),
     );
-  }, [items, q, modeledOnly]);
+    return sortFling
+      ? [...list].sort((a, b) => (b.fling ?? -1) - (a.fling ?? -1))
+      : list;
+  }, [items, q, champsOnly, sortFling]);
 
   return (
     <div className="space-y-3">
@@ -27,14 +32,26 @@ export function ItemsTable({ items }: { items: DbItem[] }) {
           placeholder={`Search ${items.length} items…`}
           className="w-64 rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm"
         />
-        <label className="flex items-center gap-1.5 text-xs text-slate-400">
-          <input
-            type="checkbox"
-            checked={modeledOnly}
-            onChange={(e) => setModeledOnly(e.target.checked)}
-          />
-          Only items with a modeled calculation
-        </label>
+        <div className="flex overflow-hidden rounded border border-slate-700 text-xs">
+          <button
+            onClick={() => setChampsOnly(true)}
+            className={`px-3 py-1.5 ${champsOnly ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}
+          >
+            Champions
+          </button>
+          <button
+            onClick={() => setChampsOnly(false)}
+            className={`px-3 py-1.5 ${!champsOnly ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}
+          >
+            Full list
+          </button>
+        </div>
+        <button
+          onClick={() => setSortFling((s) => !s)}
+          className={`rounded border px-3 py-1.5 text-xs ${sortFling ? "border-amber-500 text-amber-300" : "border-slate-700 text-slate-300"}`}
+        >
+          {sortFling ? "↓ Fling power" : "Sort by Fling"}
+        </button>
         <span className="text-xs text-slate-500">{filtered.length} shown</span>
       </div>
       <div className="overflow-x-auto rounded-lg border border-slate-800">
@@ -43,7 +60,6 @@ export function ItemsTable({ items }: { items: DbItem[] }) {
             <tr>
               <th className="px-3 py-2 font-normal">Item</th>
               <th className="px-3 py-2 font-normal">Effect</th>
-              <th className="px-3 py-2 font-normal">Calc</th>
               <th className="px-3 py-2 text-right font-normal">Fling</th>
             </tr>
           </thead>
@@ -54,10 +70,18 @@ export function ItemsTable({ items }: { items: DbItem[] }) {
                   <span className="flex items-center gap-1.5">
                     <ItemIcon item={i.name} />
                     {i.name}
+                    {/* Special-interaction marker: calculation shows on hover. */}
+                    {i.calc && (
+                      <span
+                        title={i.calc}
+                        className="cursor-help rounded-full border border-emerald-600/60 px-1 text-[9px] text-emerald-300"
+                      >
+                        ⓘ calc
+                      </span>
+                    )}
                   </span>
                 </td>
                 <td className="px-3 py-2 text-slate-300">{i.desc || "—"}</td>
-                <td className="px-3 py-2 text-xs text-emerald-300">{i.calc ?? ""}</td>
                 <td className="px-3 py-2 text-right tabular-nums text-slate-400">
                   {i.fling ?? "—"}
                 </td>

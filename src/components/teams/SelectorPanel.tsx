@@ -34,13 +34,18 @@ export function SelectorPanel({
 }) {
   const [q, setQ] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
 
+  // Focus the search box only once on open. Depending on `onClose` (a new
+  // function each parent render) would refocus on every keystroke elsewhere —
+  // e.g. stealing focus away from the nickname field.
   useEffect(() => {
     inputRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && closeRef.current();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, []);
 
   const filtered = useMemo(() => {
     const n = q.trim().toLowerCase();

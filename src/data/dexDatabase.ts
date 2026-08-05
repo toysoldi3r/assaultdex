@@ -15,7 +15,28 @@ export interface DbItem {
   fling: number | null;
   /** Exact modifier AssaultDex's engine applies, if any. */
   calc: string | null;
+  /** Competitively relevant / commonly seen in the Champions format. */
+  competitive: boolean;
 }
+
+// Common competitive held items (beyond the modeled ones) shown in the default
+// "Champions" item view. Everything else is only in the full list.
+const COMPETITIVE_ITEMS = new Set<string>([
+  "Leftovers", "Rocky Helmet", "Sitrus Berry", "Focus Sash", "Safety Goggles",
+  "Covert Cloak", "Clear Amulet", "Booster Energy", "Mental Herb", "Light Clay",
+  "Eviolite", "Weakness Policy", "Throat Spray", "Wide Lens", "Zoom Lens",
+  "Grassy Seed", "Electric Seed", "Psychic Seed", "Misty Seed", "Room Service",
+  "Loaded Dice", "Protective Pads", "Air Balloon", "Red Card", "Eject Button",
+  "Eject Pack", "Blunder Policy", "Adrenaline Orb", "Power Herb", "White Herb",
+  "Lum Berry", "Chesto Berry", "Aguav Berry", "Figy Berry", "Iapapa Berry",
+  "Mago Berry", "Wiki Berry", "Occa Berry", "Passho Berry", "Wacan Berry",
+  "Rindo Berry", "Yache Berry", "Chople Berry", "Kebia Berry", "Shuca Berry",
+  "Coba Berry", "Payapa Berry", "Tanga Berry", "Charti Berry", "Kasib Berry",
+  "Haban Berry", "Colbur Berry", "Babiri Berry", "Chilan Berry", "Roseli Berry",
+  "Assault Vest", "Life Orb", "Choice Band", "Choice Specs", "Choice Scarf",
+  "Mystic Water", "Charcoal", "Metronome", "Muscle Band", "Wise Glasses",
+  "Expert Belt", "Iron Ball", "Black Sludge", "Toxic Orb", "Flame Orb",
+]);
 
 export interface DbAbility {
   name: string;
@@ -143,20 +164,44 @@ export function listDbItems(): DbItem[] {
       desc: i.desc || i.shortDesc || "",
       fling: i.fling?.basePower ?? null,
       calc: ITEM_CALC[i.name] ?? null,
+      competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function toDbAbility(a: ReturnType<typeof gen.abilities.get>): DbAbility {
+  return {
+    name: a.name,
+    desc: a.desc || a.shortDesc || "",
+    rating: (a as unknown as { rating?: number }).rating ?? 0,
+    calc: ABILITY_CALC[a.name] ?? null,
+    interaction: ABILITY_INTERACTION[a.name] ?? null,
+  };
 }
 
 export function listDbAbilities(): DbAbility[] {
   return gen.abilities
     .all()
     .filter(isReal)
-    .map((a) => ({
-      name: a.name,
-      desc: a.desc || a.shortDesc || "",
-      rating: (a as unknown as { rating?: number }).rating ?? 0,
-      calc: ABILITY_CALC[a.name] ?? null,
-      interaction: ABILITY_INTERACTION[a.name] ?? null,
-    }))
+    .map(toDbAbility)
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Ability by slug/name, or null. */
+export function getDbAbility(nameOrId: string): DbAbility | null {
+  const a = gen.abilities.get(nameOrId);
+  return a.exists ? toDbAbility(a) : null;
+}
+
+/** Every species (full dex) that can have the given ability. */
+export function pokemonWithAbility(nameOrId: string): { name: string; slug: string }[] {
+  const target = gen.abilities.get(nameOrId).name;
+  if (!target) return [];
+  const out: { name: string; slug: string }[] = [];
+  for (const s of gen.species.all()) {
+    if (!s.exists || s.isNonstandard) continue;
+    const abilities = Object.values(s.abilities) as string[];
+    if (abilities.includes(target)) out.push({ name: s.name, slug: s.id });
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
 }

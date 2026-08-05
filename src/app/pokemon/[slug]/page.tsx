@@ -54,8 +54,8 @@ export default async function PokemonPage({
 
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <span className="grid h-16 w-16 shrink-0 place-items-center rounded bg-slate-800/50">
-            <PokeIcon species={p.name} />
+          <span className="grid h-28 w-28 shrink-0 place-items-center overflow-hidden rounded bg-slate-800/50">
+            <PokeIcon species={p.name} className="scale-[2.6]" />
           </span>
           <div>
             <span className="tabular-nums text-sm text-slate-500">
