@@ -47,7 +47,15 @@ export interface SavedTeam {
 type Side = "user" | "opponent";
 // Abilities a move can grant that may not be native to any pool species, plus
 // a "(none)" sentinel for ability suppression (Gastro Acid / Neutralizing Gas).
-const ABILITY_CHANGE_RESULTS = ["(none)", "Simple", "Insomnia", "Truant"];
+// Abilities that can be applied in battle by a move/ability even if no mon in
+// the match natively has it: Mummy-line (spread on contact), Simple Beam, Worry
+// Seed, Entrainment, etc. Plus "(none)" to suppress an ability (Gastro Acid /
+// Neutralizing Gas). Skill Swap / Trace / Role Play copy abilities already in
+// the match, which are added dynamically per battle.
+const ABILITY_CHANGE_RESULTS = [
+  "(none)", "Simple", "Insomnia", "Truant", "Mummy", "Lingering Aroma",
+  "Wandering Spirit",
+];
 const WEATHERS: Weather[] = ["none", "sun", "rain", "sand", "snow"];
 const TERRAINS: Terrain[] = ["none", "electric", "grassy", "misty", "psychic"];
 const STATUSES: StatusCondition[] = ["none", "burn", "paralysis", "poison", "toxic", "sleep", "freeze"];
@@ -100,32 +108,28 @@ const bgStyle = (id: string) => ({
   background: (BACKGROUNDS.find((b) => b.id === id) ?? BACKGROUNDS[0]!).background,
 });
 
-const SESSION_KEY = "choicedex.session.v1";
-const BATTLE_KEY = "choicedex.battle.v1";
+const SESSION_KEY = "choicedex.session.v2";
+const BATTLE_KEY = "choicedex.battle.v2";
+// Saved battles older than this are treated as stale (don't reopen yesterday's).
+const BATTLE_TTL_MS = 12 * 60 * 60 * 1000;
 
-/** Item dropdown options: the common list plus the current value if unlisted,
- *  so a saved-team item outside COMMON_ITEMS still displays as selected. */
-function itemOptions(current: string): string[] {
-  return current && !(COMMON_ITEMS as readonly string[]).includes(current)
-    ? [current, ...COMMON_ITEMS]
-    : [...COMMON_ITEMS];
+/** Item dropdown options: the given list plus the current value if unlisted, so
+ *  a saved-team item outside the list still displays as selected. */
+function itemOptions(current: string, items: readonly string[]): string[] {
+  const base = items.length ? items : COMMON_ITEMS;
+  return current && current !== "None" && !base.includes(current) ? [current, ...base] : [...base];
 }
 
 export function ChoiceDexApp({
   pokemon,
   teams,
+  items = [],
 }: {
   pokemon: PokemonRef[];
   teams: SavedTeam[];
+  items?: string[];
 }) {
   const bySlug = useMemo(() => new Map(pokemon.map((p) => [p.slug, p])), [pokemon]);
-  // Every ability across the pool, plus the results of ability-changing moves,
-  // so a card can be set to an off-species ability (Skill Swap, Simple Beam, …).
-  const allAbilities = useMemo(() => {
-    const set = new Set<string>(pokemon.flatMap((p) => p.abilities));
-    for (const a of ABILITY_CHANGE_RESULTS) set.add(a);
-    return [...set].sort();
-  }, [pokemon]);
   const [phase, setPhase] = useState<"preview" | "battle">("preview");
   const [userTeam, setUserTeam] = useState<(string | null)[]>(emptyTeam());
   const [oppTeam, setOppTeam] = useState<(string | null)[]>(emptyTeam());
@@ -141,10 +145,21 @@ export function ChoiceDexApp({
         const raw = localStorage.getItem(SESSION_KEY);
         if (raw) {
           const s = JSON.parse(raw);
-          if (Array.isArray(s.userTeam)) setUserTeam(s.userTeam);
-          if (Array.isArray(s.oppTeam)) setOppTeam(s.oppTeam);
-          if (s.loadedSets) setLoadedSets(s.loadedSets);
-          if (s.phase === "battle") setPhase("battle");
+          // Discard a stale session: too old, or referencing species that are no
+          // longer in the pool (e.g. after data changes / a deleted team).
+          const fresh = typeof s.ts === "number" && Date.now() - s.ts < BATTLE_TTL_MS;
+          const speciesOk = [...(s.userTeam ?? []), ...(s.oppTeam ?? [])]
+            .filter(Boolean)
+            .every((slug: string) => bySlug.has(slug));
+          if (fresh && speciesOk) {
+            if (Array.isArray(s.userTeam)) setUserTeam(s.userTeam);
+            if (Array.isArray(s.oppTeam)) setOppTeam(s.oppTeam);
+            if (s.loadedSets) setLoadedSets(s.loadedSets);
+            if (s.phase === "battle") setPhase("battle");
+          } else {
+            localStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem(BATTLE_KEY);
+          }
         }
       } catch {
         /* ignore corrupt storage */
@@ -152,11 +167,11 @@ export function ChoiceDexApp({
       return;
     }
     try {
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ phase, userTeam, oppTeam, loadedSets }));
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ ts: Date.now(), phase, userTeam, oppTeam, loadedSets }));
     } catch {
       /* ignore quota */
     }
-  }, [phase, userTeam, oppTeam, loadedSets]);
+  }, [phase, userTeam, oppTeam, loadedSets, bySlug]);
 
   const userCount = userTeam.filter(Boolean).length;
   const oppCount = oppTeam.filter(Boolean).length;
@@ -199,7 +214,7 @@ export function ChoiceDexApp({
     return (
       <BattleView
         bySlug={bySlug}
-        allAbilities={allAbilities}
+        items={items}
         userTeam={userTeam.filter((s): s is string => !!s)}
         oppTeam={oppTeam.filter((s): s is string => !!s)}
         loadedSets={loadedSets}
@@ -475,20 +490,29 @@ function monFromSet(set: KnownSet | undefined): MonState {
 
 function BattleView({
   bySlug,
-  allAbilities,
+  items,
   userTeam,
   oppTeam,
   loadedSets,
   onBack,
 }: {
   bySlug: Map<string, PokemonRef>;
-  allAbilities: string[];
+  items: string[];
   userTeam: string[];
   oppTeam: string[];
   loadedSets: Record<string, KnownSet>;
   onBack: () => void;
 }) {
   const refBySlug = bySlug;
+  // Abilities selectable in-match: every ability held by a Pokémon in this game
+  // (covers Skill Swap / Trace / Role Play copying) plus move/ability results.
+  const matchAbilities = useMemo(() => {
+    const set = new Set<string>(ABILITY_CHANGE_RESULTS);
+    for (const s of [...userTeam, ...oppTeam]) {
+      for (const a of bySlug.get(s)?.abilities ?? []) set.add(a);
+    }
+    return [...set].sort();
+  }, [userTeam, oppTeam, bySlug]);
   const [round, setRound] = useState(1);
   // Teams are held in state so "swap sides" can flip perspective mid-battle.
   const [uTeam, setUTeam] = useState<string[]>(userTeam);
@@ -537,6 +561,10 @@ function BattleView({
         if (raw) {
           const s = JSON.parse(raw);
           if (s.sig !== teamSig) return; // stale battle for different teams
+          if (typeof s.ts === "number" && Date.now() - s.ts > BATTLE_TTL_MS) {
+            localStorage.removeItem(BATTLE_KEY); // don't reopen an old battle
+            return;
+          }
           if (Array.isArray(s.uTeam)) setUTeam(s.uTeam);
           if (Array.isArray(s.oTeam)) setOTeam(s.oTeam);
           if (s.activeUser) setActiveUser(s.activeUser);
@@ -559,7 +587,7 @@ function BattleView({
     try {
       localStorage.setItem(
         BATTLE_KEY,
-        JSON.stringify({ sig: teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background }),
+        JSON.stringify({ ts: Date.now(), sig: teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background }),
       );
     } catch {
       /* ignore quota */
@@ -714,8 +742,9 @@ function BattleView({
                   slug={slug}
                   state={monOf("opponent", slug)}
                   options={optionsFor("opponent", oTeam, activeOpp, i as 0 | 1)}
-                  abilities={allAbilities}
+                  abilities={matchAbilities}
                   defaultAbility={abilitiesFor(slug)[0] ?? ""}
+                  items={items}
                   onSelect={(s) => {
                     setActive("opponent", i as 0 | 1, s);
                     if (s && s !== slug) patchMon("opponent", s, { stages: NEUTRAL_STAGES });
@@ -735,8 +764,9 @@ function BattleView({
                   slug={slug}
                   state={monOf("user", slug)}
                   options={optionsFor("user", uTeam, activeUser, i as 0 | 1)}
-                  abilities={allAbilities}
+                  abilities={matchAbilities}
                   defaultAbility={abilitiesFor(slug)[0] ?? ""}
+                  items={items}
                   onSelect={(s) => {
                     setActive("user", i as 0 | 1, s);
                     if (s && s !== slug) patchMon("user", s, { stages: NEUTRAL_STAGES });
@@ -753,18 +783,28 @@ function BattleView({
           {/* Shared field */}
           <div className="space-y-2 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Field (both sides)</h3>
-            <label className="flex items-center justify-between gap-2">
-              Weather
-              <select value={weather} onChange={(e) => setWeather(e.target.value as Weather)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1">
-                {WEATHERS.map((w) => <option key={w}>{w}</option>)}
-              </select>
-            </label>
-            <label className="flex items-center justify-between gap-2">
-              Terrain
-              <select value={terrain} onChange={(e) => setTerrain(e.target.value as Terrain)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1">
-                {TERRAINS.map((t) => <option key={t}>{t}</option>)}
-              </select>
-            </label>
+            <div>
+              <span className="mb-1 block text-[10px] uppercase text-slate-500">Weather</span>
+              <div className="flex flex-wrap gap-1">
+                {WEATHERS.map((w) => (
+                  <button key={w} onClick={() => setWeather(w)}
+                    className={`rounded px-2 py-0.5 capitalize ${weather === w ? "bg-amber-500 text-black" : "bg-slate-800 hover:bg-slate-700"}`}>
+                    {w}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="mb-1 block text-[10px] uppercase text-slate-500">Terrain</span>
+              <div className="flex flex-wrap gap-1">
+                {TERRAINS.map((t) => (
+                  <button key={t} onClick={() => setTerrain(t)}
+                    className={`rounded px-2 py-0.5 capitalize ${terrain === t ? "bg-amber-500 text-black" : "bg-slate-800 hover:bg-slate-700"}`}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="flex flex-wrap gap-3">
               <label className="flex items-center gap-2">
                 <input type="checkbox" checked={trickRoom} onChange={(e) => setTrickRoom(e.target.checked)} /> Trick Room
@@ -807,7 +847,7 @@ function BattleView({
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">🟢 Your team</p>
           <div className="flex flex-wrap gap-1.5">
             {uTeam.map((s) => (
-              <MonChip key={s} name={refBySlug.get(s)?.name ?? s} slug={s} state={monOf("user", s)} />
+              <MonChip key={s} name={refBySlug.get(s)?.name ?? s} slug={s} state={monOf("user", s)} refData={refBySlug.get(s)} />
             ))}
           </div>
         </div>
@@ -822,7 +862,7 @@ function BattleView({
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-rose-300">🔴 Opponent&apos;s team</p>
           <div className="flex flex-wrap justify-end gap-1.5">
             {oTeam.map((s) => (
-              <MonChip key={s} name={refBySlug.get(s)?.name ?? s} slug={s} state={monOf("opponent", s)} />
+              <MonChip key={s} name={refBySlug.get(s)?.name ?? s} slug={s} state={monOf("opponent", s)} refData={refBySlug.get(s)} />
             ))}
           </div>
         </div>
@@ -865,8 +905,9 @@ function BattleView({
                 baseStats={ref.baseStats}
                 attacker={attacker}
                 targets={targets}
-                abilities={allAbilities}
+                abilities={matchAbilities}
                 defaultAbility={abilitiesFor(spec.slug)[0] ?? ""}
+                items={items}
                 field={built.state.field}
                 defenderConditions={spec.enemies.conditions}
                 ownConditions={spec.own.conditions}
@@ -916,15 +957,33 @@ const STATUS_COLOR: Record<string, string> = {
   freeze: "bg-cyan-500 text-black",
 };
 
-/** Team-overview chip: bigger icon + HP/status warning badges + coloured status. */
-function MonChip({ name, slug, state }: { name: string; slug: string; state: MonState }) {
+/** Team-overview chip: bigger icon + HP/status warning badges + coloured status.
+ *  Hovering shows a small overview (types, stats, ability, item). */
+function MonChip({
+  name,
+  slug,
+  state,
+  refData,
+}: {
+  name: string;
+  slug: string;
+  state: MonState;
+  refData?: PokemonRef;
+}) {
   const fainted = state.hpPct <= 0;
   const warn = !fainted && state.hpPct < 20 ? "red" : !fainted && state.hpPct <= 50 ? "yellow" : null;
+  const b = refData?.baseStats;
+  const statLine = b
+    ? `\nBase: HP ${b.hp} / Atk ${b.atk} / Def ${b.def} / SpA ${b.spa} / SpD ${b.spd} / Spe ${b.spe}`
+    : "";
+  const typeLine = refData?.types?.length ? `\n${refData.types.join(" / ")}` : "";
   const title =
     `${name} — ${state.hpPct}% HP` +
     (state.status !== "none" ? ` · ${state.status}` : "") +
     (state.ability ? ` · ${state.ability}` : "") +
-    (state.item && state.item !== "None" ? ` · ${state.item}` : "");
+    (state.item && state.item !== "None" ? ` · ${state.item}` : "") +
+    typeLine +
+    statLine;
   return (
     <span
       className={`relative inline-flex h-12 w-12 items-center justify-center overflow-hidden ${fainted ? "opacity-30 grayscale" : ""}`}
@@ -961,6 +1020,7 @@ function ActiveCard({
   options,
   abilities,
   defaultAbility,
+  items,
   onSelect,
   onPatch,
 }: {
@@ -971,6 +1031,7 @@ function ActiveCard({
   options: { slug: string; name: string }[];
   abilities: string[];
   defaultAbility: string;
+  items: string[];
   onSelect: (slug: string | null) => void;
   onPatch: (p: Partial<MonState>) => void;
 }) {
@@ -1035,7 +1096,7 @@ function ActiveCard({
         onChange={(e) => onPatch({ item: e.target.value })}
         className={`mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs ${state.itemUsed ? "text-slate-500 line-through" : ""}`}
       >
-        {itemOptions(state.item).map((it) => <option key={it} value={it}>{it}</option>)}
+        {itemOptions(state.item, items).map((it) => <option key={it} value={it}>{it}</option>)}
       </select>
       {slug && state.item !== "None" && (
         <label className="mt-1 flex items-center gap-1 text-[10px] text-slate-400">

@@ -1,14 +1,17 @@
 import { PokedexBrowser } from "@/components/PokedexBrowser";
 import { listDexEntries } from "@/data/pokedexSource";
+import { listPokemon } from "@/server/repositories/pokemonRepo";
 
-// Static: the dex comes from @pkmn/dex (build-time constant), no per-request
-// state — so this prerenders once and serves from cache.
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
-export default function PokedexPage() {
+export default async function PokedexPage() {
   const all = listDexEntries();
-  // Ship only the Champions roster up front (default view); the full dex is
-  // fetched lazily from /pokemon/all when the visitor toggles to it.
-  const champions = all.filter((e) => e.champions);
+  // Attach the Champions roster's legal movepools so the advanced filter can
+  // query "learns move X" without shipping every species' full learnset.
+  const dbMons = await listPokemon();
+  const moveBySlug = new Map(dbMons.map((p) => [p.slug, p.moves.map((m) => m.name)]));
+  const champions = all
+    .filter((e) => e.champions)
+    .map((e) => ({ ...e, moves: moveBySlug.get(e.slug) ?? [] }));
   return <PokedexBrowser champions={champions} fullCount={all.length} />;
 }

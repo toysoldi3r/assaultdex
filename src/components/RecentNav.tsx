@@ -57,7 +57,7 @@ export function RecentNav() {
   const pathname = usePathname();
   const [recent, setRecent] = useState<NavItem[]>([]);
   const [pinned, setPinned] = useState<NavItem[]>([]);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true); // folded by default
 
   const toggleCollapse = () => {
     setCollapsed((c) => {
@@ -84,7 +84,8 @@ export function RecentNav() {
     setRecent(read(RECENT_KEY));
     setPinned(read(PIN_KEY));
     try {
-      setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1");
+      // Folded unless the user explicitly expanded it.
+      setCollapsed(localStorage.getItem(COLLAPSE_KEY) !== "0");
     } catch {
       /* ignore */
     }
@@ -127,8 +128,8 @@ export function RecentNav() {
   if (recent.length === 0 && pinned.length === 0) return null;
 
   return (
-    <aside className="fixed right-4 top-24 z-30 hidden w-56 xl:block">
-      <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-3 text-sm backdrop-blur">
+    <aside className="fixed right-4 top-24 z-30 hidden w-44 2xl:block">
+      <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-2 text-xs backdrop-blur">
         <button
           onClick={toggleCollapse}
           className="mb-2 flex w-full items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-300"

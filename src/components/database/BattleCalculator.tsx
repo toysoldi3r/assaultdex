@@ -49,88 +49,87 @@ function MonForm({
   onChange: (f: SlotForm) => void;
 }) {
   const ref = refs.find((r) => r.slug === form.species);
+  const totalEv = STAT_KEYS.reduce((s, k) => s + (form.evs?.[k] ?? 0), 0);
   return (
-    <div className="space-y-2 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-      <div className="flex items-center gap-2">
+    <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+      <div className="mb-2 flex items-center gap-2">
         {ref && <PokeIcon species={ref.name} />}
         <span className="text-xs font-semibold uppercase text-slate-400">{label}</span>
       </div>
-      <select
-        value={form.species}
-        onChange={(e) => onChange({ ...freshForm(e.target.value) })}
-        className="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm"
-      >
-        {refs.map((r) => (
-          <option key={r.slug} value={r.slug}>{r.name}</option>
-        ))}
-      </select>
-
-      <div className="grid grid-cols-2 gap-1 text-xs">
-        <select
-          value={form.ability}
-          onChange={(e) => onChange({ ...form, ability: e.target.value })}
-          className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
-          aria-label="Ability"
-        >
-          <option value="">{ref?.abilities[0] ?? "Ability"}</option>
-          {(ref?.abilities ?? []).map((a) => <option key={a} value={a}>{a}</option>)}
-        </select>
-        <select
-          value={form.item}
-          onChange={(e) => onChange({ ...form, item: e.target.value })}
-          className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
-          aria-label="Item"
-        >
-          {COMMON_ITEMS.map((it) => <option key={it} value={it}>{it}</option>)}
-        </select>
-      </div>
-
-      <div className="flex items-center gap-2 text-xs">
-        <ItemIcon item={form.item} />
-        <select
-          value={form.nature}
-          onChange={(e) => onChange({ ...form, nature: e.target.value })}
-          className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
-          aria-label="Nature"
-        >
-          {NATURE_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
-        </select>
-      </div>
-
-      {/* EVs */}
-      <div className="grid grid-cols-6 gap-1 text-center text-[10px]">
-        {STAT_KEYS.map((k) => (
-          <label key={k} className="flex flex-col items-center">
-            <span className="text-slate-500">{STAT_LABELS[k]}</span>
-            <input
-              type="number" min={0} max={252} step={4}
-              value={form.evs?.[k] ?? 0}
-              onChange={(e) => {
-                const v = Math.max(0, Math.min(252, Number(e.target.value)));
-                onChange({ ...form, evs: { ...form.evs, [k]: v } });
-              }}
-              className="w-9 rounded border border-slate-800 bg-slate-950 px-0.5 text-center"
-            />
-          </label>
-        ))}
-      </div>
-
-      {/* Stat stages */}
-      <div className="grid grid-cols-5 gap-1 text-center text-[10px]">
-        {BOOST_KEYS.map((k) => (
-          <div key={k} className="flex flex-col items-center">
-            <span className="text-slate-500">{STAT_LABELS[k]}</span>
-            <div className="flex items-center gap-0.5">
-              <button type="button" aria-label={`Lower ${k}`}
-                onClick={() => onChange({ ...form, stages: { ...form.stages, [k]: Math.max(-6, form.stages[k] - 1) } })}
-                className="rounded bg-slate-800 px-1 leading-none hover:bg-slate-700">−</button>
-              <span className="w-4">{form.stages[k] > 0 ? `+${form.stages[k]}` : form.stages[k]}</span>
-              <button type="button" aria-label={`Raise ${k}`}
-                onClick={() => onChange({ ...form, stages: { ...form.stages, [k]: Math.min(6, form.stages[k] + 1) } })}
-                className="rounded bg-slate-800 px-1 leading-none hover:bg-slate-700">+</button>
+      <div className="grid gap-3 md:grid-cols-2">
+        {/* LEFT: species, ability, item, nature, stages */}
+        <div className="space-y-2">
+          <select
+            value={form.species}
+            onChange={(e) => onChange({ ...freshForm(e.target.value) })}
+            className="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm"
+          >
+            {refs.map((r) => <option key={r.slug} value={r.slug}>{r.name}</option>)}
+          </select>
+          <div className="grid grid-cols-2 gap-1 text-xs">
+            <select value={form.ability} onChange={(e) => onChange({ ...form, ability: e.target.value })}
+              className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5" aria-label="Ability">
+              <option value="">{ref?.abilities[0] ?? "Ability"}</option>
+              {(ref?.abilities ?? []).map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
+            <select value={form.item} onChange={(e) => onChange({ ...form, item: e.target.value })}
+              className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5" aria-label="Item">
+              {COMMON_ITEMS.map((it) => <option key={it} value={it}>{it}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <ItemIcon item={form.item} />
+            <select value={form.nature} onChange={(e) => onChange({ ...form, nature: e.target.value })}
+              className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5" aria-label="Nature">
+              {NATURE_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase text-slate-500">Stat stages</span>
+            <div className="mt-1 grid grid-cols-5 gap-1 text-center text-[10px]">
+              {BOOST_KEYS.map((k) => (
+                <div key={k} className="flex flex-col items-center">
+                  <span className="text-slate-500">{STAT_LABELS[k]}</span>
+                  <div className="flex items-center gap-0.5">
+                    <button type="button" aria-label={`Lower ${k}`}
+                      onClick={() => onChange({ ...form, stages: { ...form.stages, [k]: Math.max(-6, form.stages[k] - 1) } })}
+                      className="rounded bg-slate-800 px-1 leading-none hover:bg-slate-700">−</button>
+                    <span className="w-4">{form.stages[k] > 0 ? `+${form.stages[k]}` : form.stages[k]}</span>
+                    <button type="button" aria-label={`Raise ${k}`}
+                      onClick={() => onChange({ ...form, stages: { ...form.stages, [k]: Math.min(6, form.stages[k] + 1) } })}
+                      className="rounded bg-slate-800 px-1 leading-none hover:bg-slate-700">+</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        ))}
+        </div>
+
+        {/* RIGHT: EV sliders (IVs assumed 31) */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px] uppercase text-slate-500">
+            <span>EVs</span>
+            <span className={totalEv > 508 ? "text-rose-400" : "text-slate-500"}>{totalEv}/508 · IV 31</span>
+          </div>
+          {STAT_KEYS.map((k) => {
+            const v = form.evs?.[k] ?? 0;
+            return (
+              <div key={k} className="flex items-center gap-2 text-[11px]">
+                <span className="w-8 text-slate-400">{STAT_LABELS[k]}</span>
+                <input
+                  type="range" min={0} max={252} step={4} value={v}
+                  onChange={(e) => onChange({ ...form, evs: { ...form.evs, [k]: Number(e.target.value) } })}
+                  className="flex-1" aria-label={`${k} EV`}
+                />
+                <input
+                  type="number" min={0} max={252} step={4} value={v}
+                  onChange={(e) => onChange({ ...form, evs: { ...form.evs, [k]: Math.max(0, Math.min(252, Number(e.target.value))) } })}
+                  className="w-12 rounded border border-slate-800 bg-slate-950 px-1 text-center"
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

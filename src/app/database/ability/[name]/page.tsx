@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getDbAbility, pokemonWithAbility } from "@/data/dexDatabase";
+import { getDbAbility, pokemonWithAbility, abilityAffectedMoves } from "@/data/dexDatabase";
 import { AbilityPokemonList } from "@/components/database/AbilityPokemonList";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 
@@ -20,6 +20,7 @@ export default async function AbilityPage({
     listPokemon(),
   ]);
   const championsSlugs = champs.map((p) => p.slug);
+  const affectedMoves = abilityAffectedMoves(ability.name);
 
   return (
     <div className="space-y-6">
@@ -47,6 +48,19 @@ export default async function AbilityPage({
           </p>
         )}
       </section>
+
+      {affectedMoves.length > 0 && (
+        <section>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+            Affected moves ({affectedMoves.length})
+          </h2>
+          <div className="flex flex-wrap gap-1">
+            {affectedMoves.map((m) => (
+              <span key={m} className="rounded bg-slate-800/60 px-2 py-0.5 text-xs text-slate-300">{m}</span>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">

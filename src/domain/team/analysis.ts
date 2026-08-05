@@ -68,6 +68,12 @@ export interface TeamAnalysis {
     setters: WeatherSetter[];
     missing: boolean;
   };
+  fieldControl: {
+    /** Entry hazards the team can set. */
+    hazards: { member: string; move: string }[];
+    /** Screens / veils / Wide Guard-style protection. */
+    protection: { member: string; move: string }[];
+  };
   dependence: {
     soleProviderCounts: { member: string; types: number }[];
     note: string | null;
@@ -93,6 +99,13 @@ const WEATHER_ABILITIES: Record<string, string> = {
   "Sand Spit": "sand",
   "Snow Warning": "snow",
 };
+
+const HAZARD_MOVES = new Set(["Stealth Rock", "Spikes", "Toxic Spikes", "Sticky Web"]);
+const PROTECTION_MOVES = new Set([
+  "Reflect", "Light Screen", "Aurora Veil", "Wide Guard", "Quick Guard",
+  "Protect", "Detect", "Spiky Shield", "King's Shield", "Baneful Bunker",
+  "Silk Trap", "Crafty Shield", "Mat Block",
+]);
 
 const WEATHER_MOVES: Record<string, string> = {
   "Sunny Day": "sun",
@@ -177,12 +190,16 @@ export function analyzeTeam(members: AnalysisMember[]): TeamAnalysis {
 
   // Weather control: abilities (Drought, Drizzle, …) and moves (Sunny Day, …).
   const setters: WeatherSetter[] = [];
+  const hazards: { member: string; move: string }[] = [];
+  const protection: { member: string; move: string }[] = [];
   for (const m of members) {
     const wa = m.ability ? WEATHER_ABILITIES[m.ability] : undefined;
     if (wa) setters.push({ member: m.name, source: m.ability!, kind: "ability", weather: wa });
     for (const mv of m.moves) {
       const wm = WEATHER_MOVES[mv.name];
       if (wm) setters.push({ member: m.name, source: mv.name, kind: "move", weather: wm });
+      if (HAZARD_MOVES.has(mv.name)) hazards.push({ member: m.name, move: mv.name });
+      if (PROTECTION_MOVES.has(mv.name)) protection.push({ member: m.name, move: mv.name });
     }
   }
 
@@ -211,6 +228,7 @@ export function analyzeTeam(members: AnalysisMember[]): TeamAnalysis {
     speedTiers,
     speedControl: { hasPriority, priorityMoves, controlMoves, missing },
     weatherControl: { setters, missing: setters.length === 0 },
+    fieldControl: { hazards, protection },
     dependence: { soleProviderCounts, note },
     assumptions: ["typeChart", "statFormula", "moveData"],
   };

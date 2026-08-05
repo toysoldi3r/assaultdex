@@ -4,11 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV = [
+  { href: "/guide", label: "Guide" },
   { href: "/pokemon", label: "Pokédex" },
   { href: "/teams", label: "Teams" },
   { href: "/choicedex", label: "ChoiceDex" },
   { href: "/database", label: "Database" },
+  { href: "/types", label: "Types" },
   { href: "/battles", label: "Battles" },
+  { href: "/sources", label: "Sources" },
 ];
 
 function isActive(pathname: string, href: string): boolean {

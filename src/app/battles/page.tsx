@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Panel, ProvisionalTag } from "@/components/ui";
+import { Simulator } from "@/components/choicedex/Simulator";
+import type { PokemonRef } from "@/lib/choicedexBuild";
 import { buildDashboard } from "@/domain/analysis/dashboard";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import { listBattles } from "@/server/repositories/battleRepo";
@@ -29,6 +31,14 @@ export default async function BattlesPage({
   const dashboard = buildDashboard(battles.map((b) => b.summary));
   const opts = pokemon.map((p) => ({ slug: p.slug, name: p.name }));
   const d = (i: number) => opts[i % opts.length]?.slug;
+  const refs: PokemonRef[] = pokemon.map((p) => ({
+    slug: p.slug,
+    name: p.name,
+    types: p.types,
+    baseStats: p.baseStats,
+    abilities: p.abilities,
+    moves: p.moves,
+  }));
 
   return (
     <div className="space-y-6">
@@ -46,6 +56,19 @@ export default async function BattlesPage({
       {err && ERR_MESSAGES[err] && (
         <p className="text-sm text-rose-400">{ERR_MESSAGES[err]}</p>
       )}
+
+      <Panel title="Batch simulation — run many outcomes">
+        <p className="mb-3 text-sm text-slate-400">
+          In a tricky spot? Pick the four active Pokémon and run dozens or hundreds
+          of Monte-Carlo rollouts at once (with a progress bar) to see the win/loss
+          distribution and what is realistically possible.
+        </p>
+        {refs.length > 0 ? (
+          <Simulator pokemon={refs} />
+        ) : (
+          <p className="text-sm text-slate-500">Import Pokémon first: <code>pnpm db:seed</code>.</p>
+        )}
+      </Panel>
 
       <Panel title="Dashboard">
         {dashboard.battles === 0 ? (

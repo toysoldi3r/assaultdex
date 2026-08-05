@@ -16,6 +16,7 @@ import { SelectorPanel } from "@/components/teams/SelectorPanel";
 import { MoveSelectorPanel, type MoveRow } from "@/components/teams/MoveSelectorPanel";
 import type { MoveMeta } from "@/components/teams/moveTypes";
 import { EvIvEditor } from "@/components/teams/EvIvEditor";
+import { suggestSets } from "@/data/suggestSets";
 import { statColor } from "@/domain/mechanics/statColor";
 import { saveTeamSnapshotAction } from "@/app/teams/actions";
 import {
@@ -103,7 +104,7 @@ export function TeamBuilder({
   tournament?: Record<string, TournamentPopular>;
 }) {
   const [members, setMembers] = useState<PokemonSet[]>(initialMembers);
-  const [tab, setTab] = useState<"team" | number>("team");
+  const [tab, setTab] = useState<"team" | "add" | number>("team");
   // One inline panel open at a time. member -1 = "add Pokémon".
   const [panel, setPanel] = useState<{ member: number; kind: PanelKind } | null>(null);
   const openPanel = (member: number, kind: PanelKind) =>
@@ -128,47 +129,44 @@ export function TeamBuilder({
     setDirty(true);
   };
 
-  // Auto-fill a new member from the highest-rated meta set where available:
-  // popular item/ability/moves from tournament data, plus a standard offensive
-  // EV spread + nature inferred from the species' better attacking stat.
+  // Auto-fill a new member with a doubles-oriented set. Prefer tournament data
+  // where available; otherwise use the heuristic suggester (which favours a
+  // STAB + coverage + Protect shell over raw highest-damage moves) so the
+  // preselected set is sensible for doubles.
   const defaultSet = (slug: string): PokemonSet => {
     const r = refOf(slug);
     const tm = tournament[uKey(slug)];
+    const moveLike = r.legalMoves.map((n) => ({
+      name: n,
+      type: moveMeta[n]?.type ?? null,
+      category: moveMeta[n]?.category ?? ("status" as const),
+      power: moveMeta[n]?.power ?? null,
+    }));
+    const suggestion = suggestSets(r.types, r.baseStats, r.abilities, moveLike)[0];
 
-    const ability = tm?.abilities[0]?.name ?? r.abilities[0] ?? null;
-    const item = tm?.items[0]?.name ?? null;
+    const ability = tm?.abilities[0]?.name ?? suggestion?.ability ?? r.abilities[0] ?? null;
+    const item = tm?.items[0]?.name ?? suggestion?.item ?? null;
 
     const legal = new Set(r.legalMoves);
-    const popularMoves = (tm?.moves ?? [])
-      .map((x) => x.name)
-      .filter((n) => legal.has(n));
-    const moves = (popularMoves.length ? popularMoves : r.legalMoves).slice(0, 4);
+    const popularMoves = (tm?.moves ?? []).map((x) => x.name).filter((n) => legal.has(n));
+    const moves = (popularMoves.length ? popularMoves : suggestion?.moves ?? r.legalMoves.slice(0, 4)).slice(0, 4);
 
-    // Offensive spread: max the better attacking stat + Speed, boosting nature.
-    const physical = (r.baseStats.atk ?? 0) >= (r.baseStats.spa ?? 0);
-    const evs = zeroEvs();
-    evs[physical ? "atk" : "spa"] = 252;
-    evs.spe = 252;
-    evs.hp = 4;
-    const ivs = maxIvs();
-    if (!physical) ivs.atk = 0; // special attacker: minimise Foul Play / confusion
-    const nature = physical ? "Adamant" : "Modest";
+    const evs = { ...zeroEvs(), ...(suggestion?.evs ?? {}) };
+    const ivs = { ...maxIvs(), ...(suggestion?.ivs ?? {}) };
+    const nature = suggestion?.nature ?? "Serious";
 
-    return {
-      species: slug,
-      level: 50,
-      ability,
-      item,
-      nature,
-      moves,
-      spread: { ivs, evs },
-    };
+    return { species: slug, level: 50, ability, item, nature, moves, spread: { ivs, evs } };
   };
 
   const addMember = (slug: string) => {
     if (!slug || members.length >= limit) return;
-    setMembers((prev) => [...prev, defaultSet(slug)]);
+    setMembers((prev) => {
+      const next = [...prev, defaultSet(slug)];
+      setTab(next.length - 1); // jump straight to the new member's card
+      return next;
+    });
     setDirty(true);
+    setPanel(null);
   };
 
   // Change a member's species, keeping display bits (nickname/level/nature/spread)
@@ -225,7 +223,12 @@ export function TeamBuilder({
   }, [flush]);
 
   const shown = useMemo(
-    () => (tab === "team" ? members.map((_, i) => i) : [tab as number]),
+    () =>
+      tab === "team"
+        ? members.map((_, i) => i)
+        : tab === "add"
+          ? []
+          : [tab as number],
     [tab, members],
   );
 
@@ -351,13 +354,15 @@ export function TeamBuilder({
             <span className="max-w-[6rem] truncate">{refOf(m.species).name}</span>
           </button>
         ))}
-        {/* Empty slots render as add buttons in the tab bar. */}
+        {/* Empty slots render as add buttons in the tab bar → individual add view. */}
         {Array.from({ length: Math.max(0, limit - members.length) }).slice(0, isBox ? 1 : 6).map((_, k) => (
           <button
             key={`empty-${k}`}
-            onClick={() => { setTab("team"); openPanel(-1, "species"); }}
+            onClick={() => { setPanel(null); setTab("add"); }}
             title="Add a Pokémon"
-            className="flex h-8 w-10 items-center justify-center rounded border border-dashed border-slate-600 text-slate-500 hover:border-amber-500 hover:text-amber-400"
+            className={`flex h-8 w-10 items-center justify-center rounded border border-dashed text-slate-500 hover:border-amber-500 hover:text-amber-400 ${
+              tab === "add" && k === 0 ? "border-amber-500 text-amber-400" : "border-slate-600"
+            }`}
           >
             ＋
           </button>
@@ -368,6 +373,22 @@ export function TeamBuilder({
           </span>
         </div>
       </div>
+
+      {/* Add view (individual): opened by the + tab, shown at the top. */}
+      {tab === "add" && members.length < limit && (
+        <div className="rounded-lg border border-amber-800/50 bg-slate-900/40 p-4">
+          <div className="mb-1 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-amber-300">Add a Pokémon</h3>
+            <button onClick={() => setTab("team")} className="text-xs text-slate-400 hover:text-slate-200">Cancel</button>
+          </div>
+          <SelectorPanel
+            title="Pokémon"
+            options={poolOptions}
+            onSelect={(v) => v && addMember(slugByName[v] ?? "")}
+            onClose={() => setTab("team")}
+          />
+        </div>
+      )}
 
       {/* Cards */}
       <div className="space-y-3">
@@ -526,34 +547,14 @@ export function TeamBuilder({
         })}
 
         {members.length === 0 && (
-          <p className="text-sm text-slate-500">No Pokémon yet — add one below.</p>
+          <button
+            onClick={() => setTab("add")}
+            className="rounded bg-amber-500 px-3 py-1.5 text-sm font-semibold text-black hover:bg-amber-400"
+          >
+            ＋ Add Pokémon
+          </button>
         )}
       </div>
-
-      {/* Add member — searchable panel */}
-      {members.length < limit && (
-        <div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => openPanel(-1, "species")}
-              className="rounded bg-amber-500 px-3 py-1.5 text-sm font-semibold text-black hover:bg-amber-400"
-            >
-              ＋ Add Pokémon
-            </button>
-            <span className="text-xs text-slate-500">
-              {members.length}/{limit}
-            </span>
-          </div>
-          {panel?.member === -1 && panel.kind === "species" && (
-            <SelectorPanel
-              title="Add Pokémon"
-              options={poolOptions}
-              onSelect={(v) => v && addMember(slugByName[v] ?? "")}
-              onClose={closePanel}
-            />
-          )}
-        </div>
-      )}
 
       {/* Extra bottom whitespace so an open panel never sits against the edge. */}
       <div className="h-32" />

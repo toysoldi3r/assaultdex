@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { ItemIcon } from "@/components/ItemIcon";
 import type { DbItem } from "@/data/dexDatabase";
 
@@ -67,19 +68,10 @@ export function ItemsTable({ items }: { items: DbItem[] }) {
             {filtered.map((i) => (
               <tr key={i.name} className="border-t border-slate-800/60 align-top">
                 <td className="whitespace-nowrap px-3 py-2 font-medium">
-                  <span className="flex items-center gap-1.5">
+                  <Link href={`/database/item/${encodeURIComponent(i.name)}`} className="flex items-center gap-1.5 hover:text-amber-300">
                     <ItemIcon item={i.name} />
                     {i.name}
-                    {/* Special-interaction marker: calculation shows on hover. */}
-                    {i.calc && (
-                      <span
-                        title={i.calc}
-                        className="cursor-help rounded-full border border-emerald-600/60 px-1 text-[9px] text-emerald-300"
-                      >
-                        ⓘ calc
-                      </span>
-                    )}
-                  </span>
+                  </Link>
                 </td>
                 <td className="px-3 py-2 text-slate-300">{i.desc || "—"}</td>
                 <td className="px-3 py-2 text-right tabular-nums text-slate-400">

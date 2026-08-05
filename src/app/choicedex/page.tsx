@@ -8,6 +8,7 @@ import type { PokemonRef } from "@/lib/choicedexBuild";
 import { POKEMON_TYPES, type PokemonType, type StatKey } from "@/domain/types/pokemon";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import { listTeams } from "@/server/repositories/teamRepo";
+import { itemCatalog } from "@/data/catalog";
 
 const STAT_KEYS_ORDER: StatKey[] = ["hp", "atk", "def", "spa", "spd", "spe"];
 
@@ -74,6 +75,8 @@ export default async function ChoiceDexPage() {
     })
     .filter((t) => t.members.length > 0);
 
+  const itemNames = ["None", ...itemCatalog().map((i) => i.name)];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -94,7 +97,7 @@ export default async function ChoiceDexPage() {
         </Panel>
       ) : (
         <>
-          <ChoiceDexApp pokemon={refs} teams={savedTeams} />
+          <ChoiceDexApp pokemon={refs} teams={savedTeams} items={itemNames} />
 
           <details className="rounded-lg border border-slate-800 bg-slate-900/40">
             <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-300">
