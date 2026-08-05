@@ -38,6 +38,35 @@ function buildVariants(refs: PokemonRef[]): Record<string, Variant[]> {
   return out;
 }
 
+/** Mega / Primal formes per pool species, for the in-battle Mega button. */
+function buildMegaForms(
+  refs: PokemonRef[],
+): Record<string, { name: string; baseStats: Record<StatKey, number>; types: PokemonType[]; ability: string; item: string }> {
+  const mapTypes = (arr: readonly string[]): PokemonType[] =>
+    arr.map((t) => t.toLowerCase()).filter((t): t is PokemonType => (POKEMON_TYPES as readonly string[]).includes(t));
+  const bs = (b: Record<StatKey, number>) =>
+    Object.fromEntries(STAT_KEYS_ORDER.map((k) => [k, b[k]])) as Record<StatKey, number>;
+
+  const out: Record<string, { name: string; baseStats: Record<StatKey, number>; types: PokemonType[]; ability: string; item: string }> = {};
+  for (const p of refs) {
+    const s = Dex.species.get(p.slug);
+    if (!s.exists) continue;
+    for (const fn of s.otherFormes ?? []) {
+      const f = Dex.species.get(fn);
+      if (!f.exists || !/Mega|Primal/.test(f.forme)) continue;
+      out[p.slug] = {
+        name: f.name,
+        baseStats: bs(f.baseStats),
+        types: mapTypes(f.types),
+        ability: (Object.values(f.abilities)[0] as string) ?? p.abilities[0] ?? "",
+        item: f.requiredItem ?? "",
+      };
+      break; // first Mega/Primal forme (e.g. Charizard-Mega-X)
+    }
+  }
+  return out;
+}
+
 export const dynamic = "force-dynamic";
 
 export default async function ChoiceDexPage() {
@@ -76,6 +105,7 @@ export default async function ChoiceDexPage() {
     .filter((t) => t.members.length > 0);
 
   const itemNames = ["None", ...itemCatalog().map((i) => i.name)];
+  const megaForms = buildMegaForms(refs);
 
   return (
     <div className="space-y-6">
@@ -97,7 +127,7 @@ export default async function ChoiceDexPage() {
         </Panel>
       ) : (
         <>
-          <ChoiceDexApp pokemon={refs} teams={savedTeams} items={itemNames} />
+          <ChoiceDexApp pokemon={refs} teams={savedTeams} items={itemNames} megaForms={megaForms} />
 
           <details className="rounded-lg border border-slate-800 bg-slate-900/40">
             <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-300">

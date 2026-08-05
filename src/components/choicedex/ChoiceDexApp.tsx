@@ -44,6 +44,27 @@ export interface SavedTeam {
   sets?: Record<string, KnownSet>;
 }
 
+/** A species' Mega/Primal battle forme, resolved offline from the dex. Keyed by
+ *  base-species slug; `item` is the required Mega Stone / Orb the mon must hold. */
+export interface MegaForme {
+  /** Display + icon name of the forme, e.g. "Charizard-Mega-X". */
+  name: string;
+  baseStats: Record<StatKey, number>;
+  types: PokemonType[];
+  ability: string;
+  item: string;
+}
+
+/** Species-specific in-battle form change offered on an active card. */
+type SpecialForm =
+  // Ditto Transform: copy one of the opposing active Pokémon.
+  | { kind: "ditto"; options: { slug: string; name: string }[] }
+  // Dondozo Commander boost (an allied Tatsugiri is on the team).
+  | { kind: "commander" }
+  // Zoroark Illusion: appear as a teammate (cosmetic).
+  | { kind: "zoroark"; options: { slug: string; name: string }[] }
+  | null;
+
 type Side = "user" | "opponent";
 // Abilities a move can grant that may not be native to any pool species, plus
 // a "(none)" sentinel for ability suppression (Gastro Acid / Neutralizing Gas).
@@ -124,10 +145,12 @@ export function ChoiceDexApp({
   pokemon,
   teams,
   items = [],
+  megaForms = {},
 }: {
   pokemon: PokemonRef[];
   teams: SavedTeam[];
   items?: string[];
+  megaForms?: Record<string, MegaForme>;
 }) {
   const bySlug = useMemo(() => new Map(pokemon.map((p) => [p.slug, p])), [pokemon]);
   const [phase, setPhase] = useState<"preview" | "battle">("preview");
@@ -215,6 +238,7 @@ export function ChoiceDexApp({
       <BattleView
         bySlug={bySlug}
         items={items}
+        megaForms={megaForms}
         userTeam={userTeam.filter((s): s is string => !!s)}
         oppTeam={oppTeam.filter((s): s is string => !!s)}
         loadedSets={loadedSets}
@@ -438,6 +462,14 @@ interface MonState {
   crit: boolean;
   /** Moves confirmed used (opponent side): now known 100%, highlighted. */
   knownMoves: string[];
+  /** Whether this Pokémon has Mega Evolved (uses its Mega forme stats/typing). */
+  mega: boolean;
+  /** Ditto only: slug of the opposing active Pokémon it has Transformed into. */
+  transformInto?: string | null;
+  /** Dondozo only: boosted +2 to every stat by an allied Tatsugiri (Commander). */
+  commander?: boolean;
+  /** Zoroark only: slug of the teammate it is disguised as (Illusion, cosmetic). */
+  illusionAs?: string | null;
 }
 const emptyMon = (): MonState => ({
   hpPct: 100,
@@ -450,6 +482,7 @@ const emptyMon = (): MonState => ({
   stages: { ...NEUTRAL_STAGES },
   crit: false,
   knownMoves: [],
+  mega: false,
 });
 
 /** One side's field conditions: screens, Tailwind, and entry hazards. */
@@ -491,6 +524,7 @@ function monFromSet(set: KnownSet | undefined): MonState {
 function BattleView({
   bySlug,
   items,
+  megaForms,
   userTeam,
   oppTeam,
   loadedSets,
@@ -498,6 +532,7 @@ function BattleView({
 }: {
   bySlug: Map<string, PokemonRef>;
   items: string[];
+  megaForms: Record<string, MegaForme>;
   userTeam: string[];
   oppTeam: string[];
   loadedSets: Record<string, KnownSet>;
@@ -544,10 +579,10 @@ function BattleView({
   const [oCond, setOCond] = useState<SideCond>(emptyCond());
   const [background, setBackground] = useState<string>("meadow");
 
-  // Stable signature of the battle's Pokémon (order/side-independent), so a saved
-  // battle is only resumed when it is the same battle — not after picking new teams.
+  // Stable side-aware signature, so a saved battle only resumes for the same
+  // side assignments and slot order — not just the same twelve Pokémon.
   const teamSig = useMemo(
-    () => [...userTeam, ...oppTeam].slice().sort().join("|"),
+    () => `user:${userTeam.join("|")}::opponent:${oppTeam.join("|")}`,
     [userTeam, oppTeam],
   );
 
@@ -608,18 +643,61 @@ function BattleView({
       return next;
     });
 
+  const asTuple = (t: readonly PokemonType[]) =>
+    t.slice(0, 2) as [PokemonType] | [PokemonType, PokemonType];
+
+  // Active battle forme for a mon: its Mega (if toggled), or — for Ditto — the
+  // opposing active Pokémon it has Transformed into (copying stats except HP,
+  // typing, ability, movepool, and sprite). Undefined = fights as its base self.
+  const formeOf = (side: Side, slug: string): SlotForm["forme"] | undefined => {
+    const s = monOf(side, slug);
+    if (s.mega && megaForms[slug]) {
+      const m = megaForms[slug];
+      return { name: m.name, baseStats: m.baseStats, types: asTuple(m.types), ability: m.ability };
+    }
+    if (slug === "ditto" && s.transformInto) {
+      const t = refBySlug.get(s.transformInto);
+      const ditto = refBySlug.get("ditto");
+      if (t) {
+        return {
+          name: t.name,
+          // Transform copies every stat except HP, which stays Ditto's own.
+          baseStats: { ...t.baseStats, hp: ditto?.baseStats.hp ?? t.baseStats.hp },
+          types: asTuple(t.types),
+          ability: t.abilities[0] ?? "",
+          moves: t.moves,
+          species: t.slug,
+        };
+      }
+    }
+    return undefined;
+  };
+
   const toSlot = (side: Side, slug: string): SlotForm => {
     const s = monOf(side, slug);
-    // A consumed item no longer applies to damage/speed.
+    const mega = s.mega ? megaForms[slug] : undefined;
+    // A consumed item no longer applies to damage/speed. A Mega holds its Stone,
+    // which is not removable/consumable, so it overrides the item slot.
+    // Commander: an allied Tatsugiri gives Dondozo +2 to every combat stage,
+    // stacked on top of (not replacing) any manually-entered boosts.
+    const stages = s.commander
+      ? (Object.fromEntries(
+          (Object.keys(s.stages) as (keyof StageStats)[]).map((k) => [
+            k,
+            Math.max(-6, Math.min(6, s.stages[k] + 2)),
+          ]),
+        ) as StageStats)
+      : s.stages;
     return {
       ...emptySlot(slug),
       hpPct: s.hpPct,
       status: s.status,
       ability: s.ability,
-      item: s.itemUsed ? "None" : s.item,
+      item: mega ? mega.item : s.itemUsed ? "None" : s.item,
       nature: s.nature,
       evs: s.evs,
-      stages: s.stages,
+      stages,
+      forme: formeOf(side, slug),
     };
   };
 
@@ -688,6 +766,34 @@ function BattleView({
       .map((s) => ({ slug: s, name: refBySlug.get(s)?.name ?? s }));
   };
 
+  // In-battle form changes available on a given active card, by species.
+  const specialFor = (side: Side, slug: string | null): SpecialForm => {
+    if (!slug) return null;
+    const team = side === "user" ? uTeam : oTeam;
+    if (slug === "ditto") {
+      const foes = (side === "user" ? activeOpp : activeUser).filter((x): x is string => !!x);
+      return { kind: "ditto", options: foes.map((s) => ({ slug: s, name: refBySlug.get(s)?.name ?? s })) };
+    }
+    if (slug === "dondozo" && team.some((s) => s.startsWith("tatsugiri"))) return { kind: "commander" };
+    if (slug === "zoroark" || slug === "zoroarkhisui") {
+      return {
+        kind: "zoroark",
+        options: team.filter((s) => s !== slug).map((s) => ({ slug: s, name: refBySlug.get(s)?.name ?? s })),
+      };
+    }
+    return null;
+  };
+  // Sprite/name shown on the card: Ditto's Transform target, or Zoroark's
+  // Illusion disguise. (Mega display is handled inside ActiveCard.)
+  const disguiseFor = (side: Side, slug: string | null): { species: string; name: string } | undefined => {
+    if (!slug) return undefined;
+    const s = monOf(side, slug);
+    const target = slug === "ditto" && s.transformInto ? s.transformInto : s.illusionAs;
+    if (!target) return undefined;
+    const r = refBySlug.get(target);
+    return r ? { species: r.slug, name: r.name } : undefined;
+  };
+
   const userAlive = uTeam.filter((s) => monOf("user", s).hpPct > 0).length;
   const oppAlive = oTeam.filter((s) => monOf("opponent", s).hpPct > 0).length;
   const battleOver = userAlive === 0 || oppAlive === 0;
@@ -745,6 +851,10 @@ function BattleView({
                   abilities={matchAbilities}
                   defaultAbility={abilitiesFor(slug)[0] ?? ""}
                   items={items}
+                  mega={slug ? megaForms[slug] : undefined}
+                  special={specialFor("opponent", slug)}
+                  disguise={disguiseFor("opponent", slug)}
+                  formeAbility={slug ? formeOf("opponent", slug)?.ability : undefined}
                   onSelect={(s) => {
                     setActive("opponent", i as 0 | 1, s);
                     if (s && s !== slug) patchMon("opponent", s, { stages: NEUTRAL_STAGES });
@@ -767,6 +877,10 @@ function BattleView({
                   abilities={matchAbilities}
                   defaultAbility={abilitiesFor(slug)[0] ?? ""}
                   items={items}
+                  mega={slug ? megaForms[slug] : undefined}
+                  special={specialFor("user", slug)}
+                  disguise={disguiseFor("user", slug)}
+                  formeAbility={slug ? formeOf("user", slug)?.ability : undefined}
                   onSelect={(s) => {
                     setActive("user", i as 0 | 1, s);
                     if (s && s !== slug) patchMon("user", s, { stages: NEUTRAL_STAGES });
@@ -847,7 +961,7 @@ function BattleView({
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">🟢 Your team</p>
           <div className="flex flex-wrap gap-1.5">
             {uTeam.map((s) => (
-              <MonChip key={s} name={refBySlug.get(s)?.name ?? s} slug={s} state={monOf("user", s)} refData={refBySlug.get(s)} />
+              <MonChip key={s} name={refBySlug.get(s)?.name ?? s} slug={s} state={monOf("user", s)} refData={refBySlug.get(s)} mega={megaForms[s]} />
             ))}
           </div>
         </div>
@@ -862,7 +976,7 @@ function BattleView({
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-rose-300">🔴 Opponent&apos;s team</p>
           <div className="flex flex-wrap justify-end gap-1.5">
             {oTeam.map((s) => (
-              <MonChip key={s} name={refBySlug.get(s)?.name ?? s} slug={s} state={monOf("opponent", s)} refData={refBySlug.get(s)} />
+              <MonChip key={s} name={refBySlug.get(s)?.name ?? s} slug={s} state={monOf("opponent", s)} refData={refBySlug.get(s)} mega={megaForms[s]} />
             ))}
           </div>
         </div>
@@ -886,6 +1000,7 @@ function BattleView({
           ] as const).map((spec) => {
             const ref = spec.slug ? refBySlug.get(spec.slug) : undefined;
             if (!ref || !spec.attacker || !spec.slug) return null;
+            const forme = formeOf(spec.foe ? "opponent" : "user", spec.slug);
             const targets = spec.enemies.active
               .filter((c): c is Combatant => c !== null)
               .map((c) => ({ name: c.name, combatant: c }));
@@ -900,13 +1015,14 @@ function BattleView({
             return (
               <MonPanel
                 key={spec.key}
-                name={ref.name}
-                types={ref.types}
-                baseStats={ref.baseStats}
+                name={forme ? forme.name : ref.name}
+                types={forme ? forme.types : ref.types}
+                baseStats={forme ? forme.baseStats : ref.baseStats}
                 attacker={attacker}
                 targets={targets}
                 abilities={matchAbilities}
                 defaultAbility={abilitiesFor(spec.slug)[0] ?? ""}
+                lockedAbility={forme?.ability}
                 items={items}
                 field={built.state.field}
                 defenderConditions={spec.enemies.conditions}
@@ -964,24 +1080,28 @@ function MonChip({
   slug,
   state,
   refData,
+  mega,
 }: {
   name: string;
   slug: string;
   state: MonState;
   refData?: PokemonRef;
+  mega?: MegaForme;
 }) {
+  const isMega = !!mega && state.mega;
   const fainted = state.hpPct <= 0;
   const warn = !fainted && state.hpPct < 20 ? "red" : !fainted && state.hpPct <= 50 ? "yellow" : null;
-  const b = refData?.baseStats;
+  const b = isMega ? mega!.baseStats : refData?.baseStats;
   const statLine = b
     ? `\nBase: HP ${b.hp} / Atk ${b.atk} / Def ${b.def} / SpA ${b.spa} / SpD ${b.spd} / Spe ${b.spe}`
     : "";
-  const typeLine = refData?.types?.length ? `\n${refData.types.join(" / ")}` : "";
+  const typeArr = isMega ? mega!.types : refData?.types;
+  const typeLine = typeArr?.length ? `\n${typeArr.join(" / ")}` : "";
   const title =
-    `${name} — ${state.hpPct}% HP` +
+    `${isMega ? mega!.name : name} — ${state.hpPct}% HP` +
     (state.status !== "none" ? ` · ${state.status}` : "") +
-    (state.ability ? ` · ${state.ability}` : "") +
-    (state.item && state.item !== "None" ? ` · ${state.item}` : "") +
+    (isMega ? ` · ${mega!.ability}` : state.ability ? ` · ${state.ability}` : "") +
+    (isMega ? ` · ${mega!.item}` : state.item && state.item !== "None" ? ` · ${state.item}` : "") +
     typeLine +
     statLine;
   return (
@@ -989,7 +1109,10 @@ function MonChip({
       className={`relative inline-flex h-12 w-12 items-center justify-center overflow-hidden ${fainted ? "opacity-30 grayscale" : ""}`}
       title={title}
     >
-      <PokeIcon species={slug} className="scale-[1.35]" />
+      <PokeIcon species={isMega ? mega!.name : slug} className="scale-[1.35]" />
+      {isMega && (
+        <span className="absolute left-0 top-0 rounded bg-fuchsia-500 px-0.5 text-[7px] font-bold text-black">M</span>
+      )}
       {warn && (
         <span
           className={`absolute right-0 top-0 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-black ${
@@ -1021,6 +1144,10 @@ function ActiveCard({
   abilities,
   defaultAbility,
   items,
+  mega,
+  special,
+  disguise,
+  formeAbility,
   onSelect,
   onPatch,
 }: {
@@ -1032,15 +1159,43 @@ function ActiveCard({
   abilities: string[];
   defaultAbility: string;
   items: string[];
+  /** This species' Mega/Primal forme, if any — enables the Mega button. */
+  mega?: MegaForme;
+  /** Species-specific in-battle form change (Ditto / Dondozo / Zoroark). */
+  special?: SpecialForm;
+  /** Sprite/name override from Transform or Illusion. */
+  disguise?: { species: string; name: string };
+  /** Ability fixed by the active forme (Mega / Transform); locks the selector. */
+  formeAbility?: string;
   onSelect: (slug: string | null) => void;
   onPatch: (p: Partial<MonState>) => void;
 }) {
+  const isMega = !!mega && state.mega;
+  // A Mega shows its forme icon/name, holds its (non-removable) Stone, and uses
+  // the forme's fixed ability. Transform/Illusion swap the sprite (and, for
+  // Transform, everything else via the built combatant).
+  const iconSpecies = isMega ? mega!.name : disguise?.species ?? slug;
+  const displayName = isMega ? mega!.name : disguise?.name ?? slug;
+  // A forme (Mega or Ditto's Transform) fixes the ability the built combatant
+  // uses, so the selector must show that ability read-only rather than a stale,
+  // ignored value.
+  const abilityLocked = !!formeAbility;
+  const abilityValue = formeAbility ?? (state.ability || defaultAbility);
+  const itemValue = isMega ? mega!.item : state.item;
+  const abilityOpts =
+    formeAbility && !abilities.includes(formeAbility) ? [formeAbility, ...abilities] : abilities;
   const hoverInfo = slug
-    ? `${slug} — ${state.hpPct}% HP` +
+    ? `${displayName} — ${state.hpPct}% HP` +
       (state.status !== "none" ? ` · ${state.status}` : "") +
-      (state.ability ? ` · ${state.ability}` : "") +
-      (state.item && state.item !== "None" ? ` · ${state.item}` : "")
+      (abilityValue ? ` · ${abilityValue}` : "") +
+      (itemValue && itemValue !== "None" ? ` · ${itemValue}` : "")
     : undefined;
+  const toggleMega = () =>
+    onPatch(
+      state.mega
+        ? { mega: false }
+        : { mega: true, item: mega!.item, itemUsed: false },
+    );
   return (
     <div
       title={hoverInfo}
@@ -1049,10 +1204,22 @@ function ActiveCard({
       <div className="mb-1 flex items-center gap-1">
         {slug && (
           <span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden">
-            <PokeIcon species={slug} className="scale-[1.3]" />
+            <PokeIcon species={iconSpecies!} className="scale-[1.3]" />
           </span>
         )}
         <span className="text-[10px] uppercase text-slate-500">{label}</span>
+        {slug && mega && (
+          <button
+            type="button"
+            onClick={toggleMega}
+            title={isMega ? `Revert ${mega.name}` : `Mega Evolve (${mega.name}, ${mega.item})`}
+            className={`ml-auto rounded px-1 py-0.5 text-[9px] font-bold ${
+              isMega ? "bg-fuchsia-500 text-black" : "border border-fuchsia-500/60 text-fuchsia-300 hover:bg-fuchsia-500/20"
+            }`}
+          >
+            M
+          </button>
+        )}
       </div>
       <select
         value={slug ?? ""}
@@ -1081,24 +1248,25 @@ function ActiveCard({
       </select>
       {abilities.length > 0 && (
         <select
-          value={state.ability || defaultAbility}
-          disabled={!slug}
+          value={abilityValue}
+          disabled={!slug || abilityLocked}
           onChange={(e) => onPatch({ ability: e.target.value })}
-          title="Set the current ability (Skill Swap, Simple Beam, …)"
-          className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs"
+          title={abilityLocked ? "Forme ability (fixed)" : "Set the current ability (Skill Swap, Simple Beam, …)"}
+          className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs disabled:opacity-70"
         >
-          {abilities.map((a) => <option key={a} value={a}>{a}</option>)}
+          {abilityOpts.map((a) => <option key={a} value={a}>{a}</option>)}
         </select>
       )}
       <select
-        value={state.item}
-        disabled={!slug}
+        value={itemValue}
+        disabled={!slug || isMega}
         onChange={(e) => onPatch({ item: e.target.value })}
-        className={`mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs ${state.itemUsed ? "text-slate-500 line-through" : ""}`}
+        title={isMega ? "Mega Stone (cannot be removed)" : undefined}
+        className={`mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs disabled:opacity-70 ${state.itemUsed && !isMega ? "text-slate-500 line-through" : ""}`}
       >
-        {itemOptions(state.item, items).map((it) => <option key={it} value={it}>{it}</option>)}
+        {itemOptions(itemValue, items).map((it) => <option key={it} value={it}>{it}</option>)}
       </select>
-      {slug && state.item !== "None" && (
+      {slug && !isMega && state.item !== "None" && (
         <label className="mt-1 flex items-center gap-1 text-[10px] text-slate-400">
           <input
             type="checkbox"
@@ -1107,6 +1275,43 @@ function ActiveCard({
           />
           item used (consumed)
         </label>
+      )}
+      {slug && special?.kind === "ditto" && (
+        <select
+          value={state.transformInto ?? ""}
+          onChange={(e) => onPatch({ transformInto: e.target.value || null })}
+          title="Transform: copy an opposing active Pokémon's stats, typing, moves & ability"
+          className="mt-1 w-full rounded border border-sky-700 bg-slate-900 px-1 py-0.5 text-[10px] text-sky-200"
+        >
+          <option value="">Transform into…</option>
+          {/* Keep the current copy selectable even after it has switched out —
+              Transform persists once used. */}
+          {(state.transformInto && !special.options.some((o) => o.slug === state.transformInto)
+            ? [{ slug: state.transformInto, name: disguise?.name ?? state.transformInto }, ...special.options]
+            : special.options
+          ).map((o) => <option key={o.slug} value={o.slug}>{o.name}</option>)}
+        </select>
+      )}
+      {slug && special?.kind === "commander" && (
+        <label className="mt-1 flex items-center gap-1 text-[10px] text-sky-200" title="Allied Tatsugiri boosts Dondozo +2 to every stat">
+          <input
+            type="checkbox"
+            checked={!!state.commander}
+            onChange={(e) => onPatch({ commander: e.target.checked })}
+          />
+          Commander (+2 all)
+        </label>
+      )}
+      {slug && special?.kind === "zoroark" && (
+        <select
+          value={state.illusionAs ?? ""}
+          onChange={(e) => onPatch({ illusionAs: e.target.value || null })}
+          title="Illusion: appear as a teammate (cosmetic — stats stay Zoroark's)"
+          className="mt-1 w-full rounded border border-fuchsia-700 bg-slate-900 px-1 py-0.5 text-[10px] text-fuchsia-200"
+        >
+          <option value="">Illusion (disguise)…</option>
+          {special.options.map((o) => <option key={o.slug} value={o.slug}>{o.name}</option>)}
+        </select>
       )}
     </div>
   );

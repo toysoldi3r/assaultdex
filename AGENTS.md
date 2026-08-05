@@ -1,6 +1,6 @@
 # AssaultDex Agent Rules
 
-Read `docs/ASSAULTDEX_SPEC.md` before architectural/product decisions.
+Read `ASSAULTDEX_SPEC.md` before architectural/product decisions.
 
 * AssaultDex support only Pokémon Champions doubles.
 * No assume mechanics from older Pokémon games.

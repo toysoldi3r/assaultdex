@@ -200,7 +200,7 @@ export async function importTeamAction(formData: FormData): Promise<void> {
     }
     members.push({
       species: ref.slug,
-      level: s.level === 100 ? 50 : s.level,
+      level: 50,
       ability: s.ability && ref.abilities.includes(s.ability) ? s.ability : (ref.abilities[0] ?? null),
       item: s.item,
       nature: s.nature,

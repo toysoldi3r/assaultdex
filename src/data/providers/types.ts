@@ -9,8 +9,14 @@ export interface FetchOptions {
   cursor?: string;
   /** Max items per page. */
   limit?: number;
-  /** Abort signal for timeout/cancellation. */
+  /** Abort signal for caller cancellation; provider utilities also enforce timeout. */
   signal?: AbortSignal;
+  /** Optional request timeout in milliseconds. */
+  timeoutMs?: number;
+  /** Optional retry count for transient failures. */
+  retries?: number;
+  /** Optional cache TTL hint in milliseconds for providers that cache pages. */
+  cacheTtlMs?: number;
 }
 
 export interface RawPage<Raw> {
@@ -22,7 +28,7 @@ export interface RawPage<Raw> {
 
 export interface ProviderAdapter<Raw, Domain> {
   readonly provider: string;
-  /** Fetch a page of raw items (handles auth, timeout, retries, rate limits). */
+  /** Fetch a page of raw items (using the shared provider fetch/rate-limit/error policy). */
   fetchPage(options?: FetchOptions): Promise<RawPage<Raw>>;
   /** Validate a single raw item (throws on invalid input). */
   validate(raw: unknown): Raw;

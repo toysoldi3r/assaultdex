@@ -229,7 +229,7 @@ export function BattleCalculator({ pokemon }: { pokemon: PokemonRef[] }) {
                 </span>
                 <span className="rounded bg-slate-800 px-2 py-0.5 text-xs">
                   OHKO {Math.round(result.dmg.ohkoProbability * 100)}% · 2HKO{" "}
-                  {Math.round(result.dmg.twoHitKoProbability * 100)}%
+                  {result.dmg.twoHitKoProbability === null ? "—" : Math.round(result.dmg.twoHitKoProbability * 100)}%
                 </span>
               </div>
               <div>
