@@ -54,4 +54,21 @@ describe("[provisional] calculateDamage", () => {
       expect(r.accuracyAdjustedOhko).toBeCloseTo(r.ohkoProbability * 0.9, 5);
     }
   });
+  it("returns null 2HKO odds in fast mode instead of a false zero", () => {
+    const attacker = combatant({ name: "A", types: ["normal"], base: stats({ atk: 120 }) });
+    const defender = combatant({ name: "D", types: ["normal"], base: stats() });
+    const r = calculateDamage(attacker, defender, move({ power: 80 }), field, { fast: true });
+    expect(r.twoHitKoProbability).toBeNull();
+  });
+
+  it("models fixed multi-hit rolls as independent hit distributions", () => {
+    const attacker = combatant({ name: "A", types: ["normal"], base: stats({ atk: 120 }) });
+    const defender = combatant({ name: "D", types: ["normal"], base: stats() });
+    const single = calculateDamage(attacker, defender, move({ power: 25 }), field);
+    const double = calculateDamage(attacker, defender, move({ power: 25, hits: 2 }), field);
+    expect(double.minDamage).toBe(single.minDamage * 2);
+    expect(double.maxDamage).toBe(single.maxDamage * 2);
+    expect(double.rolls.length).toBe(16);
+  });
+
 });
