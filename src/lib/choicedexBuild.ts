@@ -14,7 +14,7 @@ import type {
   Weather,
 } from "@/domain/types/battle";
 import { NEUTRAL_STAGES } from "@/domain/types/battle";
-import type { BaseStats, Pokemon } from "@/domain/types/pokemon";
+import type { BaseStats, MoveFixture, Pokemon, PokemonType } from "@/domain/types/pokemon";
 
 export type PokemonRef = Pick<
   Pokemon,
@@ -34,6 +34,24 @@ export interface SlotForm {
   nature?: string;
   /** EV spread; missing stats default to 0. */
   evs?: Partial<BaseStats>;
+  /**
+   * Battle-forme override (Mega / Primal / Transform): swaps in the forme's base
+   * stats, typing, display name, and ability while keeping the base species'
+   * EV/nature/HP spread. When set, its ability wins over the slot's own ability
+   * (a Mega's / copied ability is fixed by the transformation). `moves` and
+   * `species` are supplied by Transform (Ditto), which also copies the target's
+   * movepool and sprite.
+   */
+  forme?: {
+    name: string;
+    baseStats: BaseStats;
+    types: [PokemonType] | [PokemonType, PokemonType];
+    ability: string;
+    /** Overridden movepool — Transform copies the target's moves. */
+    moves?: MoveFixture[];
+    /** Icon species slug — Transform mirrors the target's sprite. */
+    species?: string;
+  };
 }
 
 /** Items with a modeled effect, offered in the editor. */
@@ -112,15 +130,21 @@ export function combatantFromRef(
   // "(none)" sentinel suppresses the ability (Gastro Acid / Neutralizing Gas);
   // an empty string means "use the species' first ability".
   const ability =
-    slot.ability === "(none)" ? null : slot.ability ? slot.ability : (ref.abilities[0] ?? null);
+    slot.ability === "(none)"
+      ? null
+      : slot.forme
+        ? slot.forme.ability || ref.abilities[0] || null
+        : slot.ability
+          ? slot.ability
+          : (ref.abilities[0] ?? null);
   const item = slot.item && slot.item !== "None" ? slot.item : null;
   const evs: BaseStats = { ...DEFAULT_EVS, ...(slot.evs ?? {}) };
   const c = buildCombatant({
-    species: ref.slug,
-    name: ref.name,
-    types: ref.types,
-    baseStats: ref.baseStats,
-    moves: ref.moves,
+    species: slot.forme?.species ?? ref.slug,
+    name: slot.forme?.name ?? ref.name,
+    types: slot.forme?.types ?? ref.types,
+    baseStats: slot.forme?.baseStats ?? ref.baseStats,
+    moves: slot.forme?.moves ?? ref.moves,
     level: 50,
     ivs: DEFAULT_IVS,
     evs,
