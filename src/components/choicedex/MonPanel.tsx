@@ -32,8 +32,8 @@ function koLabel(d: ReturnType<typeof calculateDamage>): { text: string; cls: st
   if (d.maxDamage <= 0) return { text: "—", cls: "text-slate-600" };
   if (d.ohkoProbability >= 1) return { text: "1HKO", cls: "text-emerald-400" };
   if (d.ohkoProbability > 0) return { text: `${Math.round(d.ohkoProbability * 100)}% 1HKO`, cls: "text-amber-400" };
-  if (d.twoHitKoProbability >= 1) return { text: "2HKO", cls: "text-emerald-400" };
-  if (d.twoHitKoProbability > 0) return { text: `${Math.round(d.twoHitKoProbability * 100)}% 2HKO`, cls: "text-amber-400" };
+  if ((d.twoHitKoProbability ?? 0) >= 1) return { text: "2HKO", cls: "text-emerald-400" };
+  if ((d.twoHitKoProbability ?? 0) > 0) return { text: `${Math.round((d.twoHitKoProbability ?? 0) * 100)}% 2HKO`, cls: "text-amber-400" };
   const hits = Math.max(2, Math.ceil(100 / (d.maxPercent || 1)));
   return { text: `${hits}HKO`, cls: "text-slate-500" };
 }

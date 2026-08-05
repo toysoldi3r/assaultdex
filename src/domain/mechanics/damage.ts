@@ -31,7 +31,7 @@ export interface DamageOptions {
   crit?: boolean;
   /**
    * Skip the O(rolls²) two-hit-KO computation when only the damage rolls are
-   * needed (the simulation/transition hot path). twoHitKoProbability is 0 then.
+   * needed (the simulation/transition hot path). twoHitKoProbability is null then.
    */
   fast?: boolean;
 }
@@ -51,7 +51,7 @@ export interface DamageResult {
   maxPercent: number;
   expectedPercent: number;
   ohkoProbability: number;
-  twoHitKoProbability: number;
+  twoHitKoProbability: number | null;
   survivalProbability: number;
   accuracyAdjustedOhko: number;
   effectiveness: EffectivenessResult;
@@ -86,7 +86,7 @@ function zeroResult(
     maxPercent: 0,
     expectedPercent: 0,
     ohkoProbability: 0,
-    twoHitKoProbability: 0,
+    twoHitKoProbability: null,
     survivalProbability: 1,
     accuracyAdjustedOhko: 0,
     effectiveness,
@@ -285,32 +285,64 @@ export function calculateDamage(
     itOff *
     itDef;
 
-  const rolls: number[] = [];
+  const perHitRolls: number[] = [];
   for (let roll = 85; roll <= 100; roll++) {
     const rolled = Math.floor((base * roll) / 100);
-    rolls.push(Math.max(0, Math.round(Math.floor(rolled * modifier) * hits)));
+    perHitRolls.push(Math.max(0, Math.floor(rolled * modifier)));
   }
-  rolls.sort((a, b) => a - b);
+
+  let buckets: [number, number][];
+  if (Number.isInteger(hits)) {
+    let distribution = new Map<number, number>([[0, 1]]);
+    for (let hit = 0; hit < hits; hit++) {
+      const next = new Map<number, number>();
+      for (const [sum, count] of distribution) {
+        for (const roll of perHitRolls) {
+          next.set(sum + roll, (next.get(sum + roll) ?? 0) + count);
+        }
+      }
+      distribution = next;
+    }
+    buckets = [...distribution.entries()].sort((a, b) => a[0] - b[0]);
+  } else {
+    // Average-hit approximations are explicitly labelled above; keep the usual
+    // 16 roll buckets rather than pretending to know Champions hit-count odds.
+    buckets = perHitRolls.map((roll) => [Math.round(roll * hits), 1]);
+  }
+
+  const totalOutcomes = buckets.reduce((sum, [, count]) => sum + count, 0);
+  const valueAt = (position: number): number => {
+    let seen = 0;
+    for (const [damage, count] of buckets) {
+      seen += count;
+      if (seen > position) return damage;
+    }
+    return buckets[buckets.length - 1]?.[0] ?? 0;
+  };
+  const rolls = Array.from({ length: 16 }, (_, idx) => {
+    const pos = Math.round((idx / 15) * (totalOutcomes - 1));
+    return valueAt(pos);
+  });
 
   const minDamage = rolls[0] ?? 0;
   const maxDamage = rolls[rolls.length - 1] ?? 0;
-  const expectedDamage = rolls.reduce((a, b) => a + b, 0) / rolls.length;
+  const expectedDamage = buckets.reduce((sum, [damage, count]) => sum + damage * count, 0) / totalOutcomes;
 
   const maxHp = defender.stats.hp;
   const currentHp = defender.currentHp;
 
-  const ohkoRolls = rolls.filter((d) => d >= currentHp).length;
-  const ohkoProbability = ohkoRolls / rolls.length;
+  const ohkoOutcomes = buckets.reduce((sum, [damage, count]) => sum + (damage >= currentHp ? count : 0), 0);
+  const ohkoProbability = ohkoOutcomes / totalOutcomes;
 
-  let twoHitKoProbability = 0;
+  let twoHitKoProbability: number | null = null;
   if (!options.fast) {
     let twoHitKo = 0;
-    for (const r1 of rolls) {
-      for (const r2 of rolls) {
-        if (r1 + r2 >= currentHp) twoHitKo++;
+    for (const [r1, c1] of buckets) {
+      for (const [r2, c2] of buckets) {
+        if (r1 + r2 >= currentHp) twoHitKo += c1 * c2;
       }
     }
-    twoHitKoProbability = twoHitKo / (rolls.length * rolls.length);
+    twoHitKoProbability = twoHitKo / (totalOutcomes * totalOutcomes);
   }
 
   const accFrac = move.accuracy === null ? 1 : move.accuracy / 100;
@@ -324,7 +356,7 @@ export function calculateDamage(
     maxPercent: round2((maxDamage / maxHp) * 100),
     expectedPercent: round2((expectedDamage / maxHp) * 100),
     ohkoProbability: round2(ohkoProbability),
-    twoHitKoProbability: round2(twoHitKoProbability),
+    twoHitKoProbability: twoHitKoProbability === null ? null : round2(twoHitKoProbability),
     survivalProbability: round2(1 - ohkoProbability),
     accuracyAdjustedOhko: round2(ohkoProbability * accFrac),
     effectiveness,

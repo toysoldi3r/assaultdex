@@ -11,6 +11,7 @@
 // per-move/item/ability/EV data is not present in that source.
 
 import snapshot from "./fixtures/usage/gen9championsvgc2026regmbbo3.json";
+import { usageDataSchema } from "./schemas/usage";
 
 /** The Champions format these cards describe. */
 export const CHAMPIONS_FORMAT = "gen9championsvgc2026regmbbo3";
@@ -200,7 +201,7 @@ export function aggregateRankings(rows: RankingRow[]): UsageData {
   return { format: CHAMPIONS_FORMAT, totalBattles, mons, topTeams, cores };
 }
 
-const data = snapshot as UsageData;
+const data: UsageData = usageDataSchema.parse(snapshot);
 
 /** Usage for one species by display name, or null if it has no recorded games. */
 export async function getMonUsage(name: string): Promise<MonUsage | null> {

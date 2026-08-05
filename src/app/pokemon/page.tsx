@@ -13,5 +13,5 @@ export default async function PokedexPage() {
   const champions = all
     .filter((e) => e.champions)
     .map((e) => ({ ...e, moves: moveBySlug.get(e.slug) ?? [] }));
-  return <PokedexBrowser champions={champions} fullCount={all.length} />;
+  return <PokedexBrowser champions={champions} fullDex={all} />;
 }

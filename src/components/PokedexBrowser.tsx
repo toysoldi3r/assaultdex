@@ -38,16 +38,14 @@ function bst(e: PokedexEntry): number {
 
 export function PokedexBrowser({
   champions,
-  fullCount,
+  fullDex,
 }: {
   champions: PokedexEntry[];
-  fullCount: number;
+  fullDex: PokedexEntry[];
 }) {
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("num");
   const [showAll, setShowAll] = useState(false);
-  const [full, setFull] = useState<PokedexEntry[] | null>(null);
-  const [loadingFull, setLoadingFull] = useState(false);
   // Advanced filter state.
   const [advOpen, setAdvOpen] = useState(false);
   const [fTypes, setFTypes] = useState<PokemonType[]>([]);
@@ -63,23 +61,11 @@ export function PokedexBrowser({
     return !n || (e.moves ?? []).some((m) => m.toLowerCase().includes(n));
   };
 
-  // Lazy-load the full dex the first time the visitor asks for it.
-  const enableFull = () => {
-    setShowAll(true);
-    if (full || loadingFull) return;
-    setLoadingFull(true);
-    fetch("/pokemon/all")
-      .then((r) => r.json())
-      .then((data: PokedexEntry[]) => setFull(data))
-      .catch(() => setFull(champions)) // fall back to what we have
-      .finally(() => setLoadingFull(false));
-  };
-
   const championsCount = champions.length;
 
   const results = useMemo(() => {
     // Default view is the Pokémon Champions roster; the toggle opens the full dex.
-    const scoped = showAll ? (full ?? []) : champions;
+    const scoped = showAll ? fullDex : champions;
     const needle = q.trim().toLowerCase();
     // Exact type name (e.g. "water") = pure type filter, so ability names like
     // "Water Absorb" don't drag in non-Water mons.
@@ -116,7 +102,7 @@ export function PokedexBrowser({
             : b.baseStats[sort] - a.baseStats[sort],
     );
     return adv;
-  }, [q, sort, champions, full, showAll, fTypes, fAbility, fMove1, fMove2, fMinBst]);
+  }, [q, sort, champions, fullDex, showAll, fTypes, fAbility, fMove1, fMove2, fMinBst]);
 
   return (
     <div className="space-y-6">
@@ -135,12 +121,12 @@ export function PokedexBrowser({
           Champions ({championsCount})
         </button>
         <button
-          onClick={enableFull}
+          onClick={() => setShowAll(true)}
           className={`rounded px-3 py-1 text-xs font-medium ${
             showAll ? "bg-amber-500 text-black" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
           }`}
         >
-          Full dex ({fullCount}){loadingFull ? " …" : ""}
+          Full dex ({fullDex.length})
         </button>
       </div>
 

@@ -544,10 +544,10 @@ function BattleView({
   const [oCond, setOCond] = useState<SideCond>(emptyCond());
   const [background, setBackground] = useState<string>("meadow");
 
-  // Stable signature of the battle's Pokémon (order/side-independent), so a saved
-  // battle is only resumed when it is the same battle — not after picking new teams.
+  // Stable side-aware signature, so a saved battle only resumes for the same
+  // side assignments and slot order — not just the same twelve Pokémon.
   const teamSig = useMemo(
-    () => [...userTeam, ...oppTeam].slice().sort().join("|"),
+    () => `user:${userTeam.join("|")}::opponent:${oppTeam.join("|")}`,
     [userTeam, oppTeam],
   );
 
