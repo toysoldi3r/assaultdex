@@ -51,6 +51,7 @@ export function MonPanel({
   targets,
   abilities,
   defaultAbility,
+  lockedAbility,
   items,
   field,
   defenderConditions,
@@ -68,6 +69,8 @@ export function MonPanel({
   targets: { name: string; combatant: Combatant }[];
   abilities: string[];
   defaultAbility: string;
+  /** Ability fixed by an active forme (Mega / Transform); locks the selector. */
+  lockedAbility?: string;
   items: string[];
   field: FieldState;
   defenderConditions: SideConditions;
@@ -111,9 +114,10 @@ export function MonPanel({
 
       {/* Ability / Nature / Item */}
       <div className="mb-2 grid grid-cols-3 gap-1 text-xs">
-        <select value={state.ability || defaultAbility} onChange={(e) => onPatch({ ability: e.target.value })}
-          className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5" aria-label="Ability">
-          {abilities.map((a) => <option key={a} value={a}>{a}</option>)}
+        <select value={lockedAbility ?? (state.ability || defaultAbility)} onChange={(e) => onPatch({ ability: e.target.value })}
+          disabled={!!lockedAbility} title={lockedAbility ? "Forme ability (fixed)" : undefined}
+          className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5 disabled:opacity-70" aria-label="Ability">
+          {(lockedAbility && !abilities.includes(lockedAbility) ? [lockedAbility, ...abilities] : abilities).map((a) => <option key={a} value={a}>{a}</option>)}
         </select>
         <select value={state.nature} onChange={(e) => onPatch({ nature: e.target.value })}
           className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5" aria-label="Nature">

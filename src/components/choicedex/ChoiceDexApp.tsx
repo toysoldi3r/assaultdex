@@ -678,9 +678,15 @@ function BattleView({
     const mega = s.mega ? megaForms[slug] : undefined;
     // A consumed item no longer applies to damage/speed. A Mega holds its Stone,
     // which is not removable/consumable, so it overrides the item slot.
-    // Commander: an allied Tatsugiri gives Dondozo +2 to every combat stage.
+    // Commander: an allied Tatsugiri gives Dondozo +2 to every combat stage,
+    // stacked on top of (not replacing) any manually-entered boosts.
     const stages = s.commander
-      ? { atk: 2, def: 2, spa: 2, spd: 2, spe: 2 }
+      ? (Object.fromEntries(
+          (Object.keys(s.stages) as (keyof StageStats)[]).map((k) => [
+            k,
+            Math.max(-6, Math.min(6, s.stages[k] + 2)),
+          ]),
+        ) as StageStats)
       : s.stages;
     return {
       ...emptySlot(slug),
@@ -848,6 +854,7 @@ function BattleView({
                   mega={slug ? megaForms[slug] : undefined}
                   special={specialFor("opponent", slug)}
                   disguise={disguiseFor("opponent", slug)}
+                  formeAbility={slug ? formeOf("opponent", slug)?.ability : undefined}
                   onSelect={(s) => {
                     setActive("opponent", i as 0 | 1, s);
                     if (s && s !== slug) patchMon("opponent", s, { stages: NEUTRAL_STAGES });
@@ -873,6 +880,7 @@ function BattleView({
                   mega={slug ? megaForms[slug] : undefined}
                   special={specialFor("user", slug)}
                   disguise={disguiseFor("user", slug)}
+                  formeAbility={slug ? formeOf("user", slug)?.ability : undefined}
                   onSelect={(s) => {
                     setActive("user", i as 0 | 1, s);
                     if (s && s !== slug) patchMon("user", s, { stages: NEUTRAL_STAGES });
@@ -1014,6 +1022,7 @@ function BattleView({
                 targets={targets}
                 abilities={matchAbilities}
                 defaultAbility={abilitiesFor(spec.slug)[0] ?? ""}
+                lockedAbility={forme?.ability}
                 items={items}
                 field={built.state.field}
                 defenderConditions={spec.enemies.conditions}
@@ -1138,6 +1147,7 @@ function ActiveCard({
   mega,
   special,
   disguise,
+  formeAbility,
   onSelect,
   onPatch,
 }: {
@@ -1155,6 +1165,8 @@ function ActiveCard({
   special?: SpecialForm;
   /** Sprite/name override from Transform or Illusion. */
   disguise?: { species: string; name: string };
+  /** Ability fixed by the active forme (Mega / Transform); locks the selector. */
+  formeAbility?: string;
   onSelect: (slug: string | null) => void;
   onPatch: (p: Partial<MonState>) => void;
 }) {
@@ -1164,9 +1176,14 @@ function ActiveCard({
   // Transform, everything else via the built combatant).
   const iconSpecies = isMega ? mega!.name : disguise?.species ?? slug;
   const displayName = isMega ? mega!.name : disguise?.name ?? slug;
-  const abilityValue = isMega ? mega!.ability : state.ability || defaultAbility;
+  // A forme (Mega or Ditto's Transform) fixes the ability the built combatant
+  // uses, so the selector must show that ability read-only rather than a stale,
+  // ignored value.
+  const abilityLocked = !!formeAbility;
+  const abilityValue = formeAbility ?? (state.ability || defaultAbility);
   const itemValue = isMega ? mega!.item : state.item;
-  const abilityOpts = isMega && !abilities.includes(mega!.ability) ? [mega!.ability, ...abilities] : abilities;
+  const abilityOpts =
+    formeAbility && !abilities.includes(formeAbility) ? [formeAbility, ...abilities] : abilities;
   const hoverInfo = slug
     ? `${displayName} — ${state.hpPct}% HP` +
       (state.status !== "none" ? ` · ${state.status}` : "") +
@@ -1232,9 +1249,9 @@ function ActiveCard({
       {abilities.length > 0 && (
         <select
           value={abilityValue}
-          disabled={!slug || isMega}
+          disabled={!slug || abilityLocked}
           onChange={(e) => onPatch({ ability: e.target.value })}
-          title={isMega ? "Mega forme ability (fixed)" : "Set the current ability (Skill Swap, Simple Beam, …)"}
+          title={abilityLocked ? "Forme ability (fixed)" : "Set the current ability (Skill Swap, Simple Beam, …)"}
           className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs disabled:opacity-70"
         >
           {abilityOpts.map((a) => <option key={a} value={a}>{a}</option>)}
@@ -1267,7 +1284,12 @@ function ActiveCard({
           className="mt-1 w-full rounded border border-sky-700 bg-slate-900 px-1 py-0.5 text-[10px] text-sky-200"
         >
           <option value="">Transform into…</option>
-          {special.options.map((o) => <option key={o.slug} value={o.slug}>{o.name}</option>)}
+          {/* Keep the current copy selectable even after it has switched out —
+              Transform persists once used. */}
+          {(state.transformInto && !special.options.some((o) => o.slug === state.transformInto)
+            ? [{ slug: state.transformInto, name: disguise?.name ?? state.transformInto }, ...special.options]
+            : special.options
+          ).map((o) => <option key={o.slug} value={o.slug}>{o.name}</option>)}
         </select>
       )}
       {slug && special?.kind === "commander" && (
