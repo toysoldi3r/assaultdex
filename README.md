@@ -1,7 +1,8 @@
 # AssaultDex
 
 Decision support for competitive **Pokémon Champions doubles**: a Pokédex, team
-builder, the **ChoiceDex** battle assistant, and battle analysis.
+builder, the **ChoiceDex** battle assistant, battle analysis, and a reference
+database.
 
 > **Data & mechanics.** The Pokédex is the full **Pokémon Champions pool (213
 > species/forms)**, generated from the authoritative roster + `@pkmn/dex`
@@ -20,11 +21,19 @@ builder, the **ChoiceDex** battle assistant, and battle analysis.
 - **ChoiceDex** — interactive battle editor with live recommendations, lead
   analysis, opponent-speed inference, matchup matrix, scenario sandbox, a
   bounded branching turn explorer, Monte-Carlo simulation, and an interactive
-  practice opponent (four difficulties).
+  practice opponent (four difficulties). Active Pokémon support in-battle form
+  changes — **Mega Evolution** (swaps stats/typing/ability and locks the Mega
+  Stone), **Ditto Transform**, **Zoroark Illusion**, and Dondozo's
+  **Commander** boost — all folded into the damage/KO and recommendation math.
 - **Battles** — provisional-format replay import, per-turn post-battle analysis
   (actual vs recommended on expected value), a personal dashboard, and
   confidence calibration (Brier score + reliability buckets). History is
   deletable.
+- **Database** — reference pages for items and abilities (with the Pokémon that
+  carry each), a move-type effectiveness grid, a damage calculator, and
+  Champions/full-dex toggles.
+- **Guide & Sources** — an onboarding guide to the site and competitive play,
+  plus a curated list of external Pokémon resources.
 
 ## Stack
 
@@ -63,7 +72,7 @@ pnpm dev                # http://localhost:3000
 ```bash
 pnpm typecheck   # tsc --noEmit
 pnpm lint        # next lint
-pnpm test        # vitest (89 tests)
+pnpm test        # vitest (145 tests)
 pnpm build       # prisma generate && next build
 ```
 
@@ -87,8 +96,9 @@ process + database status for monitoring.
 
 ## Roadmap
 
-Phases 1–4 and 6–10 are implemented (see `docs/ARCHITECTURE.md`). Phase 5
-(usage/win-rate/core statistics) is intentionally deferred until a verified
-Pokémon Champions usage source exists — statistics are never fabricated. The
-provider-adapter interface and provenance/reliability columns are already in
-place for it. User accounts/authentication are also a planned addition.
+Phases 1–10 are implemented (see `docs/ARCHITECTURE.md`). Phase 5
+(usage/win-rate/core statistics) is served from a snapshot committed in-repo and
+refreshed out-of-band (`pnpm refresh:usage`), so nothing is fetched at
+runtime and no statistic is ever fabricated — the home page surfaces usage %,
+win rate, top teams, and common cores from it. User accounts/authentication
+remain a planned addition.
