@@ -292,7 +292,11 @@ export function calculateDamage(
   }
 
   let buckets: [number, number][];
-  if (Number.isInteger(hits)) {
+  // Exact per-hit convolution is 16^hits buckets, so only run it for small
+  // fixed hit counts (2–3). Large fixed-count moves (Population Bomb = 10) would
+  // explode to trillions of buckets, so fall back to the scaled single-roll
+  // approximation below alongside the variable-hit moves.
+  if (Number.isInteger(hits) && hits <= 3) {
     let distribution = new Map<number, number>([[0, 1]]);
     for (let hit = 0; hit < hits; hit++) {
       const next = new Map<number, number>();

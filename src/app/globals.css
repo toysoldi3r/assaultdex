@@ -66,6 +66,8 @@ html[data-theme="light"] .text-slate-400 { color: #475569; }
 html[data-theme="light"] .text-slate-500 { color: #64748b; }
 html[data-theme="light"] .text-slate-600 { color: #94a3b8; }
 html[data-theme="light"] .text-slate-700 { color: #cbd5e1; }
+/* Hover states that brighten toward white on dark must darken on light. */
+html[data-theme="light"] .hover\:text-slate-100:hover { color: #0f172a; }
 
 /* Amber accent text needs a darker shade to stay legible on light surfaces. */
 html[data-theme="light"] .text-amber-400,

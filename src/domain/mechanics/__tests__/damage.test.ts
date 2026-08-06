@@ -71,4 +71,18 @@ describe("[provisional] calculateDamage", () => {
     expect(double.rolls.length).toBe(16);
   });
 
+  it("handles large fixed hit counts without exploding the convolution", () => {
+    // Population Bomb = 10 hits. Exact convolution would be 16^10 buckets, so it
+    // must fall back to the scaled approximation and return finite values fast.
+    const attacker = combatant({ name: "A", types: ["normal"], base: stats({ atk: 120 }) });
+    const defender = combatant({ name: "D", types: ["normal"], base: stats() });
+    const t = Date.now();
+    const r = calculateDamage(attacker, defender, move({ power: 20, hits: 10 }), field);
+    expect(Date.now() - t).toBeLessThan(1000);
+    expect(r.rolls.length).toBe(16);
+    expect(Number.isFinite(r.maxDamage)).toBe(true);
+    expect(r.minDamage).toBeGreaterThan(0);
+    expect(r.maxDamage).toBeGreaterThanOrEqual(r.minDamage);
+  });
+
 });

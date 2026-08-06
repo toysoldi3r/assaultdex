@@ -19,9 +19,11 @@ import { TypeBadge } from "@/components/ui";
 import { PokeIcon } from "@/components/PokeIcon";
 import {
   buildStateWithEntry,
+  bySlugMap,
   combatantFromRef,
   emptySlot,
-  COMMON_ITEMS,
+  itemOptions,
+  type MegaForme,
   type PokemonRef,
   type SideForm,
   type SlotForm,
@@ -42,17 +44,6 @@ export interface SavedTeam {
   members: string[]; // species slugs
   /** Known sets by species slug, so our own mons prefill their EVs/nature/item. */
   sets?: Record<string, KnownSet>;
-}
-
-/** A species' Mega/Primal battle forme, resolved offline from the dex. Keyed by
- *  base-species slug; `item` is the required Mega Stone / Orb the mon must hold. */
-export interface MegaForme {
-  /** Display + icon name of the forme, e.g. "Charizard-Mega-X". */
-  name: string;
-  baseStats: Record<StatKey, number>;
-  types: PokemonType[];
-  ability: string;
-  item: string;
 }
 
 /** Species-specific in-battle form change offered on an active card. */
@@ -134,13 +125,6 @@ const BATTLE_KEY = "choicedex.battle.v2";
 // Saved battles older than this are treated as stale (don't reopen yesterday's).
 const BATTLE_TTL_MS = 12 * 60 * 60 * 1000;
 
-/** Item dropdown options: the given list plus the current value if unlisted, so
- *  a saved-team item outside the list still displays as selected. */
-function itemOptions(current: string, items: readonly string[]): string[] {
-  const base = items.length ? items : COMMON_ITEMS;
-  return current && current !== "None" && !base.includes(current) ? [current, ...base] : [...base];
-}
-
 export function ChoiceDexApp({
   pokemon,
   teams,
@@ -152,7 +136,7 @@ export function ChoiceDexApp({
   items?: string[];
   megaForms?: Record<string, MegaForme>;
 }) {
-  const bySlug = useMemo(() => new Map(pokemon.map((p) => [p.slug, p])), [pokemon]);
+  const bySlug = useMemo(() => bySlugMap(pokemon), [pokemon]);
   const [phase, setPhase] = useState<"preview" | "battle">("preview");
   const [userTeam, setUserTeam] = useState<(string | null)[]>(emptyTeam());
   const [oppTeam, setOppTeam] = useState<(string | null)[]>(emptyTeam());
@@ -328,7 +312,7 @@ function TeamColumn({
   onSet: (idx: number, slug: string | null) => void;
 }) {
   const [editing, setEditing] = useState<number | null>(null);
-  const bySlug = useMemo(() => new Map(pokemon.map((p) => [p.slug, p])), [pokemon]);
+  const bySlug = useMemo(() => bySlugMap(pokemon), [pokemon]);
 
   return (
     <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
@@ -539,6 +523,8 @@ function BattleView({
   onBack: () => void;
 }) {
   const refBySlug = bySlug;
+  /** Display name for a slug, falling back to the slug when not in the pool. */
+  const nameOf = (s: string): string => refBySlug.get(s)?.name ?? s;
   // Abilities selectable in-match: every ability held by a Pokémon in this game
   // (covers Skill Swap / Trace / Role Play copying) plus move/ability results.
   const matchAbilities = useMemo(() => {
@@ -763,7 +749,7 @@ function BattleView({
       // Exclude the sibling (can't be in both spots) and fainted Pokémon — but
       // always keep whoever currently occupies this spot so it stays visible.
       .filter((s) => s !== sibling && (s === current || monOf(side, s).hpPct > 0))
-      .map((s) => ({ slug: s, name: refBySlug.get(s)?.name ?? s }));
+      .map((s) => ({ slug: s, name: nameOf(s) }));
   };
 
   // In-battle form changes available on a given active card, by species.
@@ -772,13 +758,13 @@ function BattleView({
     const team = side === "user" ? uTeam : oTeam;
     if (slug === "ditto") {
       const foes = (side === "user" ? activeOpp : activeUser).filter((x): x is string => !!x);
-      return { kind: "ditto", options: foes.map((s) => ({ slug: s, name: refBySlug.get(s)?.name ?? s })) };
+      return { kind: "ditto", options: foes.map((s) => ({ slug: s, name: nameOf(s) })) };
     }
     if (slug === "dondozo" && team.some((s) => s.startsWith("tatsugiri"))) return { kind: "commander" };
     if (slug === "zoroark" || slug === "zoroarkhisui") {
       return {
         kind: "zoroark",
-        options: team.filter((s) => s !== slug).map((s) => ({ slug: s, name: refBySlug.get(s)?.name ?? s })),
+        options: team.filter((s) => s !== slug).map((s) => ({ slug: s, name: nameOf(s) })),
       };
     }
     return null;
@@ -961,7 +947,7 @@ function BattleView({
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">🟢 Your team</p>
           <div className="flex flex-wrap gap-1.5">
             {uTeam.map((s) => (
-              <MonChip key={s} name={refBySlug.get(s)?.name ?? s} slug={s} state={monOf("user", s)} refData={refBySlug.get(s)} mega={megaForms[s]} />
+              <MonChip key={s} name={nameOf(s)} slug={s} state={monOf("user", s)} refData={refBySlug.get(s)} mega={megaForms[s]} />
             ))}
           </div>
         </div>
@@ -976,7 +962,7 @@ function BattleView({
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-rose-300">🔴 Opponent&apos;s team</p>
           <div className="flex flex-wrap justify-end gap-1.5">
             {oTeam.map((s) => (
-              <MonChip key={s} name={refBySlug.get(s)?.name ?? s} slug={s} state={monOf("opponent", s)} refData={refBySlug.get(s)} mega={megaForms[s]} />
+              <MonChip key={s} name={nameOf(s)} slug={s} state={monOf("opponent", s)} refData={refBySlug.get(s)} mega={megaForms[s]} />
             ))}
           </div>
         </div>

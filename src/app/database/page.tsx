@@ -1,6 +1,6 @@
 import { DatabaseApp } from "@/components/database/DatabaseApp";
 import { listDbItems, listDbAbilities, listDbMoves } from "@/data/dexDatabase";
-import type { PokemonRef } from "@/lib/choicedexBuild";
+import { toPokemonRefs, type PokemonRef } from "@/lib/choicedexBuild";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 
 export const dynamic = "force-dynamic";
@@ -14,14 +14,7 @@ export default async function DatabasePage() {
     Promise.resolve(listDbMoves()),
     listPokemon(),
   ]);
-  const refs: PokemonRef[] = pokemon.map((p) => ({
-    slug: p.slug,
-    name: p.name,
-    types: p.types,
-    baseStats: p.baseStats,
-    abilities: p.abilities,
-    moves: p.moves,
-  }));
+  const refs: PokemonRef[] = toPokemonRefs(pokemon);
   // Abilities / moves that appear in the Champions roster, for the default filter.
   const championsAbilities = [...new Set(pokemon.flatMap((p) => p.abilities))];
   const championsMoves = [

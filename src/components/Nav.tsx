@@ -14,8 +14,19 @@ const NAV: NavItem[] = [
   { href: "/guide", label: "Guide" },
   { href: "/pokemon", label: "Pokédex" },
   { href: "/teams", label: "Teams" },
-  { href: "/choicedex", label: "ChoiceDex", children: [{ href: "/battles", label: "Battles" }] },
-  { href: "/database", label: "Database", children: [{ href: "/types", label: "Types" }] },
+  { href: "/choicedex", label: "ChoiceDex" },
+  {
+    href: "/database",
+    label: "Database",
+    children: [
+      { href: "/database?tab=items", label: "Items" },
+      { href: "/database?tab=abilities", label: "Abilities" },
+      { href: "/database?tab=moves", label: "Moves" },
+      { href: "/database?tab=calc", label: "Calculator" },
+      { href: "/database?tab=terms", label: "Terminology" },
+      { href: "/types", label: "Types" },
+    ],
+  },
   { href: "/sources", label: "Sources" },
 ];
 
@@ -39,7 +50,7 @@ export function Nav() {
             <Link
               href={n.href}
               aria-current={active ? "page" : undefined}
-              className={active ? "font-semibold text-white" : "text-slate-300 hover:text-white"}
+              className={active ? "font-semibold text-slate-100" : "text-slate-300 hover:text-slate-100"}
             >
               {n.label}
               {children.length > 0 && <span aria-hidden className="ml-0.5 text-[10px] text-slate-500">▾</span>}
@@ -56,7 +67,7 @@ export function Nav() {
                         href={c.href}
                         aria-current={cActive ? "page" : undefined}
                         className={`block rounded px-3 py-1 ${
-                          cActive ? "font-semibold text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                          cActive ? "font-semibold text-slate-100" : "text-slate-300 hover:bg-slate-800 hover:text-slate-100"
                         }`}
                       >
                         {c.label}

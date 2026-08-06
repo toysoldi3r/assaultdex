@@ -166,8 +166,12 @@ export interface DbMove {
   desc: string;
 }
 
+// The item/ability/move lists derive from the static @pkmn/dex dataset, which
+// never changes at runtime, so each list is computed once and memoized rather
+// than rebuilt on every Database-page request.
+let cachedMoves: DbMove[] | undefined;
 export function listDbMoves(): DbMove[] {
-  return gen.moves
+  return (cachedMoves ??= gen.moves
     .all()
     .filter(isReal)
     .map((m) => ({
@@ -180,7 +184,7 @@ export function listDbMoves(): DbMove[] {
       priority: m.priority ?? 0,
       desc: m.shortDesc || m.desc || "",
     }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => a.name.localeCompare(b.name)));
 }
 
 const ITEM_INTERACTION: Record<string, string> = {
@@ -217,8 +221,9 @@ export function getDbItem(nameOrId: string): (DbItem & { interaction: string | n
   };
 }
 
+let cachedItems: DbItem[] | undefined;
 export function listDbItems(): DbItem[] {
-  return gen.items
+  return (cachedItems ??= gen.items
     .all()
     .filter(isReal)
     .map((i) => ({
@@ -229,7 +234,7 @@ export function listDbItems(): DbItem[] {
       calc: ITEM_CALC[i.name] ?? null,
       competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name),
     }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => a.name.localeCompare(b.name)));
 }
 
 function toDbAbility(a: ReturnType<typeof gen.abilities.get>): DbAbility {
@@ -242,12 +247,13 @@ function toDbAbility(a: ReturnType<typeof gen.abilities.get>): DbAbility {
   };
 }
 
+let cachedAbilities: DbAbility[] | undefined;
 export function listDbAbilities(): DbAbility[] {
-  return gen.abilities
+  return (cachedAbilities ??= gen.abilities
     .all()
     .filter(isReal)
     .map(toDbAbility)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => a.name.localeCompare(b.name)));
 }
 
 /** Ability by slug/name, or null. */
@@ -257,9 +263,13 @@ export function getDbAbility(nameOrId: string): DbAbility | null {
 }
 
 /** Every species/forme (full dex, incl. Mega/Primal) that can have the ability. */
+const abilityPokemonCache = new Map<string, { name: string; slug: string }[]>();
 export function pokemonWithAbility(nameOrId: string): { name: string; slug: string }[] {
   const target = gen.abilities.get(nameOrId).name;
   if (!target) return [];
+  // Full-dex scan per ability page; cache the result by ability name.
+  const cached = abilityPokemonCache.get(target);
+  if (cached) return cached;
   const out: { name: string; slug: string }[] = [];
   for (const s of gen.species.all()) {
     // Include Past (megas, e.g. Parental Bond on Kangaskhan-Mega); drop CAP/Future.
@@ -273,9 +283,11 @@ export function pokemonWithAbility(nameOrId: string): { name: string; slug: stri
   }
   // Deduplicate by display name.
   const seen = new Set<string>();
-  return out
+  const result = out
     .filter((m) => (seen.has(m.name) ? false : (seen.add(m.name), true)))
     .sort((a, b) => a.name.localeCompare(b.name));
+  abilityPokemonCache.set(target, result);
+  return result;
 }
 
 /** Move names classified for an ability's interaction list (Bulletproof, …). */

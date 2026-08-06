@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Panel, ProvisionalTag } from "@/components/ui";
 import { Simulator } from "@/components/choicedex/Simulator";
-import type { PokemonRef } from "@/lib/choicedexBuild";
+import { toNameOptions, toPokemonRefs, type PokemonRef } from "@/lib/choicedexBuild";
 import { buildDashboard } from "@/domain/analysis/dashboard";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import { listBattles } from "@/server/repositories/battleRepo";
@@ -29,16 +29,9 @@ export default async function BattlesPage({
   const { err } = await searchParams;
   const [battles, pokemon] = await Promise.all([listBattles(), listPokemon()]);
   const dashboard = buildDashboard(battles.map((b) => b.summary));
-  const opts = pokemon.map((p) => ({ slug: p.slug, name: p.name }));
+  const opts = toNameOptions(pokemon);
   const d = (i: number) => opts[i % opts.length]?.slug;
-  const refs: PokemonRef[] = pokemon.map((p) => ({
-    slug: p.slug,
-    name: p.name,
-    types: p.types,
-    baseStats: p.baseStats,
-    abilities: p.abilities,
-    moves: p.moves,
-  }));
+  const refs: PokemonRef[] = toPokemonRefs(pokemon);
 
   return (
     <div className="space-y-6">

@@ -14,12 +14,62 @@ import type {
   Weather,
 } from "@/domain/types/battle";
 import { NEUTRAL_STAGES } from "@/domain/types/battle";
-import type { BaseStats, MoveFixture, Pokemon, PokemonType } from "@/domain/types/pokemon";
+import type { BaseStats, MoveFixture, Pokemon, PokemonType, StatKey } from "@/domain/types/pokemon";
 
 export type PokemonRef = Pick<
   Pokemon,
   "slug" | "name" | "types" | "baseStats" | "abilities" | "moves"
 >;
+
+/** Project reference Pokémon rows to the lightweight ref the client tools use. */
+export function toPokemonRefs(mons: readonly Pokemon[]): PokemonRef[] {
+  return mons.map((p) => ({
+    slug: p.slug,
+    name: p.name,
+    types: p.types,
+    baseStats: p.baseStats,
+    abilities: p.abilities,
+    moves: p.moves,
+  }));
+}
+
+/** `{ slug, name }` options for the species pickers (drop the rest). */
+export function toNameOptions(
+  mons: readonly { slug: string; name: string }[],
+): { slug: string; name: string }[] {
+  return mons.map((p) => ({ slug: p.slug, name: p.name }));
+}
+
+/** Index a slugged list by its slug (species lookup maps). */
+export function bySlugMap<T extends { slug: string }>(list: readonly T[]): Map<string, T> {
+  return new Map(list.map((x) => [x.slug, x]));
+}
+
+/** Item dropdown options: the given list (or the modeled defaults) plus the
+ *  current value if it is unlisted, so a saved item outside the list still
+ *  shows as selected. */
+export function itemOptions(current: string, items: readonly string[]): string[] {
+  const base = items.length ? items : COMMON_ITEMS;
+  return current && current !== "None" && !base.includes(current) ? [current, ...base] : [...base];
+}
+
+/** A selectable battle forme (Mega / Primal / Aegislash-Blade …) with stats. */
+export interface Variant {
+  label: string;
+  baseStats: Record<StatKey, number>;
+  types: PokemonType[];
+}
+
+/** A species' Mega/Primal forme for the in-battle Mega button; `item` is the
+ *  required Mega Stone / Orb the holder must carry. */
+export interface MegaForme {
+  /** Display + icon name of the forme, e.g. "Charizard-Mega-X". */
+  name: string;
+  baseStats: Record<StatKey, number>;
+  types: PokemonType[];
+  ability: string;
+  item: string;
+}
 
 export interface SlotForm {
   species: string;

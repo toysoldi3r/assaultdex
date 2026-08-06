@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 import { assumptionsFor } from "@/domain/mechanics/assumptions";
 import { inferDefense, inferOffense } from "@/domain/choicedex/spreadInference";
 import type { NatureSign } from "@/domain/choicedex/speedInference";
-import type { MoveFixture, PokemonType, StatKey } from "@/domain/types/pokemon";
+import type { MoveFixture, PokemonType } from "@/domain/types/pokemon";
 import {
+  bySlugMap,
   combatantFromRef,
   emptySlot,
   type PokemonRef,
+  type Variant,
 } from "@/lib/choicedexBuild";
 
 type Mode = "took" | "dealt";
@@ -34,12 +36,6 @@ function screenConditions(s: Screen) {
   };
 }
 
-export interface Variant {
-  label: string;
-  baseStats: Record<StatKey, number>;
-  types: PokemonType[];
-}
-
 export function HitInference({
   pokemon,
   variants = {},
@@ -48,7 +44,7 @@ export function HitInference({
   /** Battle formes (Mega / Primal / Aegislash-Blade) per species, with stats. */
   variants?: Record<string, Variant[]>;
 }) {
-  const bySlug = useMemo(() => new Map(pokemon.map((p) => [p.slug, p])), [pokemon]);
+  const bySlug = useMemo(() => bySlugMap(pokemon), [pokemon]);
   const d = (i: number) => pokemon[i % pokemon.length]?.slug ?? "";
 
   const [mode, setMode] = useState<Mode>("took");
