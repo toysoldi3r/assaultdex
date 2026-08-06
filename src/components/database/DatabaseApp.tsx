@@ -53,8 +53,8 @@ export function DatabaseApp({
             onClick={() => setTab(t.id)}
             className={`rounded-t px-4 py-2 text-sm font-medium ${
               tab === t.id
-                ? "border-b-2 border-amber-500 text-white"
-                : "text-slate-400 hover:text-white"
+                ? "border-b-2 border-amber-500 text-slate-100"
+                : "text-slate-400 hover:text-slate-100"
             }`}
           >
             {t.label}

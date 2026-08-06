@@ -50,7 +50,7 @@ export function Nav() {
             <Link
               href={n.href}
               aria-current={active ? "page" : undefined}
-              className={active ? "font-semibold text-white" : "text-slate-300 hover:text-white"}
+              className={active ? "font-semibold text-slate-100" : "text-slate-300 hover:text-slate-100"}
             >
               {n.label}
               {children.length > 0 && <span aria-hidden className="ml-0.5 text-[10px] text-slate-500">▾</span>}
@@ -67,7 +67,7 @@ export function Nav() {
                         href={c.href}
                         aria-current={cActive ? "page" : undefined}
                         className={`block rounded px-3 py-1 ${
-                          cActive ? "font-semibold text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                          cActive ? "font-semibold text-slate-100" : "text-slate-300 hover:bg-slate-800 hover:text-slate-100"
                         }`}
                       >
                         {c.label}
