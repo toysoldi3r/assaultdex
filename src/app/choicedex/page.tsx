@@ -1,5 +1,6 @@
 import { Dex } from "@pkmn/dex";
 import { Panel, ProvisionalTag } from "@/components/ui";
+import { OnceTutorial } from "@/components/OnceTutorial";
 import { ChoiceDexApp, type KnownSet, type SavedTeam } from "@/components/choicedex/ChoiceDexApp";
 import { HitInference, type Variant } from "@/components/choicedex/HitInference";
 import { OpponentInference } from "@/components/choicedex/OpponentInference";
@@ -118,6 +119,19 @@ export default async function ChoiceDexPage() {
         as you enter what happened. All calculations are provisional and
         unverified for Pokémon Champions.
       </p>
+
+      <OnceTutorial
+        id="choicedex"
+        title="How to use ChoiceDex"
+        points={[
+          "Doubles is about targeting: focus-fire to remove a threat while keeping both of your Pokémon alive.",
+          "Each round, enter what happened — HP, status, field, and switches — and the app re-ranks your best plays.",
+          "Predict Protect and double-target reads; positioning, switches, and speed control decide most turns.",
+          "Use speed control (Tailwind / Trick Room) and redirection, and play around the opponent's.",
+          "Reference: vgcguide.com/battling. Mechanics are provisional — treat recommendations as guidance and sanity-check key calcs.",
+        ]}
+      />
+
 
       {refs.length === 0 ? (
         <Panel>

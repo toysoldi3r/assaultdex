@@ -51,6 +51,11 @@ const SOURCES: { group: string; items: Source[] }[] = [
         what: "Clean Pokédex reference: base stats, movepools, abilities, type charts, and evolution data.",
       },
       {
+        name: "Serebii",
+        url: "https://www.serebii.net/",
+        what: "Long-running Pokémon news and reference database: Pokédex, movesets, event and game-mechanic details across every generation.",
+      },
+      {
         name: "Bulbapedia",
         url: "https://bulbapedia.bulbagarden.net/",
         what: "Encyclopedic coverage of mechanics, move/ability interactions, game history, and edge cases — good for 'how does X actually work'.",

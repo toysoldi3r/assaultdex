@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Nav } from "@/components/Nav";
 import { RecentNav } from "@/components/RecentNav";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import "./globals.css";
+
+// Set the saved theme before first paint so there is no dark→light flash.
+const THEME_SCRIPT = `try{document.documentElement.dataset.theme=localStorage.getItem('assaultdex.theme')||'dark'}catch(e){document.documentElement.dataset.theme='dark'}`;
 
 export const metadata: Metadata = {
   title: "AssaultDex",
@@ -16,7 +20,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       {/* Flex column so the footer sits at the bottom on short pages instead of
           floating up. The large scroll buffer that used to live on <main> (which
           pushed the footer far down) is gone; scrollbar-gutter handles the
@@ -37,6 +44,7 @@ export default function RootLayout({
               AssaultDex
             </Link>
             <Nav />
+            <ThemeToggle />
           </div>
         </header>
         <main id="content" className="mx-auto w-full max-w-7xl flex-1 px-4 pt-8 pb-16">

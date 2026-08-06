@@ -1,4 +1,5 @@
 import { TeamsHome, type TeamCard } from "@/components/teams/TeamsHome";
+import { OnceTutorial } from "@/components/OnceTutorial";
 import { listCollections, listTeams } from "@/server/repositories/teamRepo";
 import { importTeamAction } from "./actions";
 
@@ -30,6 +31,19 @@ export default async function TeamsPage({
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Teams</h1>
+
+      <OnceTutorial
+        id="teams"
+        title="New to team building?"
+        points={[
+          "VGC is 4-vs-4 doubles chosen from a team of 6 — build a balanced 6 and bring your best 4 per matchup.",
+          "Start from a game plan: a win condition (a strong attacker or restricted) plus support around it, not six lone attackers.",
+          "Include speed control (Tailwind / Trick Room) and protection (Protect) — doubles is won on tempo and positioning.",
+          "Cover common threats and weather; aim for broad offensive + defensive type coverage.",
+          "Tune EVs to survive key hits and hit speed benchmarks; nature and item back the Pokémon's role.",
+          "Reference: vgcguide.com/teambuilding. Import a Showdown paste below to get started fast.",
+        ]}
+      />
 
       <TeamsHome teams={cards} folders={folders} />
 
