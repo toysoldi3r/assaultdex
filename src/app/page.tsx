@@ -41,7 +41,7 @@ export default function HomePage() {
       <Panel title="What's here">
         <ul className="grid gap-x-6 gap-y-2 text-sm text-slate-300 sm:grid-cols-2">
           <li><Link className="font-medium text-amber-400 hover:underline" href="/guide">Guide</Link> — new here? Start with the intro to the app and competitive doubles.</li>
-          <li><Link className="font-medium text-amber-400 hover:underline" href="/pokemon">Pokédex</Link> — search by name/type/ability/move; per-Pokémon stats, matchups, sets, and common items.</li>
+          <li><Link className="font-medium text-amber-400 hover:underline" href="/pokemon">Pokédex</Link> — search by name, type, ability, or move; stats, matchups, and sets.</li>
           <li><Link className="font-medium text-amber-400 hover:underline" href="/teams">Teams</Link> — Showdown-style builder with legality, analysis, and versioned saves.</li>
           <li><Link className="font-medium text-amber-400 hover:underline" href="/choicedex">ChoiceDex</Link> — live battle assistant: best play each turn as you enter what happens.</li>
           <li><Link className="font-medium text-amber-400 hover:underline" href="/database">Database</Link> — items, abilities (with their Pokémon), and a damage calculator.</li>
@@ -76,7 +76,7 @@ export default function HomePage() {
       <Panel title="Honesty notes">
         <div className="flex flex-wrap items-start gap-4">
           <LlmUsageLabel />
-          <div className="max-w-2xl space-y-2 text-sm text-slate-400">
+          <div className="flex-1 space-y-2 text-xs text-slate-400">
             <p>
               Mechanics status is <strong>{MECHANICS_STATUS}</strong>. Pokémon
               Champions mechanics are not publicly documented, so every formula
@@ -115,7 +115,7 @@ function LlmUsageLabel() {
       title="This content was made with generative AI — mmmlabel.tech transparency label"
       className="shrink-0"
     >
-      <svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Made with GenAI">
+      <svg width="84" height="84" viewBox="0 0 120 120" role="img" aria-label="Made with GenAI">
         <circle cx="60" cy="60" r="58" fill="#0f172a" stroke="#38bdf8" strokeWidth="3" />
         <text x="60" y="30" textAnchor="middle" fontSize="11" fill="#7dd3fc" fontFamily="sans-serif">MADE WITH</text>
         {/* simple robot glyph */}

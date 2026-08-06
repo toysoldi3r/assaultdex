@@ -38,6 +38,47 @@ export function TypeMatchup() {
 
   return (
     <div className="space-y-8">
+      {/* Full single-type chart */}
+      <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
+        <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-400">
+          Type chart
+        </h3>
+        <p className="mb-3 text-xs text-slate-500">Row = attacking type, column = defending type.</p>
+        <div className="overflow-x-auto">
+          <table className="border-collapse text-center text-xs">
+            <thead>
+              <tr>
+                <th className="sticky left-0 z-10 bg-slate-900/40 px-2 py-1 text-right text-[10px] text-slate-500">
+                  atk \ def
+                </th>
+                {POKEMON_TYPES.map((t) => (
+                  <th key={t} className="px-1 py-1 font-normal capitalize text-slate-400" title={t}>
+                    {t.slice(0, 3)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {POKEMON_TYPES.map((a) => (
+                <tr key={a}>
+                  <th className="sticky left-0 z-10 bg-slate-900/40 px-2 py-1 text-right font-normal capitalize text-slate-400">
+                    {a}
+                  </th>
+                  {POKEMON_TYPES.map((d) => {
+                    const m = singleTypeMultiplier(a, d);
+                    return (
+                      <td key={d} className={`h-8 w-9 border border-slate-950/60 tabular-nums ${cellColor(m)}`}>
+                        {m === 1 ? "" : cellText(m)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Move-type effectiveness grid */}
       <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
         <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -82,47 +123,6 @@ export function TypeMatchup() {
                     return (
                       <td key={t2} className={`h-8 w-9 border border-slate-950/60 tabular-nums ${cellColor(m)}`}>
                         {cellText(m)}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Full single-type chart */}
-      <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
-        <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Type chart
-        </h3>
-        <p className="mb-3 text-xs text-slate-500">Row = attacking type, column = defending type.</p>
-        <div className="overflow-x-auto">
-          <table className="border-collapse text-center text-xs">
-            <thead>
-              <tr>
-                <th className="sticky left-0 z-10 bg-slate-900/40 px-2 py-1 text-right text-[10px] text-slate-500">
-                  atk \ def
-                </th>
-                {POKEMON_TYPES.map((t) => (
-                  <th key={t} className="px-1 py-1 font-normal capitalize text-slate-400" title={t}>
-                    {t.slice(0, 3)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {POKEMON_TYPES.map((a) => (
-                <tr key={a}>
-                  <th className="sticky left-0 z-10 bg-slate-900/40 px-2 py-1 text-right font-normal capitalize text-slate-400">
-                    {a}
-                  </th>
-                  {POKEMON_TYPES.map((d) => {
-                    const m = singleTypeMultiplier(a, d);
-                    return (
-                      <td key={d} className={`h-8 w-9 border border-slate-950/60 tabular-nums ${cellColor(m)}`}>
-                        {m === 1 ? "" : cellText(m)}
                       </td>
                     );
                   })}
