@@ -35,6 +35,11 @@ const SOURCES: { group: string; items: Source[] }[] = [
         url: "https://munchstats.com/",
         what: "Ladder-derived usage and team-ranking data. AssaultDex's own metagame snapshot is aggregated from this source.",
       },
+      {
+        name: "Labmaus",
+        url: "https://labmaus.net/",
+        what: "VGC usage and win-rate analytics with detailed move/item/spread breakdowns and tournament data across formats.",
+      },
     ],
   },
   {

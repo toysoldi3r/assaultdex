@@ -1,4 +1,5 @@
 import { Dex } from "@pkmn/dex";
+import Link from "next/link";
 import { Panel, ProvisionalTag } from "@/components/ui";
 import { OnceTutorial } from "@/components/OnceTutorial";
 import { ChoiceDexApp, type KnownSet, type SavedTeam } from "@/components/choicedex/ChoiceDexApp";
@@ -159,6 +160,15 @@ export default async function ChoiceDexPage() {
               <section>
                 <h3 className="mb-2 text-sm font-semibold text-slate-400">Simulation mode</h3>
                 <Simulator pokemon={refs} />
+              </section>
+              <section>
+                <h3 className="mb-2 text-sm font-semibold text-slate-400">Battle analysis</h3>
+                <p className="text-sm text-slate-400">
+                  Import a finished battle and review each turn — actual vs
+                  recommended play, a personal dashboard, and confidence
+                  calibration.{" "}
+                  <Link href="/battles" className="text-amber-400 hover:underline">Open Battles →</Link>
+                </p>
               </section>
             </div>
           </details>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ItemsTable } from "./ItemsTable";
 import { AbilitiesTable } from "./AbilitiesTable";
 import { MovesTable } from "./MovesTable";
@@ -33,7 +34,16 @@ export function DatabaseApp({
   championsAbilities: string[];
   championsMoves: string[];
 }) {
-  const [tab, setTab] = useState<Tab>("items");
+  // The active tab is deep-linkable via ?tab= so the nav sub-tabs can jump
+  // straight to Items/Abilities/Moves/Calculator/Terminology.
+  const params = useSearchParams();
+  const urlTab = params.get("tab");
+  const valid = (t: string | null): t is Tab => TABS.some((x) => x.id === t);
+  const [tab, setTab] = useState<Tab>(valid(urlTab) ? urlTab : "items");
+  useEffect(() => {
+    if (valid(urlTab) && urlTab !== tab) setTab(urlTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlTab]);
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-1 border-b border-slate-800">

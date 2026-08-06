@@ -14,8 +14,19 @@ const NAV: NavItem[] = [
   { href: "/guide", label: "Guide" },
   { href: "/pokemon", label: "Pokédex" },
   { href: "/teams", label: "Teams" },
-  { href: "/choicedex", label: "ChoiceDex", children: [{ href: "/battles", label: "Battles" }] },
-  { href: "/database", label: "Database", children: [{ href: "/types", label: "Types" }] },
+  { href: "/choicedex", label: "ChoiceDex" },
+  {
+    href: "/database",
+    label: "Database",
+    children: [
+      { href: "/database?tab=items", label: "Items" },
+      { href: "/database?tab=abilities", label: "Abilities" },
+      { href: "/database?tab=moves", label: "Moves" },
+      { href: "/database?tab=calc", label: "Calculator" },
+      { href: "/database?tab=terms", label: "Terminology" },
+      { href: "/types", label: "Types" },
+    ],
+  },
   { href: "/sources", label: "Sources" },
 ];
 

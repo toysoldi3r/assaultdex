@@ -40,7 +40,7 @@ export function AbilityPokemonList({
         <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4">
           {shown.map((m) => (
             <Link
-              key={m.slug}
+              key={m.name}
               href={`/pokemon/${m.slug}`}
               className="flex items-center gap-1.5 rounded border border-slate-800 bg-slate-900/40 px-2 py-1 text-sm hover:border-amber-500"
             >
