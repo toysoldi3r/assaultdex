@@ -35,18 +35,36 @@ database.
 
 Prefer light mode? Toggle it top-right — the choice is remembered.
 
-## Development
+## Run it locally
 
 Next.js 15 (App Router) · React 19 · TypeScript · Prisma · Tailwind. Runs on
-SQLite locally with committed fixtures, so no external database is needed.
+SQLite with committed fixtures, so no external database is needed — you only
+need **Node 22+** and **pnpm**.
+
+First-time setup (run once):
 
 ```bash
-pnpm install            # deps + Prisma client
-cp .env.example .env    # DATABASE_URL="file:./dev.db"
-pnpm exec prisma migrate deploy
-pnpm db:seed            # import the Champions pool (idempotent)
-pnpm dev                # http://localhost:3000
+pnpm install                     # install deps + generate the Prisma client
+cp .env.example .env             # sets DATABASE_URL="file:./dev.db"
+pnpm exec prisma migrate deploy  # create the local SQLite database
+pnpm db:seed                     # import the Champions pool (idempotent)
 ```
+
+Then boot the website:
+
+```bash
+pnpm dev                         # dev server with hot reload → http://localhost:3000
+```
+
+To run the production build instead:
+
+```bash
+pnpm build                       # prisma generate + next build
+pnpm start                       # serve the build → http://localhost:3000
+```
+
+Open <http://localhost:3000> in your browser. If a page errors on first run,
+make sure the setup steps above (migrate + seed) have completed.
 
 `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build` all run in CI on
 every push. Architecture and deployment notes (including the PostgreSQL
