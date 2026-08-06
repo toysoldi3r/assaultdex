@@ -33,6 +33,26 @@ export function toPokemonRefs(mons: readonly Pokemon[]): PokemonRef[] {
   }));
 }
 
+/** `{ slug, name }` options for the species pickers (drop the rest). */
+export function toNameOptions(
+  mons: readonly { slug: string; name: string }[],
+): { slug: string; name: string }[] {
+  return mons.map((p) => ({ slug: p.slug, name: p.name }));
+}
+
+/** Index a slugged list by its slug (species lookup maps). */
+export function bySlugMap<T extends { slug: string }>(list: readonly T[]): Map<string, T> {
+  return new Map(list.map((x) => [x.slug, x]));
+}
+
+/** Item dropdown options: the given list (or the modeled defaults) plus the
+ *  current value if it is unlisted, so a saved item outside the list still
+ *  shows as selected. */
+export function itemOptions(current: string, items: readonly string[]): string[] {
+  const base = items.length ? items : COMMON_ITEMS;
+  return current && current !== "None" && !base.includes(current) ? [current, ...base] : [...base];
+}
+
 /** A selectable battle forme (Mega / Primal / Aegislash-Blade …) with stats. */
 export interface Variant {
   label: string;

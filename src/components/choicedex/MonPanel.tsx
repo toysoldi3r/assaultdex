@@ -8,7 +8,7 @@ import { calculateDamage } from "@/domain/mechanics/damage";
 import { hazardEntry, hasHazards } from "@/domain/mechanics/hazards";
 import type { Combatant, FieldState, SideConditions } from "@/domain/types/battle";
 import { STAT_KEYS, type MoveFixture, type PokemonType, type StatKey } from "@/domain/types/pokemon";
-import { COMMON_ITEMS } from "@/lib/choicedexBuild";
+import { itemOptions } from "@/lib/choicedexBuild";
 
 const STAT_LABEL: Record<StatKey, string> = {
   hp: "HP", atk: "ATK", def: "DEF", spa: "SPA", spd: "SPD", spe: "SPE",
@@ -125,11 +125,7 @@ export function MonPanel({
         </select>
         <select value={state.item} onChange={(e) => onPatch({ item: e.target.value })}
           className={`rounded border border-slate-700 bg-slate-900 px-1 py-0.5 ${state.itemUsed ? "text-slate-500 line-through" : ""}`} aria-label="Item">
-          {(() => {
-            const base = items.length ? items : (COMMON_ITEMS as readonly string[]);
-            const opts = state.item && state.item !== "None" && !base.includes(state.item) ? [state.item, ...base] : base;
-            return opts.map((it) => <option key={it} value={it}>{it}</option>);
-          })()}
+          {itemOptions(state.item, items).map((it) => <option key={it} value={it}>{it}</option>)}
         </select>
       </div>
 

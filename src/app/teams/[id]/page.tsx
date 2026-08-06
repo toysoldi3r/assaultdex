@@ -10,6 +10,7 @@ import { itemCatalog, poolDescMaps } from "@/data/catalog";
 import { getMonTournament } from "@/data/tournamentStats";
 import { usageKey } from "@/data/usageStats";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
+import { toNameOptions } from "@/lib/choicedexBuild";
 import { getTeam } from "@/server/repositories/teamRepo";
 import { resolveTeam } from "@/server/teamResolve";
 import { TeamMenu, type MenuVersion } from "@/components/teams/TeamMenu";
@@ -71,7 +72,7 @@ export default async function TeamDetailPage({
       if (!moveMeta[name]) moveMeta[name] = metaFor(name);
     }
   }
-  const pool = allMons.map((p) => ({ slug: p.slug, name: p.name }));
+  const pool = toNameOptions(allMons);
   const items = itemCatalog();
 
   // Tournament "Popular" lists per pool species (empty until the CI snapshot

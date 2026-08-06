@@ -6,6 +6,7 @@ import { inferDefense, inferOffense } from "@/domain/choicedex/spreadInference";
 import type { NatureSign } from "@/domain/choicedex/speedInference";
 import type { MoveFixture, PokemonType } from "@/domain/types/pokemon";
 import {
+  bySlugMap,
   combatantFromRef,
   emptySlot,
   type PokemonRef,
@@ -43,7 +44,7 @@ export function HitInference({
   /** Battle formes (Mega / Primal / Aegislash-Blade) per species, with stats. */
   variants?: Record<string, Variant[]>;
 }) {
-  const bySlug = useMemo(() => new Map(pokemon.map((p) => [p.slug, p])), [pokemon]);
+  const bySlug = useMemo(() => bySlugMap(pokemon), [pokemon]);
   const d = (i: number) => pokemon[i % pokemon.length]?.slug ?? "";
 
   const [mode, setMode] = useState<Mode>("took");

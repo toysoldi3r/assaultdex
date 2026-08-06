@@ -17,7 +17,9 @@ import {
 import { makeRng } from "@/domain/sim/transition";
 import {
   buildState,
+  bySlugMap,
   emptySide,
+  toNameOptions,
   type PokemonRef,
   type TurnForm,
 } from "@/lib/choicedexBuild";
@@ -32,11 +34,8 @@ const DIFFICULTY_LABELS: Record<Difficulty, string> = {
 };
 
 export function Simulator({ pokemon }: { pokemon: PokemonRef[] }) {
-  const refBySlug = useMemo(
-    () => new Map(pokemon.map((p) => [p.slug, p])),
-    [pokemon],
-  );
-  const opts = pokemon.map((p) => ({ slug: p.slug, name: p.name }));
+  const refBySlug = useMemo(() => bySlugMap(pokemon), [pokemon]);
+  const opts = toNameOptions(pokemon);
   const d = (i: number) => opts[i % opts.length]?.slug ?? "";
 
   const [sel, setSel] = useState({ u1: d(0), u2: d(1), o1: d(2), o2: d(3) });
