@@ -4,11 +4,12 @@ import { useMemo, useState } from "react";
 import { assumptionsFor } from "@/domain/mechanics/assumptions";
 import { inferDefense, inferOffense } from "@/domain/choicedex/spreadInference";
 import type { NatureSign } from "@/domain/choicedex/speedInference";
-import type { MoveFixture, PokemonType, StatKey } from "@/domain/types/pokemon";
+import type { MoveFixture, PokemonType } from "@/domain/types/pokemon";
 import {
   combatantFromRef,
   emptySlot,
   type PokemonRef,
+  type Variant,
 } from "@/lib/choicedexBuild";
 
 type Mode = "took" | "dealt";
@@ -32,12 +33,6 @@ function screenConditions(s: Screen) {
     lightScreen: s === "lightScreen",
     auroraVeil: s === "auroraVeil",
   };
-}
-
-export interface Variant {
-  label: string;
-  baseStats: Record<StatKey, number>;
-  types: PokemonType[];
 }
 
 export function HitInference({

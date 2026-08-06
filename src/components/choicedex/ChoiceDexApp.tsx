@@ -22,6 +22,7 @@ import {
   combatantFromRef,
   emptySlot,
   COMMON_ITEMS,
+  type MegaForme,
   type PokemonRef,
   type SideForm,
   type SlotForm,
@@ -42,17 +43,6 @@ export interface SavedTeam {
   members: string[]; // species slugs
   /** Known sets by species slug, so our own mons prefill their EVs/nature/item. */
   sets?: Record<string, KnownSet>;
-}
-
-/** A species' Mega/Primal battle forme, resolved offline from the dex. Keyed by
- *  base-species slug; `item` is the required Mega Stone / Orb the mon must hold. */
-export interface MegaForme {
-  /** Display + icon name of the forme, e.g. "Charizard-Mega-X". */
-  name: string;
-  baseStats: Record<StatKey, number>;
-  types: PokemonType[];
-  ability: string;
-  item: string;
 }
 
 /** Species-specific in-battle form change offered on an active card. */
