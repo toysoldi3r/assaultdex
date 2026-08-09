@@ -398,88 +398,103 @@ export function TeamBuilder({
           const tm = tournament[uKey(m.species)];
           return (
             <div key={i} className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <PokeIcon species={m.species} />
-                  <input
-                    value={m.nickname ?? ""}
-                    onChange={(e) => update(i, { nickname: e.target.value || undefined })}
-                    placeholder={r.name}
-                    className="w-40 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm font-semibold"
-                  />
-                  <span className="text-xs text-slate-400">{r.name}</span>
-                  <span className="flex gap-1">
-                    {r.types.map((t) => <TypeBadge key={t} type={t} />)}
-                  </span>
+              {/* Showdown-style identity strip: nickname + sprite + species on
+                  the left, then details, item, and ability. Level and nature
+                  live in the EV/IV editor; nature stays editable there. */}
+              <div className="mb-3 flex flex-wrap items-start gap-x-5 gap-y-3">
+                {/* Nickname / sprite / species */}
+                <div className="flex w-32 flex-col gap-1">
+                  <div>
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-500">Nickname</span>
+                    <input
+                      value={m.nickname ?? ""}
+                      onChange={(e) => update(i, { nickname: e.target.value || undefined })}
+                      placeholder={r.name}
+                      className="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm font-semibold"
+                    />
+                  </div>
+                  <div className="flex justify-center py-1">
+                    <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden">
+                      <PokeIcon species={m.species} className="scale-[1.7]" />
+                    </span>
+                  </div>
+                  <div>
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-500">Pokémon</span>
+                    <button
+                      onClick={() => openPanel(i, "species")}
+                      title="Change Pokémon"
+                      className="w-full truncate rounded border border-slate-700 bg-slate-900 px-2 py-1 text-left text-sm font-semibold hover:border-amber-500"
+                    >
+                      {r.name}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Details: gender + shiny (level intentionally omitted) */}
+                <div className="space-y-1 text-xs">
+                  <span className="block text-[10px] font-semibold uppercase text-slate-500">Details</span>
+                  <label className="flex items-center justify-between gap-2">
+                    Gender
+                    <select
+                      value={m.gender ?? ""}
+                      onChange={(e) => update(i, { gender: (e.target.value || undefined) as "M" | "F" | undefined })}
+                      className="w-16 rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
+                    >
+                      <option value="">—</option>
+                      <option value="M">♂ M</option>
+                      <option value="F">♀ F</option>
+                    </select>
+                  </label>
+                  <label className="flex items-center justify-between gap-2">
+                    Shiny
+                    <select
+                      value={m.shiny ? "yes" : "no"}
+                      onChange={(e) => update(i, { shiny: e.target.value === "yes" })}
+                      className="w-16 rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
+                    >
+                      <option value="no">No</option>
+                      <option value="yes">Yes</option>
+                    </select>
+                  </label>
+                </div>
+
+                {/* Item: sprite above the selector */}
+                <div className="text-xs">
+                  <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-500">Item</span>
+                  <button
+                    onClick={() => openPanel(i, "item")}
+                    className="flex w-28 flex-col items-center gap-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 hover:border-amber-500"
+                  >
+                    <span className="flex h-6 items-center">
+                      {m.item ? <ItemIcon item={m.item} /> : <span className="text-slate-600">—</span>}
+                    </span>
+                    <span className="w-full truncate text-center">{m.item ?? "None"}</span>
+                  </button>
+                </div>
+
+                {/* Ability: type badges above the selector */}
+                <div className="text-xs">
+                  <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-500">Ability</span>
+                  <div className="mb-1 flex h-6 items-center gap-1">
+                    {r.types.map((t) => <TypeBadge key={t} type={t} />)}
+                  </div>
+                  <button
+                    onClick={() => openPanel(i, "ability")}
+                    className="w-32 truncate rounded border border-slate-700 bg-slate-900 px-2 py-1 text-left hover:border-amber-500"
+                  >
+                    {m.ability || <span className="text-slate-600">—</span>}
+                  </button>
+                </div>
+
                 <button
                   onClick={() => removeMember(i)}
-                  className="rounded bg-slate-800 px-2 py-1 text-xs text-rose-300 hover:bg-slate-700"
+                  className="ml-auto rounded bg-slate-800 px-2 py-1 text-xs text-rose-300 hover:bg-slate-700"
                 >
                   Delete
                 </button>
               </div>
 
-              <div className="grid gap-5 md:grid-cols-4">
-                {/* Details */}
-                <div className="space-y-2 text-xs">
-                  <span className="font-semibold uppercase text-slate-500">Details</span>
-                  <label className="flex items-center justify-between gap-2">
-                    Level
-                    <input
-                      type="number"
-                      min={1}
-                      max={100}
-                      value={m.level}
-                      onChange={(e) =>
-                        update(i, {
-                          level: Math.max(1, Math.min(100, Number(e.target.value) || 1)),
-                        })
-                      }
-                      className="w-16 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right"
-                    />
-                  </label>
-                  <div className="flex items-center justify-between gap-2">
-                    <span>Item</span>
-                    <button
-                      onClick={() => openPanel(i, "item")}
-                      className="flex w-32 items-center gap-1 truncate rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-left hover:border-amber-500"
-                    >
-                      {m.item ? (
-                        <>
-                          <ItemIcon item={m.item} />
-                          <span className="truncate">{m.item}</span>
-                        </>
-                      ) : (
-                        <span className="text-slate-600">—</span>
-                      )}
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span>Ability</span>
-                    <button
-                      onClick={() => openPanel(i, "ability")}
-                      className="w-32 truncate rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-left hover:border-amber-500"
-                    >
-                      {m.ability || <span className="text-slate-600">—</span>}
-                    </button>
-                  </div>
-                  <label className="flex items-center justify-between gap-2">
-                    Nature
-                    <select
-                      value={m.nature}
-                      onChange={(e) => update(i, { nature: e.target.value })}
-                      className="w-28 rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
-                    >
-                      {natures.map((n) => (
-                        <option key={n} value={n}>
-                          {n}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
+              <div className="grid gap-5 md:grid-cols-3">
                 {/* Moves */}
                 <div className="space-y-1 text-xs md:col-span-2">
                   <span className="font-semibold uppercase text-slate-500">Moves</span>
