@@ -36,7 +36,14 @@ const COMPETITIVE_ITEMS = new Set<string>([
   "Assault Vest", "Life Orb", "Choice Band", "Choice Specs", "Choice Scarf",
   "Mystic Water", "Charcoal", "Metronome", "Muscle Band", "Wise Glasses",
   "Expert Belt", "Iron Ball", "Black Sludge", "Toxic Orb", "Flame Orb",
+  "Heavy-Duty Boots", "Utility Umbrella", "Mirror Herb", "Ability Shield",
+  "Punching Glove", "Custap Berry", "Leppa Berry",
 ]);
+
+// Mega Stones and the primal orbs - legal held items that trigger a Mega/Primal
+// forme. Flagged competitive so they show in the default "Champions" item view.
+const isMegaItem = (i: { megaStone?: unknown; name: string }): boolean =>
+  !!i.megaStone || i.name === "Blue Orb" || i.name === "Red Orb";
 
 export interface DbAbility {
   name: string;
@@ -216,7 +223,7 @@ export function getDbItem(nameOrId: string): (DbItem & { interaction: string | n
     desc: i.desc || i.shortDesc || "",
     fling: i.fling?.basePower ?? null,
     calc: ITEM_CALC[i.name] ?? null,
-    competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name),
+    competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name) || isMegaItem(i),
     interaction: ITEM_INTERACTION[i.name] ?? null,
   };
 }
@@ -232,7 +239,7 @@ export function listDbItems(): DbItem[] {
       desc: i.desc || i.shortDesc || "",
       fling: i.fling?.basePower ?? null,
       calc: ITEM_CALC[i.name] ?? null,
-      competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name),
+      competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name) || isMegaItem(i),
     }))
     .sort((a, b) => a.name.localeCompare(b.name)));
 }
