@@ -86,17 +86,6 @@ export default async function HomePage() {
         totalBattles={totalBattles}
         typesByKey={typesByKey}
       />
-
-      {/* Honesty note */}
-      <section className="rounded-lg border border-line bg-panel p-4 text-[13px] text-t2">
-        <p>
-          <strong className="text-t1">Built with generative AI.</strong> This project was written largely with an
-          AI coding assistant, and Champions mechanics are unverified placeholders. Verify anything important
-          against the primary{" "}
-          <Link href="/sources" className="text-acc hover:text-accs">sources</Link>{" "}
-          before relying on it. Usage statistics come from a committed ladder snapshot and are not fabricated.
-        </p>
-      </section>
     </>
   );
 }

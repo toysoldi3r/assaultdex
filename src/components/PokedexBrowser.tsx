@@ -52,12 +52,15 @@ export function PokedexBrowser({
   const [advOpen, setAdvOpen] = useState(false);
   const [fTypes, setFTypes] = useState<PokemonType[]>([]);
   const [fAbility, setFAbility] = useState("");
-  const [fMove1, setFMove1] = useState("");
-  const [fMove2, setFMove2] = useState("");
-  const [fMinBst, setFMinBst] = useState(0);
+  // Up to four required moves so a full 4-move set can be searched at once.
+  const [fMoves, setFMoves] = useState<string[]>(["", "", "", ""]);
+  const [fMinBst, setFMinBst] = useState(""); // empty = no minimum
+  const setMove = (i: number, v: string) =>
+    setFMoves((prev) => prev.map((m, idx) => (idx === i ? v : m)));
   const toggleType = (t: PokemonType) =>
     setFTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
-  const advActive = fTypes.length > 0 || !!fAbility || !!fMove1 || !!fMove2 || fMinBst > 0;
+  const anyMove = fMoves.some((m) => m.trim());
+  const advActive = fTypes.length > 0 || !!fAbility || anyMove || fMinBst.trim() !== "";
   const learns = (e: PokedexEntry, mv: string) => {
     const n = mv.trim().toLowerCase();
     return !n || (e.moves ?? []).some((m) => m.toLowerCase().includes(n));
@@ -98,11 +101,12 @@ export function PokedexBrowser({
           });
 
     // Advanced filters (all AND).
+    const minBst = Number(fMinBst) || 0;
     const adv = matched.filter((p) => {
       if (fTypes.length && !fTypes.every((t) => p.types.includes(t))) return false;
       if (fAbility && !p.abilities.some((a) => a.toLowerCase().includes(fAbility.trim().toLowerCase()))) return false;
-      if (!learns(p, fMove1) || !learns(p, fMove2)) return false;
-      if (fMinBst > 0 && bst(p) < fMinBst) return false;
+      if (!fMoves.every((mv) => learns(p, mv))) return false;
+      if (minBst > 0 && bst(p) < minBst) return false;
       return true;
     });
 
@@ -116,7 +120,7 @@ export function PokedexBrowser({
             : b.baseStats[sort] - a.baseStats[sort],
     );
     return adv;
-  }, [q, sort, champions, full, showAll, fTypes, fAbility, fMove1, fMove2, fMinBst]);
+  }, [q, sort, champions, full, showAll, fTypes, fAbility, fMoves, fMinBst]);
 
   return (
     <div className="space-y-6">
@@ -169,7 +173,7 @@ export function PokedexBrowser({
           onClick={() => setAdvOpen((o) => !o)}
           className={`rounded border px-3 py-2 text-xs ${advActive ? "border-amber-500 text-amber-300" : "border-slate-700 text-slate-300"}`}
         >
-          Advanced {advActive ? `(${[fTypes.length && "type", fAbility && "ability", (fMove1 || fMove2) && "moves", fMinBst > 0 && "BST"].filter(Boolean).length})` : ""}
+          Advanced {advActive ? `(${[fTypes.length && "type", fAbility && "ability", anyMove && "moves", fMinBst.trim() !== "" && "BST"].filter(Boolean).length})` : ""}
         </button>
       </div>
 
@@ -196,28 +200,37 @@ export function PokedexBrowser({
                 className="w-40 rounded border border-slate-700 bg-slate-900 px-2 py-1" />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-slate-500">Learns move</span>
-              <input value={fMove1} onChange={(e) => setFMove1(e.target.value)} placeholder="e.g. Protect"
-                className="w-40 rounded border border-slate-700 bg-slate-900 px-2 py-1" />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-slate-500">…and move</span>
-              <input value={fMove2} onChange={(e) => setFMove2(e.target.value)} placeholder="e.g. Fake Out"
-                className="w-40 rounded border border-slate-700 bg-slate-900 px-2 py-1" />
-            </label>
-            <label className="flex flex-col gap-1">
               <span className="text-slate-500">Min BST</span>
-              <input type="number" min={0} max={780} step={10} value={fMinBst} onChange={(e) => setFMinBst(Number(e.target.value) || 0)}
-                className="w-24 rounded border border-slate-700 bg-slate-900 px-2 py-1" />
+              <input
+                type="number" min={0} max={780} step={10}
+                value={fMinBst}
+                onChange={(e) => setFMinBst(e.target.value)}
+                placeholder="any"
+                className="w-24 rounded border border-slate-700 bg-slate-900 px-2 py-1"
+              />
             </label>
             <button
-              onClick={() => { setFTypes([]); setFAbility(""); setFMove1(""); setFMove2(""); setFMinBst(0); }}
+              onClick={() => { setFTypes([]); setFAbility(""); setFMoves(["", "", "", ""]); setFMinBst(""); }}
               className="self-end rounded border border-slate-700 px-2 py-1 text-slate-400 hover:border-rose-500"
             >
               Clear
             </button>
           </div>
-          {showAll && (fMove1 || fMove2) && (
+          <div>
+            <span className="mb-1 block text-slate-500">Knows moves (up to 4, all required)</span>
+            <div className="flex flex-wrap gap-2">
+              {fMoves.map((mv, i) => (
+                <input
+                  key={i}
+                  value={mv}
+                  onChange={(e) => setMove(i, e.target.value)}
+                  placeholder={["e.g. Protect", "e.g. Fake Out", "e.g. Ally Switch", "e.g. Follow Me"][i]}
+                  className="w-40 rounded border border-slate-700 bg-slate-900 px-2 py-1"
+                />
+              ))}
+            </div>
+          </div>
+          {showAll && anyMove && (
             <p className="text-[10px] text-amber-300/80">Move filter only applies to the Champions roster (full-dex movepools aren&apos;t loaded).</p>
           )}
         </div>
