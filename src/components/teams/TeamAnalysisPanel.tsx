@@ -112,23 +112,63 @@ export function TeamAnalysisPanel({ analysis }: { analysis: TeamAnalysis }) {
           </div>
 
           <div>
-            <h3 className="text-xs font-semibold uppercase text-slate-500">Hazards &amp; protection</h3>
-            {analysis.fieldControl.hazards.length === 0 && analysis.fieldControl.protection.length === 0 ? (
-              <p className="mt-1 text-xs text-slate-500">No entry hazards or protection.</p>
+            <h3 className="text-xs font-semibold uppercase text-slate-500">Entry hazards</h3>
+            {analysis.fieldControl.hazards.length === 0 ? (
+              <p className="mt-1 text-xs text-slate-500">None.</p>
             ) : (
               <ul className="mt-1 space-y-0.5 text-xs text-slate-300">
                 {analysis.fieldControl.hazards.map((h, i) => (
                   <li key={`h${i}`} className="flex items-center gap-1.5">
                     <PokeIcon species={h.member} />
                     <span className="text-rose-300">{h.move}</span>
-                    <span className="text-slate-500">(hazard)</span>
                   </li>
                 ))}
+              </ul>
+            )}
+          </div>
+
+          <div>
+            <h3 className="text-xs font-semibold uppercase text-slate-500">Hazard removal</h3>
+            {analysis.fieldControl.hazardRemoval.length === 0 ? (
+              <p className="mt-1 text-xs text-slate-500">None.</p>
+            ) : (
+              <ul className="mt-1 space-y-0.5 text-xs text-slate-300">
+                {analysis.fieldControl.hazardRemoval.map((h, i) => (
+                  <li key={`r${i}`} className="flex items-center gap-1.5">
+                    <PokeIcon species={h.member} />
+                    <span className="text-sky-300">{h.move}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div>
+            <h3 className="text-xs font-semibold uppercase text-slate-500">Protection</h3>
+            {analysis.fieldControl.protection.length === 0 ? (
+              <p className="mt-1 text-xs text-slate-500">None.</p>
+            ) : (
+              <ul className="mt-1 space-y-0.5 text-xs text-slate-300">
                 {analysis.fieldControl.protection.map((p, i) => (
                   <li key={`p${i}`} className="flex items-center gap-1.5">
                     <PokeIcon species={p.member} />
                     <span className="text-emerald-300">{p.move}</span>
-                    <span className="text-slate-500">(protection)</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div>
+            <h3 className="text-xs font-semibold uppercase text-slate-500">Boosting moves</h3>
+            {analysis.fieldControl.boosts.length === 0 ? (
+              <p className="mt-1 text-xs text-slate-500">None.</p>
+            ) : (
+              <ul className="mt-1 space-y-0.5 text-xs text-slate-300">
+                {analysis.fieldControl.boosts.map((b, i) => (
+                  <li key={`b${i}`} className="flex items-center gap-1.5">
+                    <PokeIcon species={b.member} />
+                    <span className="text-amber-300">{b.move}</span>
                   </li>
                 ))}
               </ul>

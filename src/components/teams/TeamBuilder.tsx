@@ -16,12 +16,14 @@ import { SelectorPanel } from "@/components/teams/SelectorPanel";
 import { MoveSelectorPanel, type MoveRow } from "@/components/teams/MoveSelectorPanel";
 import type { MoveMeta } from "@/components/teams/moveTypes";
 import { EvIvEditor } from "@/components/teams/EvIvEditor";
+import { NATURES } from "@/data/fixtures/natures";
 import { suggestSets } from "@/data/suggestSets";
 import { statColor } from "@/domain/mechanics/statColor";
 import { saveTeamSnapshotAction } from "@/app/teams/actions";
 import {
   STAT_KEYS,
   STAT_LABELS,
+  type Nature,
   type PokemonSet,
   type PokemonType,
   type StatKey,
@@ -247,6 +249,16 @@ export function TeamBuilder({
     update(i, { moves: moves.filter(Boolean) });
   };
 
+  // Nature ± straight from the stats view (no need to open the EV/IV editor).
+  // Natures never touch HP, so its ± is disabled.
+  const natureFor = (boost: StatKey, lower: StatKey): string =>
+    Object.values(NATURES).find((n) => n.boosted === boost && n.lowered === lower)?.name ??
+    "Serious";
+  const setBoost = (i: number, k: StatKey, nat: Nature) =>
+    k !== "hp" && update(i, { nature: natureFor(k === nat.boosted ? nat.lowered : k, nat.lowered) });
+  const setLower = (i: number, k: StatKey, nat: Nature) =>
+    k !== "hp" && update(i, { nature: natureFor(nat.boosted, k === nat.lowered ? nat.boosted : k) });
+
   function renderPanel(
     i: number,
     m: PokemonSet,
@@ -299,6 +311,7 @@ export function TeamBuilder({
     if (kind === "species") {
       return (
         <SelectorPanel
+          key={`species-${i}`}
           title="Change Pokémon"
           options={poolOptions}
           value={r.name}
@@ -316,6 +329,9 @@ export function TeamBuilder({
     }));
     return (
       <MoveSelectorPanel
+        // Remount per move slot so switching moves refocuses the search box and
+        // clears the previous query - otherwise you cannot type straight away.
+        key={`move-${i}-${mi}`}
         title={`Move ${mi + 1}`}
         rows={rows}
         popular={pop}
@@ -414,8 +430,8 @@ export function TeamBuilder({
                     />
                   </div>
                   <div className="flex justify-center py-1">
-                    <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden">
-                      <PokeIcon species={m.species} className="scale-[1.7]" />
+                    <span className="inline-flex h-20 w-20 items-center justify-center overflow-hidden">
+                      <PokeIcon species={m.species} className="scale-[2.8]" />
                     </span>
                   </div>
                   <div>
@@ -504,9 +520,9 @@ export function TeamBuilder({
                       <div key={mi} className="flex items-center gap-1">
                         <button
                           onClick={() => openPanel(i, `move${mi}`)}
-                          className="flex flex-1 items-center justify-between gap-2 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-left hover:border-amber-500"
+                          className="flex flex-1 items-center gap-2 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-left hover:border-amber-500"
                         >
-                          <span className="truncate">
+                          <span className="min-w-0 max-w-[9rem] truncate">
                             {mv || <span className="text-slate-600">- (empty)</span>}
                           </span>
                           {mv && <MoveTag meta={moveMeta[mv]} />}
@@ -525,12 +541,18 @@ export function TeamBuilder({
                   })}
                 </div>
 
-                {/* Stats (base + EV points; slider editor in slice D) */}
+                {/* Stats (base + EV points; ± sets nature without opening editor) */}
                 <div className="space-y-0.5 text-xs">
                   <span className="font-semibold uppercase text-slate-500">Stats</span>
-                  {STAT_KEYS.map((k) => (
+                  {STAT_KEYS.map((k) => {
+                    const nat = NATURES[m.nature] ?? NATURES.Serious!;
+                    const neutral = nat.boosted === nat.lowered;
+                    const boosted = !neutral && k === nat.boosted;
+                    const lowered = !neutral && k === nat.lowered;
+                    const mod = boosted ? "text-emerald-400" : lowered ? "text-rose-400" : "text-slate-400";
+                    return (
                     <div key={k} className="flex items-center gap-1">
-                      <span className="w-8 text-slate-400">{STAT_LABELS[k]}</span>
+                      <span className={`w-8 ${mod}`}>{STAT_LABELS[k]}</span>
                       <span className="h-2 flex-1 overflow-hidden rounded bg-slate-800">
                         <span
                           className="block h-full"
@@ -540,11 +562,32 @@ export function TeamBuilder({
                           }}
                         />
                       </span>
+                      {k !== "hp" && (
+                        <span className="inline-flex overflow-hidden rounded border border-slate-700 leading-none">
+                          <button
+                            type="button"
+                            onClick={() => setBoost(i, k, nat)}
+                            title="Nature +10%"
+                            className={`px-1 ${boosted ? "bg-emerald-600 text-white" : "text-slate-400 hover:bg-slate-800"}`}
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setLower(i, k, nat)}
+                            title="Nature −10%"
+                            className={`border-l border-slate-700 px-1 ${lowered ? "bg-rose-600 text-white" : "text-slate-400 hover:bg-slate-800"}`}
+                          >
+                            −
+                          </button>
+                        </span>
+                      )}
                       <span className="w-8 text-right tabular-nums text-slate-500">
                         {m.spread.evs[k] || "-"}
                       </span>
                     </div>
-                  ))}
+                    );
+                  })}
                   <button
                     onClick={() => openPanel(i, "spread")}
                     className="mt-1 w-full rounded bg-slate-800 px-2 py-1 text-[11px] hover:bg-slate-700"
@@ -565,6 +608,17 @@ export function TeamBuilder({
           <button
             onClick={() => setTab("add")}
             className="rounded bg-amber-500 px-3 py-1.5 text-sm font-semibold text-black hover:bg-amber-400"
+          >
+            ＋ Add Pokémon
+          </button>
+        )}
+
+        {/* Add box at the bottom of the Team view, so a Pokémon can be added
+            without scrolling back up to the tab-bar + button. */}
+        {tab === "team" && members.length > 0 && members.length < limit && (
+          <button
+            onClick={() => { setPanel(null); setTab("add"); }}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700 py-4 text-sm text-slate-400 hover:border-amber-500 hover:text-amber-400"
           >
             ＋ Add Pokémon
           </button>
