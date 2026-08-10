@@ -17,6 +17,8 @@ import {
 import type { PokemonType, StatKey } from "@/domain/types/pokemon";
 import { TypeBadge } from "@/components/ui";
 import { PokeIcon } from "@/components/PokeIcon";
+import { OnceTutorial } from "@/components/OnceTutorial";
+import { Walkthrough, type WalkStep } from "@/components/Walkthrough";
 import {
   buildStateWithEntry,
   bySlugMap,
@@ -120,6 +122,28 @@ const bgStyle = (id: string) => ({
   background: (BACKGROUNDS.find((b) => b.id === id) ?? BACKGROUNDS[0]!).background,
 });
 
+/** Step-by-step tour of the ChoiceDex flow (both phases described). */
+const CD_TOUR: WalkStep[] = [
+  { title: "Welcome to ChoiceDex", body: "ChoiceDex is a live doubles assistant: set up both teams, start the battle, and it ranks your best play each turn. This quick tour explains every part - you can skip it anytime." },
+  { title: "Build both teams", body: "Fill each side's slots with Pokémon by clicking an empty tile to search and pick; click a filled tile to change or clear it. Each side needs 2-6 Pokémon with no duplicate species." },
+  { title: "Load a saved team", body: "Use the “Load…” dropdown at the top of a column to drop in one of your saved teams. It also prefills that team's EVs, nature, item and moves so the readouts are accurate." },
+  { title: "Best opening pairs", body: "Under the teams, ChoiceDex ranks the strongest opening pairs for your side against the opponent, with the best and worst matchups noted." },
+  { title: "Start the battle", body: "Once both sides are legal, press “Start battle” to open the live board. If the button is disabled, the note beneath it says why." },
+  { title: "The battle board", body: "Each active Pokémon has a card: set its HP, status, ability and item. Mega Evolve, or trigger form changes (Ditto Transform, Zoroark's Illusion, Dondozo's Commander) right here - stats and typing update live." },
+  { title: "Field & side conditions", body: "On the right, set weather, terrain, Trick Room and Gravity, plus each side's screens and hazards. Ally Switch and Skill Swap buttons handle those positional plays." },
+  { title: "Damage & KO readouts", body: "Below the board, each of your active Pokémon lists per-move damage ranges and KO chances against the opposing active Pokémon." },
+  { title: "Best options & next round", body: "The “Best options” list recommends your strongest plays for the turn. After it resolves, update HP/status/field and press “Next round →” to re-rank." },
+  { title: "Advanced tools", body: "The Advanced tools section adds opponent stat/speed inference, a batch simulator, and battle analysis. That's the whole tool - enjoy!" },
+];
+
+const CD_TIPS = [
+  "Doubles is about targeting: focus-fire to remove a threat while keeping both of your Pokémon alive.",
+  "Each round, enter what happened - HP, status, field, and switches - and the app re-ranks your best plays.",
+  "Predict Protect and double-target reads; positioning, switches, and speed control decide most turns.",
+  "Use speed control (Tailwind / Trick Room) and redirection, and play around the opponent's.",
+  "Reference: vgcguide.com/battling. Mechanics are provisional - treat recommendations as guidance and sanity-check key calcs.",
+];
+
 const SESSION_KEY = "choicedex.session.v2";
 const BATTLE_KEY = "choicedex.battle.v2";
 // Saved battles older than this are treated as stale (don't reopen yesterday's).
@@ -180,9 +204,24 @@ export function ChoiceDexApp({
     }
   }, [phase, userTeam, oppTeam, loadedSets, bySlug]);
 
-  const userCount = userTeam.filter(Boolean).length;
-  const oppCount = oppTeam.filter(Boolean).length;
-  const canStart = userCount >= 2 && oppCount >= 2;
+  // A side is battle-legal with 2-6 distinct in-pool species (Species Clause);
+  // the battle can only start when both sides are legal.
+  const sideIssue = (team: (string | null)[]): string | null => {
+    const filled = team.filter((s): s is string => !!s);
+    if (filled.length < 2) return "add at least 2 Pokémon";
+    if (filled.length > 6) return "keep to at most 6 Pokémon";
+    if (new Set(filled).size !== filled.length) return "no duplicate species (Species Clause)";
+    if (!filled.every((s) => bySlug.has(s))) return "contains a Pokémon outside the pool";
+    return null;
+  };
+  const userIssue = sideIssue(userTeam);
+  const oppIssue = sideIssue(oppTeam);
+  const canStart = !userIssue && !oppIssue;
+  const startMsg = userIssue
+    ? `Your team: ${userIssue}.`
+    : oppIssue
+      ? `Opponent team: ${oppIssue}.`
+      : "";
 
   const setSlot = (side: Side, idx: number, slug: string | null) => {
     const setter = side === "user" ? setUserTeam : setOppTeam;
@@ -233,6 +272,13 @@ export function ChoiceDexApp({
 
   return (
     <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-slate-300">Set up your battle</span>
+        <Walkthrough id="choicedex-tour" steps={CD_TOUR} />
+      </div>
+
+      <OnceTutorial id="choicedex" title="How to use ChoiceDex" points={CD_TIPS} />
+
       <div className="grid gap-4 md:grid-cols-2">
         <TeamColumn
           title="Your team"
@@ -254,15 +300,18 @@ export function ChoiceDexApp({
         />
       </div>
 
-      <div className="flex justify-center">
+      <div className="flex flex-col items-center gap-1">
         <button
           disabled={!canStart}
-          onClick={() => setPhase("battle")}
+          onClick={() => canStart && setPhase("battle")}
           className="rounded-full bg-amber-500 px-6 py-2 font-bold text-black hover:bg-amber-400 disabled:opacity-40"
-          title={canStart ? "" : "Pick at least 2 on each side"}
+          title={startMsg}
         >
           ⚔ Start battle
         </button>
+        {!canStart && startMsg && (
+          <p className="text-xs text-rose-400">Can&apos;t start - {startMsg}</p>
+        )}
       </div>
 
       <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">

@@ -128,7 +128,7 @@ export function TeamMenu({
               <li key={v.versionNumber} className="flex items-center gap-2">
                 <span className="font-mono text-amber-400">v{v.versionNumber}</span>
                 <span className="flex-1 truncate text-xs text-slate-400">
-                  {v.members} mons · {new Date(v.createdAt).toLocaleDateString()}
+                  {v.members} mons · {new Date(v.createdAt).toLocaleDateString("en-GB", { timeZone: "UTC" })}
                 </span>
                 {v.versionNumber !== latest && (
                   <form action={restoreVersionAction}>

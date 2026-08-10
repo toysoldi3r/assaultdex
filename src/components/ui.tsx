@@ -8,24 +8,6 @@ const TYPE_HEX: Record<PokemonType, string> = {
   dark: "#6B5453", steel: "#60A1B8", fairy: "#EF70EF",
 };
 
-/** Relative luminance (sRGB → linear) for picking a legible label colour. */
-function luminance(hex: string): number {
-  const n = parseInt(hex.slice(1), 16);
-  const lin = (c: number) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  };
-  return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
-}
-
-// Precompute the label colour per type once (dark text on light badges).
-const TYPE_LABEL = Object.fromEntries(
-  (Object.entries(TYPE_HEX) as [PokemonType, string][]).map(([t, hex]) => [
-    t,
-    luminance(hex) > 0.42 ? "#1b1d20" : "#ffffff",
-  ]),
-) as Record<PokemonType, string>;
-
 export function TypeBadge({ type }: { type: PokemonType }) {
   return (
     <span
@@ -34,7 +16,7 @@ export function TypeBadge({ type }: { type: PokemonType }) {
         padding: "2px 8px",
         letterSpacing: "0.09em",
         backgroundColor: TYPE_HEX[type],
-        color: TYPE_LABEL[type],
+        color: "#ffffff",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)",
       }}
     >
