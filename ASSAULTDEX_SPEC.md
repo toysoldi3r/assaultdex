@@ -2,49 +2,49 @@
 
 ## Goal
 
-Build **AssaultDex**, a production website for competitive **Pokémon Champions doubles battles**.
+Build **AssaultDex**, website for competitive **Pokémon Champions doubles battles**.
 
-The main feature is **ChoiceDex**, which evaluates the current battle state and ranks the user's best possible actions.
+Main feature **ChoiceDex**: check battle state now, rank best actions for user.
 
 Domain: `assaultdex.com`
 
 ## Fixed scope
 
 * Support only Pokémon Champions doubles.
-* Do not support singles, older games, Pokémon Showdown, or custom rulesets.
-* Do not assume mechanics from older Pokémon games apply.
-* Do not host a public API.
-* Internal backend routes are allowed.
-* Connect to reliable external APIs for Pokémon, competitive, tournament, team, or replay data.
-* Never invent mechanics, statistics, formulas, or external data.
-* Mark unsupported or unverified mechanics clearly.
+* No singles, no older games, no Pokémon Showdown, no custom rulesets.
+* Don't assume mechanics from older Pokémon games apply.
+* No public API.
+* Internal backend routes OK.
+* Connect reliable external APIs for Pokémon, competitive, tournament, team, replay data.
+* Never invent mechanics, stats, formulas, external data.
+* Mark unsupported/unverified mechanics clearly.
 
 ## Development rules
 
-Before coding:
+Before code:
 
-1. Inspect the repository.
-2. Summarize the existing structure.
-3. Identify reusable code.
-4. Design the architecture and database.
-5. Identify external data sources and unverified mechanics.
-6. Create an implementation plan.
-7. Implement one phase at a time.
+1. Look at repo.
+2. Sum up existing structure.
+3. Find reusable code.
+4. Design architecture and database.
+5. Find external data sources and unverified mechanics.
+6. Make implementation plan.
+7. Build one phase at a time.
 
 For every change:
 
-* Use TypeScript with strict checking.
-* Validate all inputs and external responses.
-* Keep battle calculations separate from the UI and database.
+* Use TypeScript, strict checking.
+* Validate all inputs, external responses.
+* Keep battle calc separate from UI and database.
 * Add automated tests.
-* Run type checks, linting, tests, and the production build.
-* Never claim that a command passed unless it was run.
-* Do not replace working code without a reason.
-* Do not implement later phases before the current phase works.
+* Run type checks, lint, tests, prod build.
+* Never say command passed unless run.
+* Don't replace working code without reason.
+* Don't build later phases before current phase works.
 
 ## Preferred stack
 
-Use the existing stack when suitable. Otherwise use:
+Use existing stack when fits. Else use:
 
 * Next.js
 * React
@@ -71,14 +71,14 @@ Use the existing stack when suitable. Otherwise use:
 8. Scenario sandbox
 9. Battle simulations
 10. Replay and post-battle analysis
-11. Tournament preparation
+11. Tournament prep
 12. Practice opponent
-13. Personal statistics
-14. Data import and administration
+13. Personal stats
+14. Data import and admin
 
 ## External data
 
-Create server-side provider adapters for:
+Make server-side provider adapters for:
 
 * Pokémon reference data
 * Pokémon Champions mechanics
@@ -89,7 +89,7 @@ Create server-side provider adapters for:
 
 Each adapter must handle:
 
-* Authentication
+* Auth
 * Validation
 * Timeouts
 * Pagination
@@ -99,11 +99,11 @@ Each adapter must handle:
 * Provider failures
 * Data normalization
 
-Store provider, external ID, retrieval time, data version, normalization version, and update status.
+Store provider, external ID, retrieval time, data version, normalization version, update status.
 
-Imports must be repeatable without creating duplicates.
+Imports must repeat without dupes.
 
-Previously imported data and saved teams must remain available during provider outages.
+Old imported data and saved teams stay usable during provider outage.
 
 ## Homepage
 
@@ -115,11 +115,11 @@ Show:
 * Recent successful teams
 * Common leads
 * Rising and declining Pokémon
-* Move, item, ability, nature, and EV trends
+* Move, item, ability, nature, EV trends
 * Lead matchup heatmaps
 * Search and filters
 
-Every statistic must show:
+Every stat must show:
 
 * Source
 * Date range
@@ -127,7 +127,7 @@ Every statistic must show:
 * Last update
 * Reliability
 
-Separate popularity from performance.
+Keep popularity separate from performance.
 
 ## Pokémon pages
 
@@ -135,7 +135,7 @@ Show:
 
 * Types and base stats
 * Type matchups
-* Common and best-performing moves
+* Common and best moves
 * Items
 * Abilities
 * Natures
@@ -143,13 +143,13 @@ Show:
 * Teammates
 * Leads
 * Cores
-* Complete teams
+* Full teams
 * Counters and checks
 * Usage and win rates
 * Historical trends
 * Sample reliability
 
-Counter categories:
+Counter types:
 
 * Hard counter
 * Soft counter
@@ -158,25 +158,25 @@ Counter categories:
 * Situational answer
 * Speed-based answer
 
-Do not classify counters using type matchups alone.
+Don't classify counters using type matchup alone.
 
 ## Team builder
 
 Users can:
 
-* Create, edit, save, duplicate, import, export, and delete teams
+* Create, edit, save, duplicate, import, export, delete teams
 * Store teams in collections
-* View, compare, and restore team versions
+* View, compare, restore team versions
 * Save notes
-* Validate team legality
+* Check team legality
 
-Pokémon sets must contain all properties relevant to Pokémon Champions, such as species, form, ability, item, moves, nature, EVs, and IVs.
+Pokémon sets must have all props relevant to Pokémon Champions — species, form, ability, item, moves, nature, EVs, IVs.
 
-Do not include mechanics only because they existed in older games.
+Don't add mechanics just cuz they existed in older games.
 
 ## Collections
 
-Users can organize teams into collections such as:
+Users can sort teams into collections like:
 
 * Current teams
 * Tournament teams
@@ -184,30 +184,30 @@ Users can organize teams into collections such as:
 * Opponent teams
 * Archived teams
 
-Collections are private unless explicitly changed later.
+Collections private unless changed later.
 
 ## Team analysis
 
-Analyse each team for:
+Check each team for:
 
 * Shared weaknesses
 * Poor defensive switching
 * Missing speed control
 * Weak common matchups
-* Limited answers to common leads or cores
+* Few answers to common leads or cores
 * Dependence on one Pokémon
 * Poor endgame options
 * Weak speed tiers
 * Limited coverage
 * Predictable leads
 
-Classify likely team archetypes and show evidence and confidence.
+Classify likely team archetypes, show evidence and confidence.
 
-Create a matchup matrix against common Pokémon, leads, cores, archetypes, and saved opponent teams.
+Make matchup matrix vs common Pokémon, leads, cores, archetypes, saved opponent teams.
 
 ## Speed calculator
 
-Calculate move order using verified Pokémon Champions mechanics.
+Calc move order using verified Pokémon Champions mechanics.
 
 Support:
 
@@ -223,36 +223,36 @@ Show:
 
 * Final speed
 * Possible opponent range
-* Conditions for moving first
-* Speed-tie probability
+* Conditions to move first
+* Speed-tie odds
 * Assumptions
-* Spreads eliminated by observed evidence
+* Spreads ruled out by seen evidence
 
 ## ChoiceDex
 
 ### Setup
 
-Display:
+Show:
 
-* User team on the left
-* Opponent team on the right
-* Active Pokémon and field state centrally
-* Recommendations in a separate panel
+* User team left
+* Opponent team right
+* Active Pokémon and field state center
+* Recs in separate panel
 * Turn history
 
-Clearly distinguish confirmed, entered, calculated, inferred, and unknown information.
+Clearly split confirmed, entered, calculated, inferred, unknown info.
 
 ### Lead selection
 
-Before battle, rank possible user leads against likely opponent leads.
+Before battle, rank possible user leads vs likely opponent leads.
 
-Consider:
+Weigh:
 
 * Damage pressure
 * Defensive position
 * Speed control
 * Knockout risk
-* Switching options
+* Switch options
 * Board position
 * Common opponent strategies
 * Future positioning
@@ -267,71 +267,71 @@ Track:
 * Stat changes
 * Field effects
 * Revealed moves, items, and abilities
-* Consumed resources
+* Used-up resources
 * Fainted Pokémon
-* Previous actions
-* Temporary effect durations
+* Past actions
+* Temp effect durations
 * Turn number
 
-Support undo, corrections, and returning to earlier turns.
+Support undo, fixes, jump back to earlier turns.
 
 ### Legal actions
 
-Generate all legal combinations for both active user Pokémon, including moves, targets, switches, defensive actions, and Pokémon Champions-specific actions.
+Gen all legal combos for both active user Pokémon — moves, targets, switches, defensive actions, Pokémon Champions-specific actions.
 
-Generate likely legal opponent actions using known data, inferred sets, statistics, and the current position.
+Gen likely legal opponent actions from known data, inferred sets, stats, current position.
 
 ### Damage output
 
 Show:
 
-* Minimum, maximum, and expected damage
-* Damage percentage
-* One-hit and two-hit knockout probabilities
-* Survival probability
-* Accuracy-adjusted probability
+* Min, max, expected damage
+* Damage %
+* One-hit and two-hit KO odds
+* Survival odds
+* Accuracy-adjusted odds
 * Relevant random outcomes
-* Assumptions about opponent stats
+* Assumptions on opponent stats
 
 ### Recommendations
 
-Rank several complete action combinations.
+Rank several full action combos.
 
-For each recommendation show:
+For each rec show:
 
 * Both user actions and targets
-* Damage and knockout probabilities
-* Survival probabilities
+* Damage and KO odds
+* Survival odds
 * Expected resulting position
 * Likely opponent responses
 * Main risk
 * Assumptions
 * Confidence
-* Alternative action
+* Alt action
 * Explanation
 
-Never describe an uncertain result as guaranteed.
+Never call an uncertain result guaranteed.
 
 ## Recommendation scoring
 
-Keep scoring transparent.
+Keep scoring open and clear.
 
 Possible factors:
 
 * Expected damage
-* Knockout and survival probability
+* KO and survival odds
 * Pokémon advantage
 * Board control
 * Speed control
 * Type position
-* Switching flexibility
-* Resource preservation
+* Switch flexibility
+* Resource saving
 * Endgame value
-* Information gained
+* Info gained
 * Counterplay risk
 * Worst-case result
 
-Store each factor separately rather than only storing a final score.
+Store each factor alone, not just final score.
 
 ## Recommendation profiles
 
@@ -340,16 +340,16 @@ Support:
 * Balanced
 * Safest
 * Highest expected value
-* Maximum immediate damage
+* Max immediate damage
 * Best long-term position
 * Aggressive prediction
 * Conservative tournament play
 
-Profiles may change scoring weights but not battle mechanics or probabilities.
+Profiles can shift scoring weights, not battle mechanics or odds.
 
 ## Opponent inference
 
-Track probabilities for unknown opponent:
+Track odds for unknown opponent:
 
 * Moves
 * Item
@@ -360,23 +360,23 @@ Track probabilities for unknown opponent:
 * Offensive and defensive investment
 * Role
 
-Update probabilities from:
+Update odds from:
 
-* Revealed information
-* Damage dealt or received
+* Revealed info
+* Damage dealt or taken
 * Move order
 * Survival
 * Switching
-* Team composition
+* Team makeup
 * Competitive usage
 
-Show prior probability, updated probability, supporting evidence, contradictory evidence, and confidence.
+Show prior odds, updated odds, supporting evidence, contra evidence, confidence.
 
-Only remove a possibility when confirmed evidence makes it impossible.
+Only drop a possibility when confirmed evidence makes it impossible.
 
 ## Scenario sandbox
 
-Allow users to copy a battle state and change variables such as:
+Let users copy battle state, change vars like:
 
 * Opponent set
 * HP
@@ -386,15 +386,15 @@ Allow users to copy a battle state and change variables such as:
 * Switches
 * Speed assumptions
 * Damage rolls
-* Recommendation profile
+* Rec profile
 
-Show differences between the original and changed result.
+Show diff between original and changed result.
 
-Do not modify the original battle.
+Don't touch original battle.
 
 ## Branching turn explorer
 
-Display possible future turns as a decision tree containing:
+Show possible future turns as decision tree with:
 
 * User actions
 * Opponent responses
@@ -402,40 +402,40 @@ Display possible future turns as a decision tree containing:
 * Switches
 * Knockouts
 * State transitions
-* Probability and expected value
+* Odds and expected value
 
-Control tree size with depth limits, probability thresholds, beam search, state deduplication, time limits, and cancellation.
+Control tree size with depth limits, odds thresholds, beam search, state dedup, time limits, cancel.
 
 ## Simulation mode
 
-Run repeated single-turn or multi-turn simulations.
+Run repeat single-turn or multi-turn sims.
 
 Show:
 
-* Estimated win probability
+* Est win odds
 * Action success rate
-* Knockout rate
+* KO rate
 * Common resulting states
 * Best and worst cases
 * Variance
 * Confidence interval
-* Completed simulation count
+* Done sim count
 
-Run long simulations as cancellable background jobs.
+Run long sims as cancellable bg jobs.
 
-Return a fast deterministic recommendation before simulation results when possible.
+Give fast deterministic rec before sim results when possible.
 
 ## Practice opponent
 
-Create an opponent controlled by AssaultDex.
+Make opponent run by AssaultDex.
 
-It must:
+Must:
 
 * Use legal actions
-* Switch and preserve resources
+* Switch, save resources
 * Use common strategies
-* React to the battle state
-* Never read the user's hidden choice before selecting its action
+* React to battle state
+* Never peek user's hidden choice before picking own action
 
 Difficulty levels:
 
@@ -444,42 +444,42 @@ Difficulty levels:
 * Competitive
 * High variance
 
-Users can practise against common, random, archetype-based, and saved opponent teams.
+Users can practice vs common, random, archetype-based, and saved opponent teams.
 
 ## Replay import
 
-Import Pokémon Champions battle records when a reliable and permitted format exists.
+Import Pokémon Champions battle records when reliable, allowed format exists.
 
-The importer must validate and reconstruct:
+Importer must check and rebuild:
 
 * Players
 * Teams
 * Turns
 * Actions
-* Revealed information
+* Revealed info
 * Field states
 
 Report unsupported or contradictory data.
 
-Until a real format is confirmed, use an interface and test fixtures rather than claiming full replay support.
+Till real format confirmed, use interface and test fixtures — don't claim full replay support.
 
 ## Post-battle analysis
 
-Compare actual and recommended actions for each turn.
+Compare real vs recommended actions each turn.
 
 Show:
 
-* Estimated decision-value difference
-* Missed knockout opportunities
-* Unnecessary risks
+* Est decision-value diff
+* Missed KO chances
+* Needless risks
 * Better switches
-* Incorrect assumptions
-* Important information
+* Wrong assumptions
+* Key info
 * High-uncertainty turns
 * Turning points
-* Alternative branches
+* Alt branches
 
-Separate decision quality from random results and information learned later.
+Keep decision quality separate from random results and info learned later.
 
 ## Tournament preparation
 
@@ -487,7 +487,7 @@ Support:
 
 * Expected opponents
 * Saved opponent teams
-* Preferred and alternative leads
+* Preferred and alt leads
 * Matchup plans
 * Speed benchmarks
 * Common opponent sets
@@ -495,13 +495,13 @@ Support:
 * Battle reports
 * Team versions
 
-Summarize weak matchups, recommended practice, lead plans, and relevant metagame changes.
+Sum up weak matchups, recommended practice, lead plans, relevant metagame shifts.
 
 ## Metagame analytics
 
-Support historical comparison by date, season, regulation, tournament, rank, and competition level.
+Support history compare by date, season, regulation, tournament, rank, competition level.
 
-Analyse:
+Analyze:
 
 * Usage
 * Win rates
@@ -514,10 +514,10 @@ Analyse:
 * Cores
 * Archetypes
 
-Separate:
+Split:
 
 * General usage
-* High-ranked usage
+* High-rank usage
 * Tournament usage
 * High-performing-player usage
 
@@ -527,13 +527,13 @@ Classify results as:
 * Popular but underperforming
 * Uncommon but successful
 * Uncommon and underperforming
-* Insufficient data
+* Not enough data
 
 Use documented reliability thresholds.
 
 ## Core discovery
 
-Automatically find common two-, three-, and four-Pokémon combinations.
+Auto-find common two-, three-, and four-Pokémon combos.
 
 For each core show:
 
@@ -556,56 +556,56 @@ Track:
 * Record by team and team version
 * Record by archetype and lead
 * Common decision mistakes
-* Missed knockouts
+* Missed KOs
 * Switching mistakes
-* Incorrect opponent assumptions
-* Matchups requiring practice
+* Wrong opponent assumptions
+* Matchups needing practice
 * Performance over time
 * Confidence calibration
 
-Do not draw strong conclusions from small samples.
+Don't draw big conclusions from small samples.
 
-Users must be able to delete their battle history and analytics.
+Users must be able to delete own battle history and analytics.
 
 ## Confidence calibration
 
-Compare predicted probabilities with observed results.
+Compare predicted odds vs seen results.
 
-Use documented measures such as:
+Use documented measures like:
 
 * Calibration buckets
 * Reliability diagrams
 * Brier score
 * Sample size
 
-Keep separate calibration for damage, opponent inference, recommendations, and win probabilities.
+Keep calibration separate for damage, opponent inference, recs, win odds.
 
-Do not use information that was unavailable when the prediction was made.
+Don't use info unavailable at prediction time.
 
 ## Accounts and security
 
 Support:
 
-* Registration and login
+* Register and login
 * Password reset
 * Saved private data
 * Data export
 * Account deletion
 * Battle-history deletion
 
-Implement server-side validation, authorization, secure sessions, password hashing, rate limits, secret management, safe imports, sanitized errors, and administrator audit logs.
+Implement server-side validation, auth, secure sessions, password hashing, rate limits, secret mgmt, safe imports, sanitized errors, admin audit logs.
 
-Never expose private teams, credentials, external API keys, stack traces, or internal prompts.
+Never expose private teams, creds, external API keys, stack traces, internal prompts.
 
 ## Administration
 
-Administrators can manage:
+Admins can manage:
 
 * Reference data
 * Pokémon Champions legality and mechanics
 * Providers and imports
 * Import failures
-* Statistical rebuilds
+* Stat rebuilds
 * Reliability thresholds
 * Users
 * Jobs
@@ -618,45 +618,45 @@ Administrators can manage:
 Test:
 
 * Types and dual types
-* Damage and knockout probability
+* Damage and KO odds
 * Speed and priority
 * Legal actions and targets
 * Switching
-* Items, abilities, status, and field effects
+* Items, abilities, status, field effects
 * Battle-state history and undo
 * Opponent inference
-* Recommendation scoring and profiles
+* Rec scoring and profiles
 * Sandbox isolation
 * Simulations
 * Replays
 * Team validation and versioning
 * Imports and normalization
-* Core and trend calculations
+* Core and trend calc
 * Reliability and confidence calibration
-* Authentication and authorization
+* Auth and authorization
 
-Add a regression test for every calculation bug.
+Add regression test for every calc bug.
 
-Mark tests based on unverified mechanics as provisional.
+Mark tests on unverified mechanics as provisional.
 
 ## Implementation phases
 
-1. Foundation, database, authentication, provider adapters, Pokémon search and pages
+1. Foundation, database, auth, provider adapters, Pokémon search and pages
 2. Team builder, validation, versions, collections, basic team analysis
 3. Type, speed, damage, field-state, and legal-action engines
-4. ChoiceDex lead analysis, battle editor, scoring, recommendations, and explanations
-5. Usage, win-rate, trend, core, counter, and lead statistics
+4. ChoiceDex lead analysis, battle editor, scoring, recs, explanations
+5. Usage, win-rate, trend, core, counter, and lead stats
 6. Opponent-set inference
-7. Sandbox, matchup matrix, tournament preparation, and turn explorer
+7. Sandbox, matchup matrix, tournament prep, and turn explorer
 8. Simulations and practice opponent
 9. Replays, post-battle reports, personal dashboard, and confidence calibration
 10. Security, performance, accessibility, deployment, monitoring, and legal pages
 
 ## First task
 
-First provide:
+First give:
 
-1. Repository assessment
+1. Repo assessment
 2. Architecture
 3. Folder structure
 4. Database overview
@@ -666,21 +666,21 @@ First provide:
 8. External-provider design
 9. Testing strategy
 10. Risks and unverified mechanics
-11. Phase 1 acceptance criteria
+11. Phase 1 accept criteria
 
-Then implement only the first vertical slice:
+Then build only first vertical slice:
 
 1. Import verified Pokémon data or documented fixtures.
 2. Search and open a Pokémon page.
 3. Create and save a team.
 4. Create and compare team versions.
-5. Add the team to a collection.
-6. Select two user and two opponent Pokémon.
-7. Enter a basic battle state.
-8. Calculate type effectiveness, speed, and damage.
-9. Generate legal actions.
-10. Display ranked recommendations with scores and assumptions.
+5. Add team to collection.
+6. Pick two user and two opponent Pokémon.
+7. Enter basic battle state.
+8. Calc type effectiveness, speed, and damage.
+9. Gen legal actions.
+10. Show ranked recs with scores and assumptions.
 
-Include migrations, setup instructions, environment variables, tests, error states, loading states, and production-build validation.
+Include migrations, setup steps, env vars, tests, error states, loading states, prod-build check.
 
-Do not implement later phases until this slice works and passes all checks.
+Don't build later phases till this slice works and passes all checks.
