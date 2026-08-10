@@ -52,6 +52,10 @@ body {
   color: var(--t1);
   font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
   font-size: 13px;
+  /* The whole UI read a little small / zoomed out. Scale it up uniformly -
+     zoom grows both rem-based and px-literal sizes (text, spacing, icons)
+     together, unlike bumping the root font-size alone. */
+  zoom: 1.12;
 }
 a {
   color: var(--acc);

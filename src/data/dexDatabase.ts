@@ -17,6 +17,10 @@ export interface DbItem {
   calc: string | null;
   /** Competitively relevant / commonly seen in the Champions format. */
   competitive: boolean;
+  /** Berry item (name ends in "Berry"). */
+  berry: boolean;
+  /** Mega Stone or primal orb. */
+  mega: boolean;
 }
 
 // Common competitive held items (beyond the modeled ones) shown in the default
@@ -224,6 +228,8 @@ export function getDbItem(nameOrId: string): (DbItem & { interaction: string | n
     fling: i.fling?.basePower ?? null,
     calc: ITEM_CALC[i.name] ?? null,
     competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name) || isMegaItem(i),
+    berry: i.name.endsWith("Berry"),
+    mega: isMegaItem(i),
     interaction: ITEM_INTERACTION[i.name] ?? null,
   };
 }
@@ -240,6 +246,8 @@ export function listDbItems(): DbItem[] {
       fling: i.fling?.basePower ?? null,
       calc: ITEM_CALC[i.name] ?? null,
       competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name) || isMegaItem(i),
+      berry: i.name.endsWith("Berry"),
+      mega: isMegaItem(i),
     }))
     .sort((a, b) => a.name.localeCompare(b.name)));
 }
@@ -298,7 +306,10 @@ export function pokemonWithAbility(nameOrId: string): { name: string; slug: stri
 }
 
 /** Move names classified for an ability's interaction list (Bulletproof, …). */
+const affectedMovesCache = new Map<string, string[]>();
 export function abilityAffectedMoves(abilityName: string): string[] {
+  const cached = affectedMovesCache.get(abilityName);
+  if (cached) return cached;
   const flagByAbility: Record<string, string> = {
     Bulletproof: "bullet",
     Soundproof: "sound",
@@ -324,5 +335,7 @@ export function abilityAffectedMoves(abilityName: string): string[] {
       out.push(m.name);
     }
   }
-  return out.sort();
+  const result = out.sort();
+  affectedMovesCache.set(abilityName, result);
+  return result;
 }

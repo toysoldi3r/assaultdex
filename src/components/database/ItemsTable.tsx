@@ -9,12 +9,16 @@ export function ItemsTable({ items }: { items: DbItem[] }) {
   const [q, setQ] = useState("");
   const [champsOnly, setChampsOnly] = useState(true);
   const [sortFling, setSortFling] = useState(false);
+  const [hideBerries, setHideBerries] = useState(false);
+  const [hideMega, setHideMega] = useState(false);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = items.filter(
       (i) =>
         (!champsOnly || i.competitive) &&
+        (!hideBerries || !i.berry) &&
+        (!hideMega || !i.mega) &&
         (!needle ||
           i.name.toLowerCase().includes(needle) ||
           i.desc.toLowerCase().includes(needle)),
@@ -22,7 +26,7 @@ export function ItemsTable({ items }: { items: DbItem[] }) {
     return sortFling
       ? [...list].sort((a, b) => (b.fling ?? -1) - (a.fling ?? -1))
       : list;
-  }, [items, q, champsOnly, sortFling]);
+  }, [items, q, champsOnly, sortFling, hideBerries, hideMega]);
 
   return (
     <div className="space-y-3">
@@ -52,6 +56,18 @@ export function ItemsTable({ items }: { items: DbItem[] }) {
           className={`rounded border px-3 py-1.5 text-xs ${sortFling ? "border-amber-500 text-amber-300" : "border-slate-700 text-slate-300"}`}
         >
           {sortFling ? "↓ Fling power" : "Sort by Fling"}
+        </button>
+        <button
+          onClick={() => setHideBerries((s) => !s)}
+          className={`rounded border px-3 py-1.5 text-xs ${hideBerries ? "border-amber-500 text-amber-300" : "border-slate-700 text-slate-300"}`}
+        >
+          {hideBerries ? "Berries hidden" : "Hide berries"}
+        </button>
+        <button
+          onClick={() => setHideMega((s) => !s)}
+          className={`rounded border px-3 py-1.5 text-xs ${hideMega ? "border-amber-500 text-amber-300" : "border-slate-700 text-slate-300"}`}
+        >
+          {hideMega ? "Mega stones hidden" : "Hide mega stones"}
         </button>
         <span className="text-xs text-slate-500">{filtered.length} shown</span>
       </div>
