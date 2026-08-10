@@ -3,149 +3,211 @@
 import { useState } from "react";
 import Link from "next/link";
 import { PokeIcon } from "@/components/PokeIcon";
+import { TypeBadge } from "@/components/ui";
 import { createTeamAction } from "@/app/teams/actions";
+import type { PokemonType } from "@/domain/types/pokemon";
 import type { MonUsage, TeamRank, CoreEntry } from "@/data/usageStats";
 
 const uKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+const grouped = (n: number) => Math.round(n).toLocaleString();
 
-function MonList({ mons, metric }: { mons: MonUsage[]; metric: "usage" | "winRate" }) {
-  return (
-    <ol className="space-y-0.5 text-sm">
-      {mons.map((m, i) => (
-        <li key={m.name} className="flex items-center gap-2">
-          <span className="w-5 text-right text-xs tabular-nums text-slate-600">{i + 1}</span>
-          <Link href={`/pokemon/${uKey(m.name)}`} className="flex flex-1 items-center gap-1.5 hover:text-amber-300">
-            <PokeIcon species={m.name} />
-            <span className="truncate">{m.name}</span>
-          </Link>
-          <span className="w-24 text-right text-xs text-slate-500" title="teams this Pokémon appears in">
-            {m.teams} teams
-          </span>
-          <span className="w-12 text-right tabular-nums text-slate-300">
-            {metric === "usage" ? `${m.usage}%` : `${m.winRate}%`}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
+type Tab = "usage" | "winrate" | "teams";
+
+/** Win-rate colour rule shared across the cards. */
+function wrColor(w: number): string {
+  return w >= 55 ? "text-pos" : w < 48 ? "text-neg" : "text-t2";
 }
 
-function CoreRow({ members, winRate, battles }: CoreEntry) {
-  return (
-    <li className="flex items-center gap-2 rounded bg-slate-800/40 px-2 py-1 text-sm">
-      <span className="flex gap-0.5">
-        {members.map((n) => <PokeIcon key={n} species={n} />)}
-      </span>
-      <span className="flex-1 truncate text-xs text-slate-300">{members.join(" + ")}</span>
-      {battles > 0 && <span className="tabular-nums text-xs text-slate-500" title="win rate">{winRate}%</span>}
-    </li>
-  );
-}
+const LADDER_COLS = "24px 40px 1fr 110px 58px 74px";
+const CAPTION: Record<Tab, (total: string) => string> = {
+  usage: (t) =>
+    `Usage % is the share of the ${t} recorded ladder battles a Pokémon appears in; Battles is that share as a count. The bar is the share against the most-used Pokémon.`,
+  winrate: () =>
+    "Win rate is wins ÷ battles for that Pokémon, among those on at least 3% of teams. The bar is that rate against the highest.",
+  teams: () =>
+    "Teams is the number of distinct team compositions the Pokémon appears in. The bar is that count against the highest.",
+};
+const BAR_LABEL: Record<Tab, string> = {
+  usage: "Share of battles",
+  winrate: "Wins ÷ battles",
+  teams: "Distinct teams",
+};
+const VALUE_LABEL: Record<Tab, string> = { usage: "%", winrate: "%", teams: "Teams" };
 
 export function MetaCards({
-  meta,
+  usage,
   winrate,
+  byTeams,
   teams,
   cores2,
   cores3,
   cores4,
+  totalBattles,
+  typesByKey,
 }: {
-  meta: MonUsage[];
+  usage: MonUsage[];
   winrate: MonUsage[];
+  byTeams: MonUsage[];
   teams: TeamRank[];
   cores2: CoreEntry[];
   cores3: CoreEntry[];
   cores4: CoreEntry[];
+  totalBattles: number;
+  typesByKey: Record<string, PokemonType[]>;
 }) {
+  const [tab, setTab] = useState<Tab>("usage");
   const [coreSize, setCoreSize] = useState<2 | 3 | 4>(2);
+
+  const list = tab === "usage" ? usage : tab === "winrate" ? winrate : byTeams;
+  const metricOf = (m: MonUsage) => (tab === "usage" ? m.usage : tab === "winrate" ? m.winRate : m.teams);
+  const max = Math.max(1, ...list.map(metricOf));
   const cores = coreSize === 2 ? cores2 : coreSize === 3 ? cores3 : cores4;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Top 20 in the meta
-        </h2>
-        <p className="mb-2 text-[11px] text-slate-500">% = share of ladder battles the Pokémon appears in.</p>
-        <div className="max-h-96 overflow-y-auto pr-1">
-          <MonList mons={meta} metric="usage" />
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Top 20 by win rate
-        </h2>
-        <p className="mb-2 text-[11px] text-slate-500">% = wins ÷ battles for that Pokémon.</p>
-        <div className="max-h-96 overflow-y-auto pr-1">
-          <MonList mons={winrate} metric="winRate" />
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Top 10 teams
-        </h2>
-        <p className="mb-2 text-[11px] text-slate-500">count = ladder entries with this exact team · % = win rate.</p>
-        {teams.length ? (
-          <ol className="space-y-1">
-            {teams.map((t, i) => (
-              <li key={i} className="flex items-center gap-2 rounded bg-slate-800/40 px-2 py-1">
-                <span className="w-4 text-xs tabular-nums text-slate-600">{i + 1}</span>
-                <span className="flex flex-1 flex-wrap gap-0.5">
-                  {t.members.map((n) => <PokeIcon key={n} species={n} />)}
-                </span>
-                <span className="w-10 text-right text-[10px] text-slate-500" title="teams with this exact composition">
-                  ×{t.count}
-                </span>
-                <span className="w-10 text-right tabular-nums text-xs text-slate-400" title="win rate">{t.winRate}%</span>
-                <form action={createTeamAction}>
-                  <input type="hidden" name="name" value={`Meta team #${i + 1}`} />
-                  {t.members.map((n) => (
-                    <input key={n} type="hidden" name="species" value={uKey(n)} />
-                  ))}
-                  <button
-                    className="rounded border border-slate-600 px-2 py-0.5 text-[10px] hover:border-amber-500"
-                    title="Add this team to your Teams and open it in the builder"
-                  >
-                    Open
-                  </button>
-                </form>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="text-xs text-slate-500">No team data yet.</p>
-        )}
-      </section>
-
-      <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Common cores
-          </h2>
-          <div className="flex gap-1 text-xs">
-            {([2, 3, 4] as const).map((s) => (
+    <div className="grid min-w-0 gap-[18px] lg:grid-cols-[1.35fr_1fr]">
+      {/* Ladder */}
+      <section className="overflow-hidden rounded-lg border border-line bg-panel">
+        <div className="flex items-center gap-3 border-b border-line px-3.5 py-[9px]">
+          <h2 className="text-[13px] font-semibold text-t1">Ladder</h2>
+          <div className="ml-auto flex gap-1">
+            {(["usage", "winrate", "teams"] as Tab[]).map((t) => (
               <button
-                key={s}
-                onClick={() => setCoreSize(s)}
-                className={`rounded px-2 py-0.5 ${
-                  coreSize === s ? "bg-amber-500 text-black" : "bg-slate-800 text-slate-300"
+                key={t}
+                onClick={() => setTab(t)}
+                className={`rounded px-[9px] py-[3px] text-[11px] font-medium capitalize ${
+                  tab === t ? "bg-accbg text-acc" : "bg-transparent text-t3 hover:text-t2"
                 }`}
               >
-                {s}-mon
+                {t === "winrate" ? "Win rate" : t === "teams" ? "Teams" : "Usage"}
               </button>
             ))}
           </div>
         </div>
-        {cores.length ? (
-          <ul className="space-y-1">
-            {cores.map((c, i) => <CoreRow key={i} {...c} />)}
-          </ul>
-        ) : (
-          <p className="text-xs text-slate-500">No core data yet.</p>
-        )}
+        <p className="border-b border-line px-3.5 py-[7px] text-[11px] leading-4 text-t3">
+          {CAPTION[tab](grouped(totalBattles))}
+        </p>
+        <div className="max-h-[560px] overflow-y-auto overflow-x-hidden">
+          <div
+            className="sticky top-0 z-[1] grid items-center border-b border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3"
+            style={{ gridTemplateColumns: LADDER_COLS }}
+          >
+            <span>#</span>
+            <span />
+            <span>Pokémon</span>
+            <span>{BAR_LABEL[tab]}</span>
+            <span className="text-right">{VALUE_LABEL[tab]}</span>
+            <span className="text-right">Battles</span>
+          </div>
+          {list.map((m, i) => {
+            const v = metricOf(m);
+            const types = typesByKey[uKey(m.name)] ?? [];
+            return (
+              <Link
+                key={m.name}
+                href={`/pokemon/${uKey(m.name)}`}
+                title={`${m.usage}% usage · ${m.winRate}% win rate · ${m.teams} teams`}
+                className="grid items-center border-b border-soft px-3.5 py-[5px] hover:bg-soft"
+                style={{ gridTemplateColumns: LADDER_COLS }}
+              >
+                <span className="mono text-[11px] text-t3">{i + 1}</span>
+                <PokeIcon species={m.name} />
+                <span className="flex min-w-0 items-center gap-1 pr-2">
+                  <span className="truncate text-[13px] font-medium text-t1">{m.name}</span>
+                  <span className="flex flex-shrink-0 gap-1">
+                    {types.map((t) => <TypeBadge key={t} type={t} />)}
+                  </span>
+                </span>
+                <span className="h-[5px] rounded-[3px] bg-raise">
+                  <span className="block h-full rounded-[3px] bg-acc" style={{ width: `${(v / max) * 100}%` }} />
+                </span>
+                <span className={`mono text-right text-xs ${tab === "winrate" ? wrColor(m.winRate) : "text-t1"}`}>
+                  {tab === "teams" ? v : `${v}%`}
+                </span>
+                <span className="mono text-right text-[11px] text-t3">{grouped((m.usage / 100) * totalBattles)}</span>
+              </Link>
+            );
+          })}
+        </div>
       </section>
+
+      {/* Right stack */}
+      <div className="flex min-w-0 flex-col gap-[18px]">
+        {/* Common cores */}
+        <section className="overflow-hidden rounded-lg border border-line bg-panel">
+          <div className="flex items-center gap-3 px-3.5 py-2">
+            <h2 className="text-[13px] font-semibold text-t1">Common cores</h2>
+            <div className="ml-auto flex gap-1">
+              {([2, 3, 4] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setCoreSize(s)}
+                  className={`rounded px-2 py-[3px] text-[11px] font-medium ${
+                    coreSize === s ? "bg-accbg text-acc" : "bg-transparent text-t3 hover:text-t2"
+                  }`}
+                >
+                  {s}-mon
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="max-h-[330px] overflow-y-auto">
+            <div className="sticky top-0 z-[1] flex items-center justify-between border-y border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3">
+              <span>Pairing</span>
+              <span>Win rate</span>
+            </div>
+            {cores.length ? (
+              cores.map((c, i) => (
+                <div key={i} className="flex items-center gap-2.5 border-b border-soft px-3.5 py-1.5">
+                  <span className="flex gap-px">
+                    {c.members.map((n) => <PokeIcon key={n} species={n} />)}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-xs text-t2">{c.members.join(" + ")}</span>
+                  {c.battles > 0 && <span className={`mono w-11 flex-shrink-0 text-right text-xs ${wrColor(c.winRate)}`}>{c.winRate}%</span>}
+                </div>
+              ))
+            ) : (
+              <p className="px-3.5 py-3 text-xs text-t3">No core data yet.</p>
+            )}
+          </div>
+        </section>
+
+        {/* Top teams */}
+        <section className="overflow-hidden rounded-lg border border-line bg-panel">
+          <div className="px-3.5 py-[11px]">
+            <h2 className="text-[13px] font-semibold text-t1">Top teams</h2>
+          </div>
+          <div className="max-h-[330px] overflow-y-auto">
+            <div className="sticky top-0 z-[1] flex items-center gap-2 border-y border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3">
+              <span className="flex-1">Exact composition</span>
+              <span className="w-9 text-right">Entries</span>
+              <span className="w-[46px] text-right">Win rate</span>
+            </div>
+            {teams.length ? (
+              teams.map((t, i) => (
+                <div key={i} className="flex items-center gap-2 border-b border-soft px-3.5 py-1.5">
+                  <span className="mono w-3.5 text-[11px] text-t3">{i + 1}</span>
+                  <span className="flex flex-1 flex-wrap gap-px">
+                    {t.members.map((n) => <PokeIcon key={n} species={n} />)}
+                  </span>
+                  <span className="mono w-9 flex-shrink-0 text-right text-[11px] text-t3">×{t.count}</span>
+                  <span className={`mono w-[46px] flex-shrink-0 text-right text-xs ${wrColor(t.winRate)}`}>{t.winRate}%</span>
+                  <form action={createTeamAction}>
+                    <input type="hidden" name="name" value={`Meta team #${i + 1}`} />
+                    {t.members.map((n) => (
+                      <input key={n} type="hidden" name="species" value={uKey(n)} />
+                    ))}
+                    <button className="rounded border border-line px-2 py-0.5 text-[10px] text-t2 hover:border-accln" title="Add to your Teams">
+                      Open
+                    </button>
+                  </form>
+                </div>
+              ))
+            ) : (
+              <p className="px-3.5 py-3 text-xs text-t3">No team data yet.</p>
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

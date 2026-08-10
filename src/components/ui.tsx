@@ -1,30 +1,42 @@
 import type { PokemonType } from "@/domain/types/pokemon";
 
-const TYPE_COLORS: Record<PokemonType, string> = {
-  normal: "bg-stone-500",
-  fire: "bg-orange-600",
-  water: "bg-blue-600",
-  electric: "bg-yellow-500 text-black",
-  grass: "bg-green-600",
-  ice: "bg-cyan-400 text-black",
-  fighting: "bg-red-700",
-  poison: "bg-fuchsia-700",
-  ground: "bg-amber-700",
-  flying: "bg-sky-400 text-black",
-  psychic: "bg-pink-600",
-  bug: "bg-lime-600 text-black",
-  rock: "bg-yellow-800",
-  ghost: "bg-indigo-700",
-  dragon: "bg-violet-700",
-  dark: "bg-neutral-800",
-  steel: "bg-slate-500",
-  fairy: "bg-pink-400 text-black",
+// Current-generation game type colours.
+const TYPE_HEX: Record<PokemonType, string> = {
+  normal: "#9FA19F", fire: "#E8503A", water: "#2980EF", electric: "#F7C325", grass: "#43A93C",
+  ice: "#3DCEF3", fighting: "#FF8000", poison: "#9141CB", ground: "#A9702F", flying: "#81B9EF",
+  psychic: "#EF4179", bug: "#9CAA22", rock: "#B7AF7E", ghost: "#7B4E8C", dragon: "#5060E1",
+  dark: "#6B5453", steel: "#60A1B8", fairy: "#EF70EF",
 };
+
+/** Relative luminance (sRGB → linear) for picking a legible label colour. */
+function luminance(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  const lin = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+}
+
+// Precompute the label colour per type once (dark text on light badges).
+const TYPE_LABEL = Object.fromEntries(
+  (Object.entries(TYPE_HEX) as [PokemonType, string][]).map(([t, hex]) => [
+    t,
+    luminance(hex) > 0.42 ? "#1b1d20" : "#ffffff",
+  ]),
+) as Record<PokemonType, string>;
 
 export function TypeBadge({ type }: { type: PokemonType }) {
   return (
     <span
-      className={`inline-block rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white ${TYPE_COLORS[type]}`}
+      className="inline-block rounded-full text-[9px] font-bold uppercase leading-3"
+      style={{
+        padding: "2px 8px",
+        letterSpacing: "0.09em",
+        backgroundColor: TYPE_HEX[type],
+        color: TYPE_LABEL[type],
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)",
+      }}
     >
       {type}
     </span>

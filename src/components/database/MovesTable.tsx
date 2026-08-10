@@ -63,28 +63,28 @@ export function MovesTable({
         <span className="text-slate-500">{filtered.length} shown</span>
       </div>
       <div className="overflow-x-auto rounded-lg border border-slate-800">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-900/60 text-[10px] uppercase text-slate-500">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-slate-900/60 text-xs uppercase text-slate-500">
             <tr>
-              <th className="px-2 py-2 font-normal">Move</th>
-              <th className="px-2 py-2 font-normal">Type</th>
-              <th className="px-2 py-2 font-normal">Cat</th>
-              <th className="px-2 py-2 text-right font-normal">Pow</th>
-              <th className="px-2 py-2 text-right font-normal">Acc</th>
-              <th className="px-2 py-2 text-right font-normal">PP</th>
-              <th className="px-2 py-2 font-normal">Description</th>
+              <th className="px-3 py-2.5 font-normal">Move</th>
+              <th className="px-3 py-2.5 font-normal">Type</th>
+              <th className="px-3 py-2.5 font-normal">Cat</th>
+              <th className="px-3 py-2.5 text-right font-normal">Pow</th>
+              <th className="px-3 py-2.5 text-right font-normal">Acc</th>
+              <th className="px-3 py-2.5 text-right font-normal">PP</th>
+              <th className="px-3 py-2.5 font-normal">Description</th>
             </tr>
           </thead>
           <tbody>
             {filtered.slice(0, 600).map((m) => (
               <tr key={m.name} className="border-t border-slate-800/60 align-top">
-                <td className="px-2 py-1 font-medium text-slate-100">{m.name}</td>
-                <td className="px-2 py-1">{(POKEMON_TYPES as readonly string[]).includes(m.type.toLowerCase()) && <TypeBadge type={m.type.toLowerCase() as PokemonType} />}</td>
-                <td className="px-2 py-1"><CategoryIcon category={m.category.toLowerCase() as MoveCategory} /></td>
-                <td className="px-2 py-1 text-right tabular-nums text-slate-300">{m.power ?? "-"}</td>
-                <td className="px-2 py-1 text-right tabular-nums text-slate-300">{m.accuracy == null ? "-" : `${m.accuracy}%`}</td>
-                <td className="px-2 py-1 text-right tabular-nums text-slate-400">{m.pp ?? "-"}</td>
-                <td className="px-2 py-1 text-[11px] text-slate-400">{m.desc}</td>
+                <td className="px-3 py-1.5 font-medium text-slate-100">{m.name}</td>
+                <td className="px-3 py-1.5">{(POKEMON_TYPES as readonly string[]).includes(m.type.toLowerCase()) && <TypeBadge type={m.type.toLowerCase() as PokemonType} />}</td>
+                <td className="px-3 py-1.5"><CategoryIcon category={m.category.toLowerCase() as MoveCategory} /></td>
+                <td className="px-3 py-1.5 text-right tabular-nums text-slate-300">{m.power ?? "-"}</td>
+                <td className="px-3 py-1.5 text-right tabular-nums text-slate-300">{m.accuracy == null ? "-" : `${m.accuracy}%`}</td>
+                <td className="px-3 py-1.5 text-right tabular-nums text-slate-400">{m.pp ?? "-"}</td>
+                <td className="px-3 py-1.5 text-slate-400">{m.desc}</td>
               </tr>
             ))}
           </tbody>
