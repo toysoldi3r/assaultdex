@@ -71,8 +71,12 @@ export interface TeamAnalysis {
   fieldControl: {
     /** Entry hazards the team can set. */
     hazards: { member: string; move: string }[];
+    /** Moves that clear entry hazards (Rapid Spin, Defog, …). */
+    hazardRemoval: { member: string; move: string }[];
     /** Screens / veils / Wide Guard-style protection. */
     protection: { member: string; move: string }[];
+    /** Moves that raise the user's stats (setup / boosting moves). */
+    boosts: { member: string; move: string }[];
   };
   dependence: {
     soleProviderCounts: { member: string; types: number }[];
@@ -101,11 +105,34 @@ const WEATHER_ABILITIES: Record<string, string> = {
 };
 
 const HAZARD_MOVES = new Set(["Stealth Rock", "Spikes", "Toxic Spikes", "Sticky Web"]);
+// Moves that clear entry hazards off the field (Court Change swaps them away).
+const HAZARD_REMOVAL_MOVES = new Set([
+  "Rapid Spin", "Defog", "Mortal Spin", "Tidy Up", "Court Change",
+]);
 const PROTECTION_MOVES = new Set([
   "Reflect", "Light Screen", "Aurora Veil", "Wide Guard", "Quick Guard",
   "Protect", "Detect", "Spiky Shield", "King's Shield", "Baneful Bunker",
   "Silk Trap", "Crafty Shield", "Mat Block",
 ]);
+// Stat-boosting (setup) moves. Combined with any move whose selfBoosts raise a
+// stat, so damaging setup moves (e.g. Close Combat is a drop, excluded) and
+// pure setup are both caught.
+const BOOSTING_MOVES = new Set([
+  "Swords Dance", "Nasty Plot", "Dragon Dance", "Calm Mind", "Bulk Up",
+  "Quiver Dance", "Shell Smash", "Iron Defense", "Cosmic Power", "Coil",
+  "Agility", "Rock Polish", "Autotomize", "Work Up", "Hone Claws", "Curse",
+  "Growth", "Tail Glow", "Belly Drum", "Clangorous Soul", "Victory Dance",
+  "No Retreat", "Geomancy", "Acid Armor", "Amnesia", "Barrier", "Defend Order",
+  "Harden", "Howl", "Sharpen", "Meditate", "Charge", "Stockpile", "Minimize",
+  "Double Team", "Cotton Guard",
+]);
+
+/** True when a move raises at least one of the user's stats. */
+function raisesOwnStat(mv: MoveFixture): boolean {
+  if (BOOSTING_MOVES.has(mv.name)) return true;
+  const sb = mv.selfBoosts;
+  return !!sb && Object.values(sb).some((v) => (v ?? 0) > 0);
+}
 
 const WEATHER_MOVES: Record<string, string> = {
   "Sunny Day": "sun",
@@ -191,7 +218,9 @@ export function analyzeTeam(members: AnalysisMember[]): TeamAnalysis {
   // Weather control: abilities (Drought, Drizzle, …) and moves (Sunny Day, …).
   const setters: WeatherSetter[] = [];
   const hazards: { member: string; move: string }[] = [];
+  const hazardRemoval: { member: string; move: string }[] = [];
   const protection: { member: string; move: string }[] = [];
+  const boosts: { member: string; move: string }[] = [];
   for (const m of members) {
     const wa = m.ability ? WEATHER_ABILITIES[m.ability] : undefined;
     if (wa) setters.push({ member: m.name, source: m.ability!, kind: "ability", weather: wa });
@@ -199,7 +228,9 @@ export function analyzeTeam(members: AnalysisMember[]): TeamAnalysis {
       const wm = WEATHER_MOVES[mv.name];
       if (wm) setters.push({ member: m.name, source: mv.name, kind: "move", weather: wm });
       if (HAZARD_MOVES.has(mv.name)) hazards.push({ member: m.name, move: mv.name });
+      if (HAZARD_REMOVAL_MOVES.has(mv.name)) hazardRemoval.push({ member: m.name, move: mv.name });
       if (PROTECTION_MOVES.has(mv.name)) protection.push({ member: m.name, move: mv.name });
+      if (raisesOwnStat(mv)) boosts.push({ member: m.name, move: mv.name });
     }
   }
 
@@ -228,7 +259,7 @@ export function analyzeTeam(members: AnalysisMember[]): TeamAnalysis {
     speedTiers,
     speedControl: { hasPriority, priorityMoves, controlMoves, missing },
     weatherControl: { setters, missing: setters.length === 0 },
-    fieldControl: { hazards, protection },
+    fieldControl: { hazards, hazardRemoval, protection, boosts },
     dependence: { soleProviderCounts, note },
     assumptions: ["typeChart", "statFormula", "moveData"],
   };

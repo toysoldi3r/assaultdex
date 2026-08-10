@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Panel, ProvisionalTag } from "@/components/ui";
+import { Panel } from "@/components/ui";
 import { ChoiceDexApp, type KnownSet, type SavedTeam } from "@/components/choicedex/ChoiceDexApp";
 import { HitInference } from "@/components/choicedex/HitInference";
 import { OpponentInference } from "@/components/choicedex/OpponentInference";
@@ -47,7 +47,6 @@ export default async function ChoiceDexPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-bold">ChoiceDex</h1>
-        <ProvisionalTag />
       </div>
       <p className="max-w-2xl text-sm text-slate-400">
         Set up both teams, start the battle, and get the best options each round

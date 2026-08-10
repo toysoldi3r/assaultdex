@@ -2,11 +2,11 @@ import Link from "next/link";
 import { MetaCards } from "@/components/home/MetaCards";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import type { PokemonType } from "@/domain/types/pokemon";
+import { listDbItems } from "@/data/dexDatabase";
 import {
   getCores,
   getTopTeams,
   getTotalBattles,
-  getRankedMonCount,
   topByTeams,
   topMeta,
   topWinRate,
@@ -25,11 +25,14 @@ export default async function HomePage() {
   );
 
   const totalBattles = getTotalBattles();
-  const ranked = getRankedMonCount();
+  // Legal moves = distinct moves across every Champions mon's legal movepool.
+  const legalMoves = new Set(pokemon.flatMap((p) => p.movepool)).size;
+  const legalItems = listDbItems().length;
   const stats = [
     { value: grouped(totalBattles), label: "Battles in snapshot" },
-    { value: String(pokemon.length), label: "Champions species" },
-    { value: `${ranked}+`, label: "Ranked Pokémon" },
+    { value: String(pokemon.length), label: "Valid pokemons" },
+    { value: grouped(legalMoves), label: "Legal moves" },
+    { value: grouped(legalItems), label: "Legal items" },
     { value: "Reg M-B", label: "Format · Bo3" },
   ];
 
@@ -66,7 +69,7 @@ export default async function HomePage() {
       </div>
 
       {/* Stat strip */}
-      <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-line sm:grid-cols-4" style={{ gap: 1, background: "var(--line)" }}>
+      <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-line sm:grid-cols-3 lg:grid-cols-5" style={{ gap: 1, background: "var(--line)" }}>
         {stats.map((s) => (
           <div key={s.label} className="bg-panel px-3.5 py-[11px]">
             <div className="mono text-[18px] font-bold text-t1">{s.value}</div>
@@ -86,17 +89,6 @@ export default async function HomePage() {
         totalBattles={totalBattles}
         typesByKey={typesByKey}
       />
-
-      {/* Honesty note */}
-      <section className="rounded-lg border border-line bg-panel p-4 text-[13px] text-t2">
-        <p>
-          <strong className="text-t1">Built with generative AI.</strong> This project was written largely with an
-          AI coding assistant, and Champions mechanics are unverified placeholders. Verify anything important
-          against the primary{" "}
-          <Link href="/sources" className="text-acc hover:text-accs">sources</Link>{" "}
-          before relying on it. Usage statistics come from a committed ladder snapshot and are not fabricated.
-        </p>
-      </section>
     </>
   );
 }

@@ -55,7 +55,6 @@ export function TeamsHome({
   const [teams, setTeams] = useState<TeamCard[]>(initialTeams);
   const [folder, setFolder] = useState<string | null>(null); // null=all, "uncat", or id
   const [q, setQ] = useState("");
-  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleted, setDeleted] = useState<Deleted | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -87,7 +86,6 @@ export function TeamsHome({
   const currentCollectionId = folder && folder !== "uncat" ? folder : "";
 
   const doDelete = (t: TeamCard) => {
-    setConfirmId(null);
     setTeams((prev) => prev.filter((x) => x.id !== t.id));
     setDeleted({
       name: t.name,
@@ -249,45 +247,26 @@ export function TeamsHome({
                 </Link>
 
                 <div className="flex flex-col items-stretch justify-center gap-1 border-l border-slate-800 p-2 text-xs">
-                  {confirmId === t.id ? (
-                    <div className="flex flex-col gap-1">
-                      <span className="font-semibold text-rose-300">Delete?</span>
-                      <button
-                        onClick={() => doDelete(t)}
-                        disabled={pending}
-                        className="rounded bg-rose-600 px-2 py-1 font-semibold text-white hover:bg-rose-500"
-                      >
-                        Confirm
-                      </button>
-                      <button
-                        onClick={() => setConfirmId(null)}
-                        className="rounded bg-slate-700 px-2 py-1 hover:bg-slate-600"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <Link
-                        href={`/teams/${t.id}`}
-                        className="rounded bg-slate-800 px-2 py-1 text-center hover:bg-slate-700"
-                      >
-                        ✎ Edit
-                      </Link>
-                      <button
-                        onClick={() => copyTeam(t)}
-                        className="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700"
-                      >
-                        ⧉ Copy
-                      </button>
-                      <button
-                        onClick={() => setConfirmId(t.id)}
-                        className="rounded bg-slate-800 px-2 py-1 text-rose-300 hover:bg-slate-700"
-                      >
-                        🗑 Delete
-                      </button>
-                    </>
-                  )}
+                  <Link
+                    href={`/teams/${t.id}`}
+                    className="rounded bg-slate-800 px-2 py-1 text-center hover:bg-slate-700"
+                  >
+                    ✎ Edit
+                  </Link>
+                  <button
+                    onClick={() => copyTeam(t)}
+                    className="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700"
+                  >
+                    ⧉ Copy
+                  </button>
+                  {/* Delete is immediate - the undo toast is the safety net. */}
+                  <button
+                    onClick={() => doDelete(t)}
+                    disabled={pending}
+                    className="rounded bg-slate-800 px-2 py-1 text-rose-300 hover:bg-slate-700"
+                  >
+                    🗑 Delete
+                  </button>
                 </div>
               </li>
             ))}

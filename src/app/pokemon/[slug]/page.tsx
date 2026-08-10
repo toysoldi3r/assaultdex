@@ -1,24 +1,43 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Dex } from "@pkmn/dex";
 import { Panel, TypeBadge } from "@/components/ui";
 import { changeHistory, speciesMeta } from "@/data/pkmnEnrich";
 import { PokeIcon } from "@/components/PokeIcon";
 import { ItemIcon } from "@/components/ItemIcon";
 import { getDexSpecies, getSpeciesForms } from "@/data/pokedexSource";
 import { CHAMPIONS_FORMAT_LABEL, getMonUsage } from "@/data/usageStats";
-import { getMonTournament } from "@/data/tournamentStats";
-import { suggestSets } from "@/data/suggestSets";
+import { suggestSets, type MegaInfo } from "@/data/suggestSets";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { statColor } from "@/domain/mechanics/statColor";
 import { POKEMON_TYPES, STAT_KEYS, STAT_LABELS, type PokemonType } from "@/domain/types/pokemon";
 
 export const dynamic = "force-dynamic";
 
-function multiplierLabel(m: number): { text: string; cls: string } {
-  if (m === 0) return { text: "0×", cls: "text-slate-500" };
-  if (m < 1) return { text: `${m}×`, cls: "text-emerald-400" };
-  if (m === 1) return { text: "1×", cls: "text-slate-400" };
-  return { text: `${m}×`, cls: "text-rose-400" };
+/** Colour the whole matchup card by effectiveness: white 1×, red 2×+, green
+ *  resisted (0.5× / 0.25×), black immune (0×). */
+function matchupCard(m: number): { text: string; card: string } {
+  if (m === 0) return { text: "0×", card: "bg-black text-white" };
+  if (m >= 2) return { text: `${m}×`, card: "bg-rose-600 text-white" };
+  if (m < 1) return { text: `${m}×`, card: "bg-emerald-600 text-white" };
+  return { text: "1×", card: "bg-white text-slate-900" };
+}
+
+/** Mega/Primal forme (stone + forme ability), for a Mega suggested set. */
+function megaInfo(slug: string): MegaInfo | null {
+  const s = Dex.species.get(slug);
+  if (!s.exists) return null;
+  for (const fn of s.otherFormes ?? []) {
+    const f = Dex.species.get(fn);
+    if (f.exists && /Mega|Primal/.test(f.forme) && f.requiredItem) {
+      return {
+        stone: f.requiredItem,
+        ability: (Object.values(f.abilities)[0] as string) ?? "",
+        label: f.forme,
+      };
+    }
+  }
+  return null;
 }
 
 
@@ -48,14 +67,11 @@ export default async function PokemonPage({
   const meta = speciesMeta(p.name, p.abilities);
   const history = changeHistory(p.name);
   const usage = await getMonUsage(p.name);
-  const sets = suggestSets(p.types, p.baseStats, p.abilities, p.moves);
+  const mega = megaInfo(target);
+  const sets = suggestSets(p.types, p.baseStats, p.abilities, p.moves, mega ?? undefined);
   const moveType = new Map<string, PokemonType>(
     p.moves.flatMap((m) => (m.type ? [[m.name, m.type] as [string, PokemonType]] : [])),
   );
-  const tournament = getMonTournament(p.name);
-  const commonItems = tournament?.items?.length
-    ? tournament.items.map((i) => i.name)
-    : [...new Set(sets.map((s) => s.item))];
 
   return (
     <div className="space-y-6">
@@ -63,32 +79,32 @@ export default async function PokemonPage({
         ← Pokédex
       </Link>
 
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <span className="grid h-28 w-28 shrink-0 place-items-center overflow-hidden rounded bg-slate-800/50">
-            <PokeIcon species={p.name} className="scale-[2.6]" />
+      <div className="flex items-center gap-4">
+        <span className="grid h-28 w-28 shrink-0 place-items-center overflow-hidden rounded bg-slate-800/50">
+          <PokeIcon species={p.name} className="scale-[2.6]" />
+        </span>
+        <div>
+          <span className="tabular-nums text-sm text-slate-500">
+            #{String(p.num).padStart(4, "0")}
           </span>
-          <div>
-            <span className="tabular-nums text-sm text-slate-500">
-              #{String(p.num).padStart(4, "0")}
-            </span>
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold">{p.name}</h1>
-            {meta && (
-              <span className="text-xs text-slate-400">{meta.genderLabel}</span>
-            )}
-            {usage && (
-              <span className="mt-1 block text-xs text-slate-400">
-                {CHAMPIONS_FORMAT_LABEL}:{" "}
-                <span className="text-amber-300">{usage.usage}%</span> usage ·{" "}
-                {usage.winRate}% win rate
-              </span>
-            )}
+            <span className="flex gap-1">
+              {p.types.map((t) => (
+                <TypeBadge key={t} type={t} />
+              ))}
+            </span>
           </div>
-        </div>
-        <div className="flex shrink-0 gap-1">
-          {p.types.map((t) => (
-            <TypeBadge key={t} type={t} />
-          ))}
+          {meta && (
+            <span className="text-xs text-slate-400">{meta.genderLabel}</span>
+          )}
+          {usage && (
+            <span className="mt-1 block text-xs text-slate-400">
+              {CHAMPIONS_FORMAT_LABEL}:{" "}
+              <span className="text-amber-300">{usage.usage}%</span> usage ·{" "}
+              {usage.winRate}% win rate
+            </span>
+          )}
         </div>
       </div>
 
@@ -141,14 +157,14 @@ export default async function PokemonPage({
         <Panel title="Defensive type matchups">
           <div className="grid grid-cols-2 gap-1 text-xs sm:grid-cols-3">
             {POKEMON_TYPES.map((t) => {
-              const l = multiplierLabel(chart[t]);
+              const l = matchupCard(chart[t]);
               return (
                 <div
                   key={t}
-                  className="flex items-center justify-between gap-1 rounded bg-slate-800/50 px-2 py-1"
+                  className={`flex items-center justify-between gap-1 rounded px-2 py-1 ${l.card}`}
                 >
                   <TypeBadge type={t} />
-                  <span className={`font-semibold ${l.cls}`}>{l.text}</span>
+                  <span className="font-semibold">{l.text}</span>
                 </div>
               );
             })}
@@ -156,20 +172,37 @@ export default async function PokemonPage({
         </Panel>
       </div>
 
-      <Panel title="Common items">
-        <p className="mb-2 text-[10px] uppercase tracking-wide text-slate-600">
-          {tournament?.items?.length
-            ? "From tournament usage."
-            : "Suggested items (heuristic - no per-Pokémon usage dataset for Champions yet)."}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {commonItems.map((it) => (
-            <span key={it} className="flex items-center gap-1 rounded bg-slate-800/50 px-2 py-1 text-sm">
-              <ItemIcon item={it} />
-              {it}
-            </span>
-          ))}
-        </div>
+      <Panel title="Abilities">
+        {meta ? (
+          <ul className="space-y-2">
+            {meta.abilities.map((a) => (
+              <li key={a.name} className="rounded bg-slate-800/50 px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-slate-100">{a.name}</span>
+                  {a.hidden && (
+                    <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-300">
+                      Hidden
+                    </span>
+                  )}
+                </div>
+                {a.effect && (
+                  <p className="mt-0.5 text-xs text-slate-400">{a.effect}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {p.abilities.map((a) => (
+              <span
+                key={a}
+                className="rounded bg-slate-800 px-2 py-1 text-sm text-slate-200"
+              >
+                {a}
+              </span>
+            ))}
+          </div>
+        )}
       </Panel>
 
       <Panel title="Suggested sets">
@@ -204,79 +237,6 @@ export default async function PokemonPage({
           ))}
         </div>
       </Panel>
-
-      <Panel title="Abilities">
-        {meta ? (
-          <ul className="space-y-2">
-            {meta.abilities.map((a) => (
-              <li key={a.name} className="rounded bg-slate-800/50 px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-100">{a.name}</span>
-                  {a.hidden && (
-                    <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-300">
-                      Hidden
-                    </span>
-                  )}
-                </div>
-                {a.effect && (
-                  <p className="mt-0.5 text-xs text-slate-400">{a.effect}</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {p.abilities.map((a) => (
-              <span
-                key={a}
-                className="rounded bg-slate-800 px-2 py-1 text-sm text-slate-200"
-              >
-                {a}
-              </span>
-            ))}
-          </div>
-        )}
-        <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
-          Competitive usage % pending a usage dataset.
-        </p>
-      </Panel>
-
-      {meta && (
-        <Panel title="Competitive change history">
-          <details>
-            <summary className="cursor-pointer text-sm text-amber-400">
-              {history.length > 0
-                ? `${history.length} generation${history.length > 1 ? "s" : ""} with changes`
-                : "No competitively significant changes since introduction"}
-            </summary>
-            {history.length > 0 && (
-              <ul className="mt-2 space-y-2">
-                {history.map((h) => (
-                  <li key={h.gen} className="flex gap-3 text-sm">
-                    <span className="w-14 shrink-0 font-semibold text-slate-400">
-                      Gen {h.gen}
-                    </span>
-                    <span className="flex flex-wrap gap-1">
-                      {h.changes.map((c) => (
-                        <span
-                          key={c}
-                          className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-slate-300"
-                        >
-                          {c}
-                        </span>
-                      ))}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </details>
-          <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
-            Base-stat, typing, and ability revisions across generations
-            (@pkmn/dex).
-          </p>
-        </Panel>
-      )}
 
       {usage && usage.teammates.length > 0 && (
         <Panel title={`Common teammates · ${CHAMPIONS_FORMAT_LABEL}`}>
@@ -351,6 +311,43 @@ export default async function PokemonPage({
           Move data from @pkmn/dex; usage % pending a usage dataset.
         </p>
       </Panel>
+
+      {meta && (
+        <Panel title="Competitive change history">
+          <details>
+            <summary className="cursor-pointer text-sm text-amber-400">
+              {history.length > 0
+                ? `${history.length} generation${history.length > 1 ? "s" : ""} with changes`
+                : "No competitively significant changes since introduction"}
+            </summary>
+            {history.length > 0 && (
+              <ul className="mt-2 space-y-2">
+                {history.map((h) => (
+                  <li key={h.gen} className="flex gap-3 text-sm">
+                    <span className="w-14 shrink-0 font-semibold text-slate-400">
+                      Gen {h.gen}
+                    </span>
+                    <span className="flex flex-wrap gap-1">
+                      {h.changes.map((c) => (
+                        <span
+                          key={c}
+                          className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-slate-300"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </details>
+          <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
+            Base-stat, typing, and ability revisions across generations
+            (@pkmn/dex).
+          </p>
+        </Panel>
+      )}
     </div>
   );
 }

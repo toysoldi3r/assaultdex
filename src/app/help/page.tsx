@@ -69,6 +69,17 @@ export default function HelpPage() {
         </p>
       </Panel>
 
+      <Panel title="Built with generative AI">
+        <p className="text-sm text-slate-300">
+          This project was written largely with an AI coding assistant, and
+          Champions mechanics are unverified placeholders. Verify anything
+          important against the primary{" "}
+          <Link href="/sources" className="text-amber-400 hover:underline">sources</Link>{" "}
+          before relying on it. Usage statistics come from a committed ladder
+          snapshot and are not fabricated.
+        </p>
+      </Panel>
+
       <Panel title="Report a problem">
         <p className="text-sm text-slate-300">Open an issue and include:</p>
         <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-400">

@@ -41,7 +41,9 @@ export function SelectorPanel({
   // function each parent render) would refocus on every keystroke elsewhere -
   // e.g. stealing focus away from the nickname field.
   useEffect(() => {
-    inputRef.current?.focus();
+    // preventScroll: focusing must not scroll the panel into view - that jump
+    // is what shifts the page when a card's selector opens.
+    inputRef.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && closeRef.current();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
