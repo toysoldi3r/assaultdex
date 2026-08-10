@@ -24,6 +24,7 @@ const NAV: NavItem[] = [
       { href: "/database?tab=moves", label: "Moves" },
       { href: "/database?tab=calc", label: "Calculator" },
       { href: "/database?tab=terms", label: "Terminology" },
+      { href: "/database/knowledgebase", label: "Knowledgebase" },
       { href: "/types", label: "Types" },
     ],
   },
