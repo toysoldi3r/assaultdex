@@ -17,6 +17,10 @@ export interface DbItem {
   calc: string | null;
   /** Competitively relevant / commonly seen in the Champions format. */
   competitive: boolean;
+  /** Berry item (name ends in "Berry"). */
+  berry: boolean;
+  /** Mega Stone or primal orb. */
+  mega: boolean;
 }
 
 // Common competitive held items (beyond the modeled ones) shown in the default
@@ -224,6 +228,8 @@ export function getDbItem(nameOrId: string): (DbItem & { interaction: string | n
     fling: i.fling?.basePower ?? null,
     calc: ITEM_CALC[i.name] ?? null,
     competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name) || isMegaItem(i),
+    berry: i.name.endsWith("Berry"),
+    mega: isMegaItem(i),
     interaction: ITEM_INTERACTION[i.name] ?? null,
   };
 }
@@ -240,6 +246,8 @@ export function listDbItems(): DbItem[] {
       fling: i.fling?.basePower ?? null,
       calc: ITEM_CALC[i.name] ?? null,
       competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name) || isMegaItem(i),
+      berry: i.name.endsWith("Berry"),
+      mega: isMegaItem(i),
     }))
     .sort((a, b) => a.name.localeCompare(b.name)));
 }
