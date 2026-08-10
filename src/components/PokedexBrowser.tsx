@@ -236,9 +236,15 @@ export function PokedexBrowser({
         </div>
       )}
 
-      {results.length === 0 ? (
+      {showAll && !full && loadingFull ? (
         <Panel>
-          <p className="text-sm text-slate-400">No Pokémon match “{q}”.</p>
+          <p className="text-sm text-slate-400">Loading the full Pokédex…</p>
+        </Panel>
+      ) : results.length === 0 ? (
+        <Panel>
+          <p className="text-sm text-slate-400">
+            {q.trim() || advActive ? `No Pokémon match “${q}”.` : "No Pokémon to show."}
+          </p>
         </Panel>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

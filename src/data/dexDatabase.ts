@@ -306,7 +306,10 @@ export function pokemonWithAbility(nameOrId: string): { name: string; slug: stri
 }
 
 /** Move names classified for an ability's interaction list (Bulletproof, …). */
+const affectedMovesCache = new Map<string, string[]>();
 export function abilityAffectedMoves(abilityName: string): string[] {
+  const cached = affectedMovesCache.get(abilityName);
+  if (cached) return cached;
   const flagByAbility: Record<string, string> = {
     Bulletproof: "bullet",
     Soundproof: "sound",
@@ -332,5 +335,7 @@ export function abilityAffectedMoves(abilityName: string): string[] {
       out.push(m.name);
     }
   }
-  return out.sort();
+  const result = out.sort();
+  affectedMovesCache.set(abilityName, result);
+  return result;
 }
