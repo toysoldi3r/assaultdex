@@ -1,6 +1,6 @@
 // Opponent speed/spread inference (Phase 6). Enumerate an opponent's possible
 // Speed across a uniform spread grid, then narrow it with observed move-order
-// evidence. Pure and mechanics-driven — no usage data. Provisional.
+// evidence. Pure and mechanics-driven - no usage data. Provisional.
 
 import { type AssumptionId } from "../mechanics/assumptions";
 import { computeStat } from "../mechanics/stats";

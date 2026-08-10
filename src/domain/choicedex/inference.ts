@@ -2,7 +2,7 @@
 // over an unknown opponent property, updated from battle evidence. A possibility
 // is removed only when confirmed evidence makes it impossible (spec).
 //
-// Priors here are uniform over the candidate set — NOT usage-based. Competitive
+// Priors here are uniform over the candidate set - NOT usage-based. Competitive
 // usage priors are deferred until a verified data source exists
 // (ASSUMPTIONS.spreadGridPrior).
 

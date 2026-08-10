@@ -231,7 +231,7 @@ export function Simulator({ pokemon }: { pokemon: PokemonRef[] }) {
             <span>Turn variance {result.turnsVariance}</span>
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            Outcomes — win {result.outcomeCounts.user}, loss{" "}
+            Outcomes - win {result.outcomeCounts.user}, loss{" "}
             {result.outcomeCounts.opponent}, draw {result.outcomeCounts.draw},
             timeout {result.outcomeCounts.timeout}.
           </p>

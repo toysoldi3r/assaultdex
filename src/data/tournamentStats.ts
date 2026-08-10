@@ -1,6 +1,6 @@
 // Tournament usage (Limitless TCG) for the Champions format. Same privacy model
 // as usageStats: served from a committed snapshot only, refreshed out of band in
-// CI (scripts/refreshTournaments.ts) — the app makes no external call. Open team
+// CI (scripts/refreshTournaments.ts) - the app makes no external call. Open team
 // sheets carry item/ability/tera/nature/moves but no EV spreads, so there is no
 // spread data here.
 

@@ -29,7 +29,7 @@ export interface MonPanelState {
 }
 
 function koLabel(d: ReturnType<typeof calculateDamage>): { text: string; cls: string } {
-  if (d.maxDamage <= 0) return { text: "—", cls: "text-slate-600" };
+  if (d.maxDamage <= 0) return { text: "-", cls: "text-slate-600" };
   if (d.ohkoProbability >= 1) return { text: "1HKO", cls: "text-emerald-400" };
   if (d.ohkoProbability > 0) return { text: `${Math.round(d.ohkoProbability * 100)}% 1HKO`, cls: "text-amber-400" };
   if ((d.twoHitKoProbability ?? 0) >= 1) return { text: "2HKO", cls: "text-emerald-400" };
@@ -160,7 +160,7 @@ export function MonPanel({
         );
       })()}
 
-      {/* Moves / damage — one row per move against the SELECTED target. The "vs"
+      {/* Moves / damage - one row per move against the SELECTED target. The "vs"
           column holds both target icons; click one to switch the KO readout. */}
       <div className="mb-2">
         <table className="w-full text-xs">
@@ -200,7 +200,7 @@ export function MonPanel({
                       <button
                         type="button"
                         onClick={toggleKnown}
-                        title={known ? "Confirmed used — click to unmark" : "Mark as confirmed used"}
+                        title={known ? "Confirmed used - click to unmark" : "Mark as confirmed used"}
                         className={known ? "font-semibold text-amber-300" : "text-slate-300 hover:text-amber-300"}
                       >
                         {known ? "✓ " : "○ "}
@@ -211,7 +211,7 @@ export function MonPanel({
                     )}
                   </td>
                   <td className="py-0.5 pr-2 text-right tabular-nums text-slate-400">
-                    {d ? `${d.minPercent}–${d.maxPercent}%` : "—"}
+                    {d ? `${d.minPercent}–${d.maxPercent}%` : "-"}
                   </td>
                   <td className={`py-0.5 text-right ${ko?.cls ?? ""}`}>{ko?.text ?? ""}</td>
                   <td className={`py-0.5 text-right ${koc?.cls ?? ""}`}>{koc?.text ?? ""}</td>
@@ -274,7 +274,7 @@ export function MonPanel({
           </tr>
           <tr>
             <td className="text-left text-slate-500">STAGE</td>
-            <td className="text-slate-700">—</td>
+            <td className="text-slate-700">-</td>
             {(["atk", "def", "spa", "spd", "spe"] as const).map((k) => (
               <td key={k}>
                 <div className="flex items-center justify-center gap-0.5">

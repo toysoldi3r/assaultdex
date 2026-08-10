@@ -1,5 +1,5 @@
 // Base-stat bar colour + width. Six discrete tiers keyed to real stat breakpoints
-// (top of the scale is 255 — Blissey's HP). Shared by the Pokédex, teambuilder,
+// (top of the scale is 255 - Blissey's HP). Shared by the Pokédex, teambuilder,
 // and team-analysis stat bars so colours mean the same thing everywhere.
 //
 //   <=29 red · <=59 orange · <=89 yellow · <=119 green · <=149 dark green · <=255 blue

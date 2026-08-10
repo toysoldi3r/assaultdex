@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import rosterData from "../fixtures/championsRoster.json";
 import fixtureDataset from "../fixtures/pokemon.json";
 
-// Enforces that the fixture set is exactly the authoritative Champions pool —
+// Enforces that the fixture set is exactly the authoritative Champions pool -
 // no more, no fewer species than the provided roster.
 describe("Champions pool ↔ fixtures", () => {
   const roster = rosterData.roster;

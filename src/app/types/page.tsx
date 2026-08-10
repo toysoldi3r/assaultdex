@@ -1,6 +1,6 @@
 import { TypeMatchup } from "@/components/database/TypeMatchup";
 
-export const metadata = { title: "Type chart — AssaultDex" };
+export const metadata = { title: "Type chart - AssaultDex" };
 
 export default function TypesPage() {
   return (

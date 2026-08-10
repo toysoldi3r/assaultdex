@@ -38,7 +38,7 @@ export default async function TeamDetailPage({
   // Teambuilder needs a reference (name, abilities, legal moves, base stats) for
   // every pool species so newly added members render too.
   const allMons = await listPokemon();
-  // Description maps for the picker panels (memoised — the pool is static).
+  // Description maps for the picker panels (memoised - the pool is static).
   const { abilityDesc, moveDesc } = poolDescMaps(allMons);
 
   const memberRefs: Record<string, MemberRef> = {};

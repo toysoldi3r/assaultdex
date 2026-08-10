@@ -13,7 +13,7 @@ const foe = combatant({ name: "D", types: ["normal"], base: stats() });
 const fire = move({ name: "Ember", type: "fire", power: 100 });
 const normal = move({ name: "Tackle", type: "normal", power: 100 });
 
-// [provisional] — ability/item effects use documented mainline behaviour.
+// [provisional] - ability/item effects use documented mainline behaviour.
 describe("[provisional] ability effects", () => {
   it("Adaptability boosts STAB moves", () => {
     const base = calculateDamage(atk, foe, fire, field);

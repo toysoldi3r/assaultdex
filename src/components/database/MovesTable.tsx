@@ -81,9 +81,9 @@ export function MovesTable({
                 <td className="px-2 py-1 font-medium text-slate-100">{m.name}</td>
                 <td className="px-2 py-1">{(POKEMON_TYPES as readonly string[]).includes(m.type.toLowerCase()) && <TypeBadge type={m.type.toLowerCase() as PokemonType} />}</td>
                 <td className="px-2 py-1"><CategoryIcon category={m.category.toLowerCase() as MoveCategory} /></td>
-                <td className="px-2 py-1 text-right tabular-nums text-slate-300">{m.power ?? "—"}</td>
-                <td className="px-2 py-1 text-right tabular-nums text-slate-300">{m.accuracy == null ? "—" : `${m.accuracy}%`}</td>
-                <td className="px-2 py-1 text-right tabular-nums text-slate-400">{m.pp ?? "—"}</td>
+                <td className="px-2 py-1 text-right tabular-nums text-slate-300">{m.power ?? "-"}</td>
+                <td className="px-2 py-1 text-right tabular-nums text-slate-300">{m.accuracy == null ? "-" : `${m.accuracy}%`}</td>
+                <td className="px-2 py-1 text-right tabular-nums text-slate-400">{m.pp ?? "-"}</td>
                 <td className="px-2 py-1 text-[11px] text-slate-400">{m.desc}</td>
               </tr>
             ))}

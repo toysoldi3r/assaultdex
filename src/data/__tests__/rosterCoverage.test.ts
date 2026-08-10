@@ -5,7 +5,7 @@ import usage from "../fixtures/usage/gen9championsvgc2026regmbbo3.json";
 
 // Invariant: every Pokémon that actually appears in the committed Champions
 // usage snapshot (i.e. was seen in real ladder battles) must be in the generated
-// pool. This guards against roster drift — if a future usage refresh introduces
+// pool. This guards against roster drift - if a future usage refresh introduces
 // a species the roster doesn't cover, this fails instead of silently shipping a
 // gap in the team builder / calculator.
 describe("Champions pool covers ladder-observed Pokémon", () => {

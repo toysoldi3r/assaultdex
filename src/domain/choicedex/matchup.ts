@@ -1,7 +1,7 @@
 // Matchup matrix (Phase 7). For each of the user's Pokémon against each opponent
 // Pokémon, the best single-target offensive result and speed relationship. Pure
 // and provisional. (Matrices against "common" Pokémon/cores are deferred with
-// the statistics phase; the caller supplies the opponent set — e.g. a saved
+// the statistics phase; the caller supplies the opponent set - e.g. a saved
 // opponent team.)
 
 import type { AssumptionId } from "../mechanics/assumptions";

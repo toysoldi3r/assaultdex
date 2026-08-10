@@ -60,7 +60,7 @@ export function Recommendations({
                     {d.attacker} → {d.target} ({d.moveName}): {d.damage.minPercent}
                     –{d.damage.maxPercent}% (exp {d.damage.expectedPercent}%),
                     OHKO {(d.damage.ohkoProbability * 100).toFixed(0)}%, 2HKO{" "}
-                    {d.damage.twoHitKoProbability === null ? "—" : (d.damage.twoHitKoProbability * 100).toFixed(0)}%,{" "}
+                    {d.damage.twoHitKoProbability === null ? "-" : (d.damage.twoHitKoProbability * 100).toFixed(0)}%,{" "}
                     {d.movesFirst ? "moves first" : "moves second"}
                     {mods.length > 0 && (
                       <span className="text-slate-500">

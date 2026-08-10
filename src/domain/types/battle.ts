@@ -63,7 +63,7 @@ export type Terrain = "none" | "electric" | "grassy" | "misty" | "psychic";
 /**
  * Whole-field conditions (affect both sides). The `*Turns` fields are optional
  * countdowns: when present and > 0 they decrement each end of turn and the
- * condition clears at 0. Undefined means "no countdown" (persists) — this keeps
+ * condition clears at 0. Undefined means "no countdown" (persists) - this keeps
  * existing single-turn callers unchanged.
  */
 export interface FieldState {

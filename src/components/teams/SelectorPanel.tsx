@@ -1,6 +1,6 @@
 "use client";
 
-// Inline selector panel — same shape as the EV/IV editor (opens below the card,
+// Inline selector panel - same shape as the EV/IV editor (opens below the card,
 // not a floating dropdown) so it never clips the screen bottom. Search box, a
 // "Popular in tournaments" section, and a scrollable list with descriptions.
 // Used for item / ability / move / species pickers and adding Pokémon.
@@ -38,7 +38,7 @@ export function SelectorPanel({
   closeRef.current = onClose;
 
   // Focus the search box only once on open. Depending on `onClose` (a new
-  // function each parent render) would refocus on every keystroke elsewhere —
+  // function each parent render) would refocus on every keystroke elsewhere -
   // e.g. stealing focus away from the nickname field.
   useEffect(() => {
     inputRef.current?.focus();

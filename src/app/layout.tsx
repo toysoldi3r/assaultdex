@@ -11,7 +11,7 @@ const THEME_SCRIPT = `try{document.documentElement.dataset.theme=localStorage.ge
 export const metadata: Metadata = {
   title: "AssaultDex",
   description:
-    "Competitive Pokémon Champions doubles — Pokédex, team builder, ChoiceDex, and battle analysis.",
+    "Competitive Pokémon Champions doubles - Pokédex, team builder, ChoiceDex, and battle analysis.",
 };
 
 export default function RootLayout({
@@ -53,8 +53,8 @@ export default function RootLayout({
         <RecentNav />
         <footer className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-8 text-xs text-slate-500">
           <span>
-            Mechanics are <strong>provisional</strong> and unverified for Pokémon
-            Champions. Fixture data only.
+            Fan-made and unofficial. Pokémon and all related names are
+            trademarks of Nintendo, Game Freak, and The Pokémon Company.
           </span>
           <span className="flex items-center gap-x-3">
             <Link href="/help" className="underline hover:text-slate-300">Help</Link>

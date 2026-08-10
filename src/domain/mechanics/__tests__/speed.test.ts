@@ -14,7 +14,7 @@ describe("stageMultiplier", () => {
   });
 });
 
-// [provisional] — paralysis modifier is unverified for Champions.
+// [provisional] - paralysis modifier is unverified for Champions.
 describe("[provisional] effectiveSpeed", () => {
   it("halves speed under paralysis", () => {
     const fast = combatant({ name: "Fast", types: ["normal"], base: stats({ spe: 200 }) });

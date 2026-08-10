@@ -84,7 +84,7 @@ export function PokedexBrowser({
     // Exact type name (e.g. "water") = pure type filter, so ability names like
     // "Water Absorb" don't drag in non-Water mons.
     const exactType = POKEMON_TYPES.find((t) => t === needle);
-    // Otherwise match name, type, and ability — moves are deliberately excluded
+    // Otherwise match name, type, and ability - moves are deliberately excluded
     // so a query like "lip" surfaces Pelipper, not every Flip Turn user.
     const matched = !needle
       ? [...scoped]

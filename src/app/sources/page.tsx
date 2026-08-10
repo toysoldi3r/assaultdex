@@ -1,4 +1,4 @@
-export const metadata = { title: "Sources — AssaultDex" };
+export const metadata = { title: "Sources - AssaultDex" };
 
 interface Source {
   name: string;
@@ -18,6 +18,21 @@ const SOURCES: { group: string; items: Source[] }[] = [
     ],
   },
   {
+    group: "Pokémon Champions",
+    items: [
+      {
+        name: "Pokébase - Champions teams",
+        url: "https://pokebase.app/pokemon-champions/teams",
+        what: "Community-shared Pokémon Champions teams you can browse for inspiration and import.",
+      },
+      {
+        name: "Pokémon Zone - Champions",
+        url: "https://www.pokemon-zone.com/champions/",
+        what: "A Pokémon Champions hub with team lists, tier data, and format-specific tools.",
+      },
+    ],
+  },
+  {
     group: "Usage & tournament stats",
     items: [
       {
@@ -29,6 +44,16 @@ const SOURCES: { group: string; items: Source[] }[] = [
         name: "Limitless VGC",
         url: "https://limitlessvgc.com/",
         what: "Official-style VGC tournament results, event coverage, and team lists from top players and regional/international events.",
+      },
+      {
+        name: "Meta VGC",
+        url: "https://metavgc.com/",
+        what: "Metagame usage and team statistics for VGC formats, with trends, common sets, and archetypes.",
+      },
+      {
+        name: "ShowdownTier",
+        url: "https://showdowntier.com/",
+        what: "Usage and tier data derived from the Pokémon Showdown ladder across formats.",
       },
       {
         name: "MunchStats",
@@ -43,12 +68,22 @@ const SOURCES: { group: string; items: Source[] }[] = [
     ],
   },
   {
+    group: "Guides & learning",
+    items: [
+      {
+        name: "VGC Guide",
+        url: "https://www.vgcguide.com/",
+        what: "Beginner-to-advanced guides on team building, battling, and the metagame - the kind of write-ups behind this app's Teams and ChoiceDex tips.",
+      },
+    ],
+  },
+  {
     group: "Reference & mechanics",
     items: [
       {
         name: "Smogon University",
         url: "https://www.smogon.com/",
-        what: "Competitive analyses, sample sets, strategy articles, and the Smogon forums — the largest competitive community and rules authority for singles and doubles.",
+        what: "Competitive analyses, sample sets, strategy articles, and the Smogon forums - the largest competitive community and rules authority for singles and doubles.",
       },
       {
         name: "PokémonDB",
@@ -63,7 +98,7 @@ const SOURCES: { group: string; items: Source[] }[] = [
       {
         name: "Bulbapedia",
         url: "https://bulbapedia.bulbagarden.net/",
-        what: "Encyclopedic coverage of mechanics, move/ability interactions, game history, and edge cases — good for 'how does X actually work'.",
+        what: "Encyclopedic coverage of mechanics, move/ability interactions, game history, and edge cases - good for 'how does X actually work'.",
       },
     ],
   },
@@ -83,7 +118,7 @@ const SOURCES: { group: string; items: Source[] }[] = [
       {
         name: "r/pokemon",
         url: "https://www.reddit.com/r/pokemon/",
-        what: "General Pokémon community — news and casual discussion, less competitive focus.",
+        what: "General Pokémon community - news and casual discussion, less competitive focus.",
       },
     ],
   },

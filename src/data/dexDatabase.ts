@@ -1,6 +1,6 @@
 // Server-only reference data for the Database tab, sourced from @pkmn/dex (full
 // offline item/ability text) and annotated with the exact formulas AssaultDex's
-// own damage/speed engine applies. No network, no DB — pure lookups.
+// own damage/speed engine applies. No network, no DB - pure lookups.
 
 import { Dex } from "@pkmn/dex";
 
@@ -137,13 +137,13 @@ const ABILITY_INTERACTION: Record<string, string> = {
   "Gale Wings":
     "Grants +1 priority to the holder's Flying-type moves, but only while it is at full HP. Take any chip damage (Life Orb, hazards, weather) and the priority is gone until healed back to 100%.",
   "Armor Tail":
-    "Blocks opposing priority moves that target this Pokémon or its allies — the same class of moves Psychic Terrain and Dazzling/Queenly Majesty stop. A move counts as priority when its priority bracket is >0: Quick Attack/Aqua Jet/Bullet Punch/Sucker Punch/Extreme Speed/Fake Out/Grassy Glide (Grassy Terrain)/Gale Wings-boosted moves, and status moves raised by Prankster. It does NOT stop Trick Room 'speed control' or moves that merely go first from raw Speed.",
+    "Blocks opposing priority moves that target this Pokémon or its allies - the same class of moves Psychic Terrain and Dazzling/Queenly Majesty stop. A move counts as priority when its priority bracket is >0: Quick Attack/Aqua Jet/Bullet Punch/Sucker Punch/Extreme Speed/Fake Out/Grassy Glide (Grassy Terrain)/Gale Wings-boosted moves, and status moves raised by Prankster. It does NOT stop Trick Room 'speed control' or moves that merely go first from raw Speed.",
   Prankster:
     "+1 priority to the holder's status moves. Prankster-boosted status moves fail against Dark-type targets, and are stopped by Armor Tail / Dazzling / Queenly Majesty / Psychic Terrain.",
   Triage: "+3 priority to the holder's healing moves (Giga Drain, Drain Punch, Recover, …).",
   Dazzling:
     "Like Armor Tail: opposing priority moves aimed at this Pokémon or its allies fail. Same priority-bracket rule as Armor Tail.",
-  "Queenly Majesty": "Same as Dazzling / Armor Tail — blocks opposing priority moves.",
+  "Queenly Majesty": "Same as Dazzling / Armor Tail - blocks opposing priority moves.",
   Intimidate: "On entry, lowers each opposing active Pokémon's Attack by one stage.",
   Unaware: "Ignores the target's stat-stage changes when calculating damage (not modeled in the calc yet).",
   Sturdy: "Survives any single hit from full HP with 1 HP (OHKO protection).",
@@ -151,7 +151,7 @@ const ABILITY_INTERACTION: Record<string, string> = {
 };
 
 function isReal(x: { exists: boolean; isNonstandard?: string | null; name: string }): boolean {
-  // Keep standard + Past (megas, some legacy abilities) — only drop CAP/Future.
+  // Keep standard + Past (megas, some legacy abilities) - only drop CAP/Future.
   return x.exists && (!x.isNonstandard || x.isNonstandard === "Past") && x.name !== "";
 }
 
@@ -188,8 +188,8 @@ export function listDbMoves(): DbMove[] {
 }
 
 const ITEM_INTERACTION: Record<string, string> = {
-  "Iron Ball": "Halves the holder's Speed and grounds it — a Flying-type or Levitate holder becomes hit by Ground moves and affected by Spikes/terrain. Cancels the ungrounding from Levitate/Magnet Rise for as long as it's held.",
-  "Air Balloon": "Grounds nothing — instead makes the holder immune to Ground moves until it is hit by any damaging move, which pops the balloon.",
+  "Iron Ball": "Halves the holder's Speed and grounds it - a Flying-type or Levitate holder becomes hit by Ground moves and affected by Spikes/terrain. Cancels the ungrounding from Levitate/Magnet Rise for as long as it's held.",
+  "Air Balloon": "Grounds nothing - instead makes the holder immune to Ground moves until it is hit by any damaging move, which pops the balloon.",
   "Choice Band": "Locks the holder into the first move it selects, but boosts Attack ×1.5.",
   "Choice Specs": "Locks the holder into the first move it selects, but boosts Special Attack ×1.5.",
   "Choice Scarf": "Locks the holder into the first move it selects, but boosts Speed ×1.5.",
@@ -197,11 +197,11 @@ const ITEM_INTERACTION: Record<string, string> = {
   "Assault Vest": "×1.5 Special Defense, but the holder cannot select status moves.",
   "Focus Sash": "If at full HP, the holder survives any single hit with 1 HP. Consumed after use.",
   "Rocky Helmet": "Attackers that make contact lose 1/6 of their max HP.",
-  "Flame Orb": "Burns the holder at the end of the turn — used to trigger Guts/Flare Boost or self-inflict burn deliberately.",
-  "Toxic Orb": "Badly poisons the holder — used to trigger Poison Heal/Guts or Toxic Boost.",
+  "Flame Orb": "Burns the holder at the end of the turn - used to trigger Guts/Flare Boost or self-inflict burn deliberately.",
+  "Toxic Orb": "Badly poisons the holder - used to trigger Poison Heal/Guts or Toxic Boost.",
   "Weakness Policy": "When hit by a super-effective move, sharply raises the holder's Attack and Special Attack (+2 each). Consumed.",
   "Booster Energy": "Activates Protosynthesis/Quark Drive without sun/Electric Terrain, boosting the holder's highest stat. Consumed.",
-  "Covert Cloak": "Protects the holder from the added (secondary) effects of moves — no flinch, no stat drops from the attack's secondary.",
+  "Covert Cloak": "Protects the holder from the added (secondary) effects of moves - no flinch, no stat drops from the attack's secondary.",
   "Clear Amulet": "Prevents other Pokémon from lowering the holder's stats (blocks Intimidate, Icy Wind's drop, etc.).",
   "Safety Goggles": "Immune to powder/spore moves (Spore, Sleep Powder, Rage Powder) and to weather chip damage (sand/hail).",
 };

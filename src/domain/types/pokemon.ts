@@ -160,6 +160,10 @@ export interface PokemonSet {
   species: string;
   /** Optional display nickname. */
   nickname?: string;
+  /** Cosmetic gender ("M"/"F"); absent = genderless/unspecified. */
+  gender?: "M" | "F";
+  /** Cosmetic shiny flag. */
+  shiny?: boolean;
   level: number;
   ability: string | null;
   item: string | null;

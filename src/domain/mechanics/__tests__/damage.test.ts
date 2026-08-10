@@ -5,7 +5,7 @@ import { calculateDamage } from "../damage";
 
 const field = DEFAULT_FIELD;
 
-// [provisional] — damage formula is unverified for Champions.
+// [provisional] - damage formula is unverified for Champions.
 describe("[provisional] calculateDamage", () => {
   it("produces 16 ascending rolls with min ≤ expected ≤ max", () => {
     const attacker = combatant({ name: "A", types: ["fire"], base: stats({ atk: 150 }) });

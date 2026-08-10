@@ -4,7 +4,7 @@
 // concerns).
 //
 // Scope: PokéAPI is used ONLY for reference base stats/types cross-verification.
-// It does not know the Pokémon Champions pool or Champions mechanics — pool
+// It does not know the Pokémon Champions pool or Champions mechanics - pool
 // membership and provisional move/mechanic data are handled separately.
 
 import type {
@@ -24,7 +24,7 @@ import { fetchProviderJson } from "./fetch";
 export const POKEAPI_PROVIDER = "pokeapi";
 const BASE_URL = "https://pokeapi.co/api/v2";
 
-/** A verified reference subset (no moves — those stay provisional). */
+/** A verified reference subset (no moves - those stay provisional). */
 export interface PokemonReference {
   slug: string;
   name: string;

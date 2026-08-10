@@ -1,7 +1,7 @@
 // Opponent offensive/defensive spread inference from an observed HP change.
 // Enumerate the EV/IV/nature grid for the relevant stat, keep only the grid
 // points whose damage rolls are consistent with what actually happened, and
-// summarize the surviving range. Pure and mechanics-driven — uses the
+// summarize the surviving range. Pure and mechanics-driven - uses the
 // provisional damage formula and a uniform (non-usage) prior
 // (ASSUMPTIONS.statInference).
 
@@ -186,7 +186,7 @@ export interface DefenseInference {
   hpMax: number | null;
   defMin: number | null;
   defMax: number | null;
-  /** Effective-HP (hp × defStat) range — the true "bulk" measure. */
+  /** Effective-HP (hp × defStat) range - the true "bulk" measure. */
   bulkMin: number | null;
   bulkMax: number | null;
   confidence: number;

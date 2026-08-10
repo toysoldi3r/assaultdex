@@ -1,7 +1,7 @@
 // Basic team analysis (Phase 2). Pure functions over resolved team members.
 // Everything that touches mechanics is provisional (type chart, stat formula).
 // Analyses that would require metagame/usage data (common leads, cores) are
-// intentionally omitted here — that is Phase 5 and must not be fabricated.
+// intentionally omitted here - that is Phase 5 and must not be fabricated.
 
 import { computeStats } from "../mechanics/stats";
 import { type AssumptionId } from "../mechanics/assumptions";
@@ -217,7 +217,7 @@ export function analyzeTeam(members: AnalysisMember[]): TeamAnalysis {
   const top = soleProviderCounts[0];
   const note =
     top && top.types >= 3
-      ? `${top.member} is the only super-effective answer to ${top.types} types — losing it narrows coverage.`
+      ? `${top.member} is the only super-effective answer to ${top.types} types - losing it narrows coverage.`
       : null;
 
   return {

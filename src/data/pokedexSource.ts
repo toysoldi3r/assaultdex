@@ -1,6 +1,6 @@
 // Full-national-dex source for the Pokédex tab, read straight from @pkmn/dex
 // (~1500 species incl. formes). Deliberately decoupled from the curated
-// fixture/DB that powers the team builder and choicedex sim — the Pokédex is a
+// fixture/DB that powers the team builder and choicedex sim - the Pokédex is a
 // reference view of every species, the builder stays scoped to the format's
 // legal set. Server-only (imports @pkmn/dex).
 
@@ -53,7 +53,7 @@ function statsOf(bs: BaseStatsLike) {
 /**
  * True for species Pokémon Showdown actually ships. @pkmn/dex is generated from
  * Showdown's data, so the only non-Showdown entries are fan-made CAP mons
- * (num ≤ 0) and one-off Custom fakemon — everything else (standard, past-gen,
+ * (num ≤ 0) and one-off Custom fakemon - everything else (standard, past-gen,
  * LGPE, future/DLC) is in Showdown's dex.
  */
 function inShowdown(s: { num: number; isNonstandard: string | null }): boolean {
@@ -146,7 +146,7 @@ export interface DexSpecies {
 
 const speciesCache = new Map<string, DexSpecies | null>();
 
-/** Detail for one species by slug (@pkmn id). Null if unknown. Memoised — the
+/** Detail for one species by slug (@pkmn id). Null if unknown. Memoised - the
  *  learnset + dex data are constant for the process. */
 export async function getDexSpecies(slug: string): Promise<DexSpecies | null> {
   if (speciesCache.has(slug)) return speciesCache.get(slug)!;

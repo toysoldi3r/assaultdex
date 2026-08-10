@@ -218,7 +218,7 @@ export function BattleCalculator({ pokemon }: { pokemon: PokemonRef[] }) {
                 <span className="font-semibold">{result.move.name}</span>
                 <TypeBadge type={result.move.type} />
                 <span className="text-xs uppercase text-slate-500">{result.move.category}</span>
-                <span className="text-xs text-slate-400">power {result.move.power ?? "—"}</span>
+                <span className="text-xs text-slate-400">power {result.move.power ?? "-"}</span>
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <span className="text-lg font-bold tabular-nums">
@@ -229,7 +229,7 @@ export function BattleCalculator({ pokemon }: { pokemon: PokemonRef[] }) {
                 </span>
                 <span className="rounded bg-slate-800 px-2 py-0.5 text-xs">
                   OHKO {Math.round(result.dmg.ohkoProbability * 100)}% · 2HKO{" "}
-                  {result.dmg.twoHitKoProbability === null ? "—" : Math.round(result.dmg.twoHitKoProbability * 100)}%
+                  {result.dmg.twoHitKoProbability === null ? "-" : Math.round(result.dmg.twoHitKoProbability * 100)}%
                 </span>
               </div>
               <div>

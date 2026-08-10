@@ -36,9 +36,9 @@ export default async function TeamsPage({
         id="teams"
         title="New to team building?"
         points={[
-          "VGC is 4-vs-4 doubles chosen from a team of 6 — build a balanced 6 and bring your best 4 per matchup.",
+          "VGC is 4-vs-4 doubles chosen from a team of 6 - build a balanced 6 and bring your best 4 per matchup.",
           "Start from a game plan: a win condition (a strong attacker or restricted) plus support around it, not six lone attackers.",
-          "Include speed control (Tailwind / Trick Room) and protection (Protect) — doubles is won on tempo and positioning.",
+          "Include speed control (Tailwind / Trick Room) and protection (Protect) - doubles is won on tempo and positioning.",
           "Cover common threats and weather; aim for broad offensive + defensive type coverage.",
           "Tune EVs to survive key hits and hit speed benchmarks; nature and item back the Pokémon's role.",
           "Reference: vgcguide.com/teambuilding. Import a Showdown paste below to get started fast.",

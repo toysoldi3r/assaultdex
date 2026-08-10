@@ -40,18 +40,18 @@ export default function HomePage() {
 
       <Panel title="What's here">
         <ul className="grid gap-x-6 gap-y-2 text-sm text-slate-300 sm:grid-cols-2">
-          <li><Link className="font-medium text-amber-400 hover:underline" href="/guide">Guide</Link> — new here? Start with the intro to the app and competitive doubles.</li>
-          <li><Link className="font-medium text-amber-400 hover:underline" href="/pokemon">Pokédex</Link> — search by name, type, ability, or move; stats, matchups, and sets.</li>
-          <li><Link className="font-medium text-amber-400 hover:underline" href="/teams">Teams</Link> — Showdown-style builder with legality, analysis, and versioned saves.</li>
-          <li><Link className="font-medium text-amber-400 hover:underline" href="/choicedex">ChoiceDex</Link> — live battle assistant: best play each turn as you enter what happens.</li>
-          <li><Link className="font-medium text-amber-400 hover:underline" href="/database">Database</Link> — items, abilities (with their Pokémon), and a damage calculator.</li>
-          <li><Link className="font-medium text-amber-400 hover:underline" href="/types">Types</Link> &amp; <Link className="font-medium text-amber-400 hover:underline" href="/sources">Sources</Link> — the type chart and the major community sites.</li>
+          <li><Link className="font-medium text-amber-400 hover:underline" href="/guide">Guide</Link> - new here? Start with the intro to the app and competitive doubles.</li>
+          <li><Link className="font-medium text-amber-400 hover:underline" href="/pokemon">Pokédex</Link> - search by name, type, ability, or move; stats, matchups, and sets.</li>
+          <li><Link className="font-medium text-amber-400 hover:underline" href="/teams">Teams</Link> - Showdown-style builder with legality, analysis, and versioned saves.</li>
+          <li><Link className="font-medium text-amber-400 hover:underline" href="/choicedex">ChoiceDex</Link> - live battle assistant: best play each turn as you enter what happens.</li>
+          <li><Link className="font-medium text-amber-400 hover:underline" href="/database">Database</Link> - items, abilities (with their Pokémon), and a damage calculator.</li>
+          <li><Link className="font-medium text-amber-400 hover:underline" href="/types">Types</Link> &amp; <Link className="font-medium text-amber-400 hover:underline" href="/sources">Sources</Link> - the type chart and the major community sites.</li>
         </ul>
       </Panel>
 
       <div>
         <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">Metagame — {CHAMPIONS_FORMAT_LABEL}</h2>
+          <h2 className="text-lg font-semibold">Metagame - {CHAMPIONS_FORMAT_LABEL}</h2>
           <form action={refreshMetagameAction}>
             <button className="rounded border border-slate-600 px-3 py-1 text-xs hover:border-amber-500">
               ↻ Refresh metagame data
@@ -87,7 +87,7 @@ export default function HomePage() {
             <p>
               <strong className="text-slate-200">Built with generative AI.</strong>{" "}
               This project was written largely with an AI coding assistant. AI can
-              be wrong — verify anything important against the primary{" "}
+              be wrong - verify anything important against the primary{" "}
               <Link href="/sources" className="text-amber-400 hover:underline">sources</Link>{" "}
               before relying on it, keep a human in the loop for decisions, and
               don&apos;t treat generated numbers as ground truth.
@@ -112,7 +112,7 @@ function LlmUsageLabel() {
       href="https://mmmlabel.tech/"
       target="_blank"
       rel="noreferrer noopener"
-      title="This content was made with generative AI — mmmlabel.tech transparency label"
+      title="This content was made with generative AI - mmmlabel.tech transparency label"
       className="shrink-0"
     >
       <svg width="84" height="84" viewBox="0 0 120 120" role="img" aria-label="Made with GenAI">
