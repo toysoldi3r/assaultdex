@@ -14,20 +14,13 @@ import {
 export default function HomePage() {
   const meta = topMeta(20);
   const winrate = topWinRate(20, 3);
-  const teams = getTopTeams(10);
+  const teams = getTopTeams(20);
   const cores2 = getCores(2, 10);
   const cores3 = getCores(3, 10);
   const cores4 = getCores(4, 10);
 
   return (
     <div className="space-y-6">
-      {/* Experimental label */}
-      <div>
-        <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300">
-          ⚠ Data &amp; Mechanics may be inaccurate
-        </span>
-      </div>
-
       <div>
         <h1 className="text-3xl font-bold">AssaultDex</h1>
         <p className="mt-2 max-w-2xl text-slate-300">

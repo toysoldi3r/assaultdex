@@ -157,7 +157,7 @@ export function aggregateRankings(rows: RankingRow[]): UsageData {
   const topTeams: TeamRank[] = Object.values(teamAcc)
     .filter((t) => t.battles > 0)
     .sort((a, b) => b.battles - a.battles)
-    .slice(0, 10)
+    .slice(0, 20)
     .map((t) => ({
       members: t.members,
       battles: t.battles,
