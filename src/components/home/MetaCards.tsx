@@ -9,7 +9,10 @@ import type { PokemonType } from "@/domain/types/pokemon";
 import type { MonUsage, TeamRank, CoreEntry } from "@/data/usageStats";
 
 const uKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
-const grouped = (n: number) => Math.round(n).toLocaleString();
+// Locale-independent thousands grouping. `toLocaleString()` picks the runtime
+// locale, so it renders "10,662" on the server and "10.662" in a nl/de browser,
+// which triggers a hydration mismatch. This is deterministic on both sides.
+const grouped = (n: number) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
 type Tab = "usage" | "winrate" | "teams";
 

@@ -12,12 +12,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
+    // Open by default; only collapse if the user has explicitly collapsed it.
     try {
-      const stored = localStorage.getItem(COLLAPSE_KEY);
-      if (stored === "1") setOpen(false);
-      else if (stored === "0") setOpen(true);
-      // No stored preference: start collapsed on narrower viewports.
-      else if (window.innerWidth < 1100) setOpen(false);
+      if (localStorage.getItem(COLLAPSE_KEY) === "1") setOpen(false);
     } catch {
       /* ignore */
     }

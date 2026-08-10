@@ -13,6 +13,8 @@ import {
 } from "@/data/usageStats";
 
 const uKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+// Locale-independent grouping so it matches the client-rendered numbers.
+const grouped = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +27,7 @@ export default async function HomePage() {
   const totalBattles = getTotalBattles();
   const ranked = getRankedMonCount();
   const stats = [
-    { value: totalBattles.toLocaleString(), label: "Battles in snapshot" },
+    { value: grouped(totalBattles), label: "Battles in snapshot" },
     { value: String(pokemon.length), label: "Champions species" },
     { value: `${ranked}+`, label: "Ranked Pokémon" },
     { value: "Reg M-B", label: "Format · Bo3" },
