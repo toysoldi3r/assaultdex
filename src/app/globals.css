@@ -2,73 +2,120 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* Theme tokens. Two themes on the same variable names; `data-theme` is set
+   pre-paint by the inline script in layout.tsx and persisted at
+   localStorage["assaultdex.theme"]. */
+:root,
+html[data-theme="dark"] {
   color-scheme: dark;
+  --bg: #0e1013;
+  --panel: #16191e;
+  --raise: #1c2026;
+  --line: #262b32;
+  --soft: #1e232a;
+  --t1: #e7e9ec;
+  --t2: #98a0aa;
+  --t3: #69717b;
+  --acc: #6b93e6;
+  --accs: #8fb0f0;
+  --accbg: rgba(107, 147, 230, 0.13);
+  --accln: rgba(107, 147, 230, 0.38);
+  --pos: #6fc48f;
+  --neg: #e08a8a;
+}
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f2f3f5;
+  --panel: #ffffff;
+  --raise: #eaecef;
+  --line: #dcdfe4;
+  --soft: #e8eaee;
+  --t1: #14171b;
+  --t2: #5a626c;
+  --t3: #858d97;
+  --acc: #2f5fc4;
+  --accs: #1e4aa8;
+  --accbg: rgba(47, 95, 196, 0.08);
+  --accln: rgba(47, 95, 196, 0.30);
+  --pos: #2e7d51;
+  --neg: #b04a4a;
 }
 
-/* Always reserve the vertical scrollbar gutter. Without this, opening an inline
-   panel that grows the page past the viewport makes the scrollbar appear, which
-   narrows the viewport and shifts the whole centered layout sideways. */
+/* Always reserve the scrollbar gutter so opening an inline panel doesn't shift
+   the centered layout sideways. */
 html {
   scrollbar-gutter: stable;
 }
 
 body {
-  @apply bg-slate-950 text-slate-100;
+  background: var(--bg);
+  color: var(--t1);
+  font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+}
+a {
+  color: var(--acc);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--accs);
+}
+
+/* Space Mono for every numeral (stat values, %, counts, ranks). */
+.mono {
+  font-family: var(--font-space-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 /* --------------------------------------------------------------------------
-   Light theme. The app is authored dark-first with hard-coded slate utilities;
-   rather than add `dark:` variants across ~50 files, `[data-theme="light"]`
-   remaps the dominant neutral surfaces/text to a light palette. Element+class
-   specificity beats the single-class Tailwind utilities, so no !important.
-   Accent colours (amber/emerald/rose/sky) are intentionally left alone.
+   Re-skin bridge. The shell and home board use the token utilities directly
+   (bg-panel, text-t2, …). Pages not yet migrated still use the legacy slate /
+   amber utilities, so map those onto the same tokens here (both themes) - the
+   whole app adopts the palette and themes correctly without a per-file rewrite.
+   Unlayered rules beat @tailwind utilities, so these win without !important.
 --------------------------------------------------------------------------- */
-html[data-theme="light"] {
-  color-scheme: light;
-}
-html[data-theme="light"] body {
-  @apply bg-slate-100 text-slate-900;
-}
+.bg-slate-950,
+.bg-slate-950\/40,
+.bg-slate-950\/90 { background-color: var(--bg); }
+.bg-slate-900,
+.bg-slate-900\/40,
+.bg-slate-900\/50,
+.bg-slate-900\/60,
+.bg-slate-900\/70 { background-color: var(--panel); }
+.bg-slate-800,
+.bg-slate-800\/30,
+.bg-slate-800\/40,
+.bg-slate-800\/50,
+.bg-slate-800\/60,
+.bg-slate-800\/70,
+.bg-slate-700 { background-color: var(--raise); }
 
-/* Surfaces (solid + the common translucent variants) */
-html[data-theme="light"] .bg-slate-950 { background-color: #e2e8f0; }
-html[data-theme="light"] .bg-slate-950\/40,
-html[data-theme="light"] .bg-slate-950\/90 { background-color: #e2e8f0; }
-html[data-theme="light"] .bg-slate-900,
-html[data-theme="light"] .bg-slate-900\/40,
-html[data-theme="light"] .bg-slate-900\/50,
-html[data-theme="light"] .bg-slate-900\/60,
-html[data-theme="light"] .bg-slate-900\/70 { background-color: #ffffff; }
-html[data-theme="light"] .bg-slate-800,
-html[data-theme="light"] .bg-slate-800\/30,
-html[data-theme="light"] .bg-slate-800\/40,
-html[data-theme="light"] .bg-slate-800\/50,
-html[data-theme="light"] .bg-slate-800\/60,
-html[data-theme="light"] .bg-slate-800\/70 { background-color: #e2e8f0; }
-html[data-theme="light"] .bg-slate-700 { background-color: #cbd5e1; }
-html[data-theme="light"] .bg-slate-600 { background-color: #94a3b8; }
-html[data-theme="light"] .bg-slate-500 { background-color: #64748b; }
+.border-slate-950\/60,
+.border-slate-800,
+.border-slate-800\/60,
+.border-slate-700,
+.border-slate-600 { border-color: var(--line); }
+.divide-slate-800 > :not([hidden]) ~ :not([hidden]) { border-color: var(--line); }
 
-/* Borders */
-html[data-theme="light"] .border-slate-950\/60 { border-color: #cbd5e1; }
-html[data-theme="light"] .border-slate-800,
-html[data-theme="light"] .border-slate-800\/60 { border-color: #cbd5e1; }
-html[data-theme="light"] .border-slate-700 { border-color: #94a3b8; }
-html[data-theme="light"] .border-slate-600 { border-color: #64748b; }
-html[data-theme="light"] .divide-slate-800 > :not([hidden]) ~ :not([hidden]) { border-color: #cbd5e1; }
+.text-slate-100,
+.text-slate-200 { color: var(--t1); }
+.text-slate-300,
+.text-slate-400 { color: var(--t2); }
+.text-slate-500,
+.text-slate-600,
+.text-slate-700 { color: var(--t3); }
+.hover\:text-slate-100:hover,
+.hover\:text-slate-300:hover { color: var(--t1); }
+.hover\:text-slate-200:hover { color: var(--t1); }
 
-/* Text */
-html[data-theme="light"] .text-slate-100 { color: #0f172a; }
-html[data-theme="light"] .text-slate-200 { color: #1e293b; }
-html[data-theme="light"] .text-slate-300 { color: #334155; }
-html[data-theme="light"] .text-slate-400 { color: #475569; }
-html[data-theme="light"] .text-slate-500 { color: #64748b; }
-html[data-theme="light"] .text-slate-600 { color: #94a3b8; }
-html[data-theme="light"] .text-slate-700 { color: #cbd5e1; }
-/* Hover states that brighten toward white on dark must darken on light. */
-html[data-theme="light"] .hover\:text-slate-100:hover { color: #0f172a; }
-
-/* Amber accent text needs a darker shade to stay legible on light surfaces. */
-html[data-theme="light"] .text-amber-400,
-html[data-theme="light"] .text-amber-300 { color: #b45309; }
+/* Amber accent unified to the steel-blue token. */
+.text-amber-400,
+.text-amber-300,
+.text-amber-200 { color: var(--acc); }
+.hover\:text-amber-300:hover,
+.hover\:text-amber-400:hover { color: var(--accs); }
+.bg-amber-500 { background-color: var(--acc); }
+.hover\:bg-amber-400:hover { background-color: var(--accs); }
+.border-amber-500,
+.border-amber-500\/40,
+.hover\:border-amber-500:hover { border-color: var(--accln); }

@@ -223,6 +223,21 @@ export function topWinRate(n = 30, minUsage = 1): MonUsage[] {
     .slice(0, n);
 }
 
+/** Total recorded battles behind the snapshot. */
+export function getTotalBattles(): number {
+  return data.totalBattles;
+}
+
+/** How many Pokémon have any recorded games (for the home stat strip). */
+export function getRankedMonCount(): number {
+  return Object.keys(data.mons).length;
+}
+
+/** Top N Pokémon by distinct team compositions they appear in. */
+export function topByTeams(n = 20): MonUsage[] {
+  return [...allMons()].sort((a, b) => b.teams - a.teams).slice(0, n);
+}
+
 /** Top exact teams, if the snapshot carries them (newer refreshes). */
 export function getTopTeams(n = 10): TeamRank[] {
   return (data.topTeams ?? []).slice(0, n);
