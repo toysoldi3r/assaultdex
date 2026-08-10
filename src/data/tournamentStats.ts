@@ -38,3 +38,33 @@ const data = snapshot as TournData;
 export function getMonTournament(name: string): TournMon | null {
   return data.mons[usageKey(name)] ?? null;
 }
+
+/** True when the committed tournament snapshot actually carries data. */
+export function hasTournamentData(): boolean {
+  return Object.keys(data.mons).length > 0;
+}
+
+export interface ItemHolder {
+  /** Display name of the Pokémon that holds the item. */
+  name: string;
+  /** That Pokémon's overall tournament usage (%). */
+  monUsage: number;
+  /** Share of that Pokémon's sets that run this item (%). */
+  pct: number;
+}
+
+/**
+ * Champions Pokémon that commonly hold a given item, inverted from the per-mon
+ * tournament snapshot. Ranked by prominence (mon usage × item share), so the
+ * top entries are the Pokémon most of the metagame actually runs it on. Empty
+ * until the snapshot is populated in CI.
+ */
+export function itemHolders(itemName: string): ItemHolder[] {
+  const key = usageKey(itemName);
+  const out: ItemHolder[] = [];
+  for (const m of Object.values(data.mons)) {
+    const e = m.items.find((x) => usageKey(x.name) === key);
+    if (e) out.push({ name: m.name, monUsage: m.usage, pct: e.pct });
+  }
+  return out.sort((a, b) => b.monUsage * b.pct - a.monUsage * a.pct);
+}

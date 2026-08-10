@@ -51,6 +51,9 @@ export function Nav() {
             <Link
               href={n.href}
               aria-current={active ? "page" : undefined}
+              // Drop focus after clicking so the hover dropdown doesn't stay
+              // pinned open (group-focus-within) once the mouse leaves.
+              onClick={(e) => e.currentTarget.blur()}
               className={active ? "font-semibold text-slate-100" : "text-slate-300 hover:text-slate-100"}
             >
               {n.label}
@@ -67,6 +70,7 @@ export function Nav() {
                         key={c.href}
                         href={c.href}
                         aria-current={cActive ? "page" : undefined}
+                        onClick={(e) => e.currentTarget.blur()}
                         className={`block rounded px-3 py-1 ${
                           cActive ? "font-semibold text-slate-100" : "text-slate-300 hover:bg-slate-800 hover:text-slate-100"
                         }`}
