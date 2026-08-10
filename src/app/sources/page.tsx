@@ -18,6 +18,21 @@ const SOURCES: { group: string; items: Source[] }[] = [
     ],
   },
   {
+    group: "Pokémon Champions",
+    items: [
+      {
+        name: "Pokébase - Champions teams",
+        url: "https://pokebase.app/pokemon-champions/teams",
+        what: "Community-shared Pokémon Champions teams you can browse for inspiration and import.",
+      },
+      {
+        name: "Pokémon Zone - Champions",
+        url: "https://www.pokemon-zone.com/champions/",
+        what: "A Pokémon Champions hub with team lists, tier data, and format-specific tools.",
+      },
+    ],
+  },
+  {
     group: "Usage & tournament stats",
     items: [
       {
@@ -31,6 +46,16 @@ const SOURCES: { group: string; items: Source[] }[] = [
         what: "Official-style VGC tournament results, event coverage, and team lists from top players and regional/international events.",
       },
       {
+        name: "Meta VGC",
+        url: "https://metavgc.com/",
+        what: "Metagame usage and team statistics for VGC formats, with trends, common sets, and archetypes.",
+      },
+      {
+        name: "ShowdownTier",
+        url: "https://showdowntier.com/",
+        what: "Usage and tier data derived from the Pokémon Showdown ladder across formats.",
+      },
+      {
         name: "MunchStats",
         url: "https://munchstats.com/",
         what: "Ladder-derived usage and team-ranking data. AssaultDex's own metagame snapshot is aggregated from this source.",
@@ -39,6 +64,16 @@ const SOURCES: { group: string; items: Source[] }[] = [
         name: "Labmaus",
         url: "https://labmaus.net/",
         what: "VGC usage and win-rate analytics with detailed move/item/spread breakdowns and tournament data across formats.",
+      },
+    ],
+  },
+  {
+    group: "Guides & learning",
+    items: [
+      {
+        name: "VGC Guide",
+        url: "https://www.vgcguide.com/",
+        what: "Beginner-to-advanced guides on team building, battling, and the metagame - the kind of write-ups behind this app's Teams and ChoiceDex tips.",
       },
     ],
   },
