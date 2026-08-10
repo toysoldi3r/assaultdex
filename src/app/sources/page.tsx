@@ -1,4 +1,4 @@
-export const metadata = { title: "Sources — AssaultDex" };
+export const metadata = { title: "Sources - AssaultDex" };
 
 interface Source {
   name: string;
@@ -48,7 +48,7 @@ const SOURCES: { group: string; items: Source[] }[] = [
       {
         name: "Smogon University",
         url: "https://www.smogon.com/",
-        what: "Competitive analyses, sample sets, strategy articles, and the Smogon forums — the largest competitive community and rules authority for singles and doubles.",
+        what: "Competitive analyses, sample sets, strategy articles, and the Smogon forums - the largest competitive community and rules authority for singles and doubles.",
       },
       {
         name: "PokémonDB",
@@ -63,7 +63,7 @@ const SOURCES: { group: string; items: Source[] }[] = [
       {
         name: "Bulbapedia",
         url: "https://bulbapedia.bulbagarden.net/",
-        what: "Encyclopedic coverage of mechanics, move/ability interactions, game history, and edge cases — good for 'how does X actually work'.",
+        what: "Encyclopedic coverage of mechanics, move/ability interactions, game history, and edge cases - good for 'how does X actually work'.",
       },
     ],
   },
@@ -83,7 +83,7 @@ const SOURCES: { group: string; items: Source[] }[] = [
       {
         name: "r/pokemon",
         url: "https://www.reddit.com/r/pokemon/",
-        what: "General Pokémon community — news and casual discussion, less competitive focus.",
+        what: "General Pokémon community - news and casual discussion, less competitive focus.",
       },
     ],
   },

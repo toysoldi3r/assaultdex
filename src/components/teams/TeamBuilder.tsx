@@ -440,7 +440,7 @@ export function TeamBuilder({
                       onChange={(e) => update(i, { gender: (e.target.value || undefined) as "M" | "F" | undefined })}
                       className="w-16 rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
                     >
-                      <option value="">—</option>
+                      <option value="">-</option>
                       <option value="M">♂ M</option>
                       <option value="F">♀ F</option>
                     </select>
@@ -466,7 +466,7 @@ export function TeamBuilder({
                     className="flex w-28 flex-col items-center gap-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 hover:border-amber-500"
                   >
                     <span className="flex h-6 items-center">
-                      {m.item ? <ItemIcon item={m.item} /> : <span className="text-slate-600">—</span>}
+                      {m.item ? <ItemIcon item={m.item} /> : <span className="text-slate-600">-</span>}
                     </span>
                     <span className="w-full truncate text-center">{m.item ?? "None"}</span>
                   </button>
@@ -482,7 +482,7 @@ export function TeamBuilder({
                     onClick={() => openPanel(i, "ability")}
                     className="w-32 truncate rounded border border-slate-700 bg-slate-900 px-2 py-1 text-left hover:border-amber-500"
                   >
-                    {m.ability || <span className="text-slate-600">—</span>}
+                    {m.ability || <span className="text-slate-600">-</span>}
                   </button>
                 </div>
 
@@ -507,7 +507,7 @@ export function TeamBuilder({
                           className="flex flex-1 items-center justify-between gap-2 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-left hover:border-amber-500"
                         >
                           <span className="truncate">
-                            {mv || <span className="text-slate-600">— (empty)</span>}
+                            {mv || <span className="text-slate-600">- (empty)</span>}
                           </span>
                           {mv && <MoveTag meta={moveMeta[mv]} />}
                         </button>
@@ -541,7 +541,7 @@ export function TeamBuilder({
                         />
                       </span>
                       <span className="w-8 text-right tabular-nums text-slate-500">
-                        {m.spread.evs[k] || "—"}
+                        {m.spread.evs[k] || "-"}
                       </span>
                     </div>
                   ))}

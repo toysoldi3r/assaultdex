@@ -41,7 +41,7 @@ export function typeEffectiveness(
   return { multiplier, label: labelFor(multiplier), assumptions: ["typeChart"] };
 }
 
-/** Per-attacking-type multipliers for a defender — used on Pokémon pages. */
+/** Per-attacking-type multipliers for a defender - used on Pokémon pages. */
 export function defensiveChart(
   defending: DefenderTypes,
 ): Record<PokemonType, number> {

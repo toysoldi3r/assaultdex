@@ -1,6 +1,6 @@
 // Action-selection policies for simulations and the practice opponent (Phase 8).
 //
-// Every policy takes ONLY the current battle state (and an RNG) — it cannot see
+// Every policy takes ONLY the current battle state (and an RNG) - it cannot see
 // the opponent's pending choice, so the practice opponent structurally never
 // reads the user's hidden action before selecting its own (spec).
 

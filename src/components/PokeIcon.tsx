@@ -1,6 +1,6 @@
 // Pokémon menu icon from the locally-hosted Showdown icon spritesheet. @pkmn/img
 // computes the sprite-sheet offset; we rewrite its CDN URL to our self-hosted
-// copy (public/pokemonicons-sheet.png) so no external image is ever requested —
+// copy (public/pokemonicons-sheet.png) so no external image is ever requested -
 // CSP stays "no external origins" and nothing leaks to a third-party CDN.
 
 import type { CSSProperties } from "react";

@@ -2,7 +2,7 @@
 // battle/choicedex sim needs; this layer adds display-only extras (gender,
 // sprite, ability effects + hidden flag, move PP + effect text) looked up live
 // at render so no DB column, migration, or fixture regen is required. Every
-// lookup is name-keyed and null-guarded — species the fixtures invent that
+// lookup is name-keyed and null-guarded - species the fixtures invent that
 // @pkmn doesn't know simply return no extras.
 
 import { Dex } from "@pkmn/dex";
@@ -27,14 +27,14 @@ function genderLabel(spriteId: string): string {
   if (s.gender === "M") return "♂ only";
   if (s.gender === "F") return "♀ only";
   const r = s.genderRatio;
-  if (!r) return "—";
+  if (!r) return "-";
   return `♂ ${+(r.M * 100).toFixed(1)}% / ♀ ${+(r.F * 100).toFixed(1)}%`;
 }
 
 const metaCache = new Map<string, SpeciesMeta | null>();
 
 /** Look up display extras for a species by its fixture name. Null if unknown.
- *  Memoised — @pkmn/dex data is constant for the process. */
+ *  Memoised - @pkmn/dex data is constant for the process. */
 export function speciesMeta(name: string, fixtureAbilities: string[]): SpeciesMeta | null {
   const key = `${name}|${fixtureAbilities.join(",")}`;
   const cached = metaCache.get(key);
@@ -80,7 +80,7 @@ export interface GenChange {
  */
 const historyCache = new Map<string, GenChange[]>();
 
-/** Memoised wrapper — the 9-generation diff is deterministic per species. */
+/** Memoised wrapper - the 9-generation diff is deterministic per species. */
 export function changeHistory(name: string): GenChange[] {
   const cached = historyCache.get(name);
   if (cached) return cached;

@@ -5,7 +5,7 @@ import { calculateDamage } from "../damage";
 
 const field = DEFAULT_FIELD;
 
-// [provisional] — special move mechanics use documented (Showdown) rules over the
+// [provisional] - special move mechanics use documented (Showdown) rules over the
 // provisional Champions damage formula.
 describe("[provisional] special move mechanics", () => {
   it("Body Press scales with the user's Defense, not Attack", () => {

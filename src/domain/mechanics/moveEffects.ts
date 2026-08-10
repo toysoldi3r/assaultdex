@@ -1,6 +1,6 @@
 // Human-readable descriptions of a move's mechanical effects (stat overrides,
 // multi-hit, and secondary/self stat/status/flinch effects). Pure formatting of
-// MoveFixture data — no I/O. Used to surface move effects in the UI.
+// MoveFixture data - no I/O. Used to surface move effects in the UI.
 
 import type { MoveFixture, StageStatKey } from "../types/pokemon";
 

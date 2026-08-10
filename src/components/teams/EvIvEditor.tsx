@@ -80,7 +80,7 @@ export function EvIvEditor({
   const setIv = (k: StatKey, raw: number) =>
     onChange({ ...spread, ivs: { ...spread.ivs, [k]: clamp(0, 31, Math.round(raw)) } });
 
-  // Nature by its (boosted, lowered) pair — natures never touch HP.
+  // Nature by its (boosted, lowered) pair - natures never touch HP.
   const natureFor = (boost: StatKey, lower: StatKey) =>
     Object.values(NATURES).find((n) => n.boosted === boost && n.lowered === lower)?.name ??
     "Serious";

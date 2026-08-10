@@ -5,7 +5,7 @@ import { listPokemon } from "@/server/repositories/pokemonRepo";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Database — AssaultDex" };
+export const metadata = { title: "Database - AssaultDex" };
 
 export default async function DatabasePage() {
   const [items, abilities, moves, pokemon] = await Promise.all([

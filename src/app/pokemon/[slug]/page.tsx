@@ -160,7 +160,7 @@ export default async function PokemonPage({
         <p className="mb-2 text-[10px] uppercase tracking-wide text-slate-600">
           {tournament?.items?.length
             ? "From tournament usage."
-            : "Suggested items (heuristic — no per-Pokémon usage dataset for Champions yet)."}
+            : "Suggested items (heuristic - no per-Pokémon usage dataset for Champions yet)."}
         </p>
         <div className="flex flex-wrap gap-2">
           {commonItems.map((it) => (
@@ -325,18 +325,18 @@ export default async function PokemonPage({
               {p.moves.map((m) => (
                 <tr key={m.name} className="border-t border-slate-800">
                   <td className="py-1">{m.name}</td>
-                  <td>{m.type ? <TypeBadge type={m.type} /> : "—"}</td>
+                  <td>{m.type ? <TypeBadge type={m.type} /> : "-"}</td>
                   <td className="capitalize text-slate-400">{m.category}</td>
-                  <td className="text-right tabular-nums">{m.power ?? "—"}</td>
+                  <td className="text-right tabular-nums">{m.power ?? "-"}</td>
                   <td className="text-right tabular-nums">
-                    {m.accuracy === null ? "—" : m.accuracy}
+                    {m.accuracy === null ? "-" : m.accuracy}
                   </td>
-                  <td className="text-right tabular-nums">{m.pp ?? "—"}</td>
+                  <td className="text-right tabular-nums">{m.pp ?? "-"}</td>
                   <td>
                     {m.effect ? (
                       <span className="text-xs text-slate-300">{m.effect}</span>
                     ) : (
-                      <span className="text-slate-600">—</span>
+                      <span className="text-slate-600">-</span>
                     )}
                   </td>
                   <td>

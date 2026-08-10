@@ -125,7 +125,7 @@ export function HitInference({
     <div className="space-y-4">
       <p className="text-sm text-slate-400">
         Reconstruct an unknown opponent&apos;s EV/nature spread from one hit. Enter
-        your Pokémon&apos;s HP% before and after — every spread whose damage rolls
+        your Pokémon&apos;s HP% before and after - every spread whose damage rolls
         can&apos;t produce that result is ruled out. Provisional (uses the damage
         formula and a uniform, non-usage prior).
       </p>
@@ -160,7 +160,7 @@ export function HitInference({
             <select
               value={variantIdx}
               onChange={(e) => setVariantIdx(Number(e.target.value))}
-              title="Mega / battle forme (e.g. Aegislash-Blade) — uses that forme's stats"
+              title="Mega / battle forme (e.g. Aegislash-Blade) - uses that forme's stats"
               className="mt-0.5 block rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
             >
               {oppVariants.map((v, i) => (
@@ -298,7 +298,7 @@ export function HitInference({
                 {result.inf.total} combos remain.
               </p>
               <p className="mt-1 text-[10px] text-slate-600">
-                HP and {statLabel} are coupled from one hit, so ranges are wide —
+                HP and {statLabel} are coupled from one hit, so ranges are wide -
                 narrow them with a second observation.
               </p>
             </>

@@ -61,10 +61,10 @@ export default async function ChoiceDexPage() {
         title="How to use ChoiceDex"
         points={[
           "Doubles is about targeting: focus-fire to remove a threat while keeping both of your Pokémon alive.",
-          "Each round, enter what happened — HP, status, field, and switches — and the app re-ranks your best plays.",
+          "Each round, enter what happened - HP, status, field, and switches - and the app re-ranks your best plays.",
           "Predict Protect and double-target reads; positioning, switches, and speed control decide most turns.",
           "Use speed control (Tailwind / Trick Room) and redirection, and play around the opponent's.",
-          "Reference: vgcguide.com/battling. Mechanics are provisional — treat recommendations as guidance and sanity-check key calcs.",
+          "Reference: vgcguide.com/battling. Mechanics are provisional - treat recommendations as guidance and sanity-check key calcs.",
         ]}
       />
 
@@ -99,7 +99,7 @@ export default async function ChoiceDexPage() {
               <section>
                 <h3 className="mb-2 text-sm font-semibold text-slate-400">Battle analysis</h3>
                 <p className="text-sm text-slate-400">
-                  Import a finished battle and review each turn — actual vs
+                  Import a finished battle and review each turn - actual vs
                   recommended play, a personal dashboard, and confidence
                   calibration.{" "}
                   <Link href="/battles" className="text-amber-400 hover:underline">Open Battles →</Link>

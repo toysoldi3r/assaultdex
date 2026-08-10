@@ -78,14 +78,14 @@ export async function saveTeamSnapshotAction(formData: FormData): Promise<string
   return `Saved as v${version}.`;
 }
 
-/** Delete without revalidate/redirect — the homepage manages its own list state
+/** Delete without revalidate/redirect - the homepage manages its own list state
  *  and shows an undo affordance, so a navigation here would drop it. */
 export async function deleteTeamSilentAction(formData: FormData): Promise<void> {
   const teamId = String(formData.get("teamId") ?? "");
   if (teamId) await deleteTeam(teamId);
 }
 
-/** Recreate a team/box from a captured snapshot — powers undo-delete. Returns
+/** Recreate a team/box from a captured snapshot - powers undo-delete. Returns
  *  the new card so the client can slot it back in without a full reload. */
 export async function recreateTeamAction(formData: FormData): Promise<{
   id: string;

@@ -6,7 +6,7 @@
 // Factors implemented from the spec's lead criteria that are computable without
 // metagame data: damage pressure, defensive position, speed control, and
 // knockout risk. Criteria that need usage data (common opponent strategies) are
-// intentionally omitted — that is Phase 5.
+// intentionally omitted - that is Phase 5.
 
 import type { AssumptionId } from "../mechanics/assumptions";
 import { effectiveSpeed } from "../mechanics/speed";

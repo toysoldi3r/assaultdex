@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Panel } from "@/components/ui";
 
 export const metadata = {
-  title: "Help & troubleshooting — AssaultDex",
+  title: "Help & troubleshooting - AssaultDex",
 };
 
 const REPO_ISSUES = "https://github.com/toystores/assaultdex/issues";
@@ -13,90 +13,68 @@ export default function HelpPage() {
       <div>
         <h1 className="text-2xl font-bold">Help &amp; troubleshooting</h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-400">
-          Something not working? Most issues fall into one of the cases below. If
-          none of them fix it, report the problem and include the details listed
-          at the bottom.
+          Something not working, or unsure what a tab does? Start here. If none
+          of the cases below fix it, report the problem with the details at the
+          bottom.
         </p>
       </div>
 
       <Panel title="What each tab does">
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
-          <li><Link href="/guide" className="text-amber-400 hover:underline">Guide</Link> — intro to the app and to competitive doubles.</li>
-          <li><Link href="/pokemon" className="text-amber-400 hover:underline">Pokédex</Link>, <Link href="/teams" className="text-amber-400 hover:underline">Teams</Link>, <Link href="/choicedex" className="text-amber-400 hover:underline">ChoiceDex</Link> — browse, build, and battle-calculate.</li>
-          <li><Link href="/database" className="text-amber-400 hover:underline">Database</Link>, <Link href="/types" className="text-amber-400 hover:underline">Types</Link>, <Link href="/sources" className="text-amber-400 hover:underline">Sources</Link> — item/ability reference, the type chart, and external sites.</li>
+          <li><Link href="/guide" className="text-amber-400 hover:underline">Guide</Link>: an intro to the app and to competitive doubles.</li>
+          <li><Link href="/pokemon" className="text-amber-400 hover:underline">Pokédex</Link>, <Link href="/teams" className="text-amber-400 hover:underline">Teams</Link>, <Link href="/choicedex" className="text-amber-400 hover:underline">ChoiceDex</Link>: browse Pokémon, build teams, and get live battle recommendations.</li>
+          <li><Link href="/database" className="text-amber-400 hover:underline">Database</Link> and <Link href="/sources" className="text-amber-400 hover:underline">Sources</Link>: item / ability / move reference, the type chart, a damage calculator, and links to major community sites.</li>
         </ul>
       </Panel>
 
-      <Panel title="The page is blank or shows “Something went wrong”">
+      <Panel title="A page is blank or shows “Something went wrong”">
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
+          <li>Refresh the page, or use the &ldquo;Try again&rdquo; button on the error screen.</li>
+          <li>Your team or battle data is safe; a single page failing to load does not delete anything.</li>
           <li>
-            The first page load after starting compiles on demand and can take
-            ~15 seconds. Give it a moment, then refresh.
-          </li>
-          <li>
-            If it persists, the database may not be set up. Stop the app and run{" "}
-            <code>pnpm db:migrate</code> then <code>pnpm db:seed</code> (or just
-            re-run <code>run.bat</code>).
+            Running it yourself? The first request after starting the dev server
+            compiles on demand and can take a few seconds. If a page stays empty,
+            make sure the database is set up (see the next card).
           </li>
         </ul>
       </Panel>
 
-      <Panel title="No Pokémon / empty Pokédex or Teams">
+      <Panel title="Empty Pokédex or Teams (local setup only)">
         <p className="text-sm text-slate-300">
-          The database has not been seeded. Run <code>pnpm db:seed</code> to load
-          the Pokémon pool, then refresh.
+          If you are running AssaultDex locally and the Pokémon pool is empty,
+          the database has not been created and seeded yet. From the project
+          folder run <code>pnpm exec prisma migrate deploy</code> then{" "}
+          <code>pnpm db:seed</code>, and refresh.
         </p>
       </Panel>
 
-      <Panel title="ChoiceDex opens an old battle / a team that no longer exists">
+      <Panel title="ChoiceDex opens an old battle or a team that no longer exists">
         <p className="text-sm text-slate-300">
           ChoiceDex remembers your last battle so you can switch tabs and come
-          back. It now discards a saved battle whose Pokémon no longer match a
-          real team. If you still see a stale battle, click <strong>New
-          battle</strong>, or clear this site&apos;s data in your browser
-          (Application → Local Storage).
+          back. It discards a saved battle whose Pokémon no longer match a real
+          team, but if you still see a stale one, click <strong>New battle</strong>,
+          or clear this site&apos;s data in your browser (Application &rsaquo; Local
+          Storage).
         </p>
-      </Panel>
-
-      <Panel title="The launcher (run.bat) fails">
-        <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
-          <li>
-            <strong>Windows:</strong> double-click <code>run.bat</code>. Node is
-            installed automatically via winget on first run (accept the UAC
-            prompt).
-          </li>
-          <li>
-            <strong>“node is not installed”:</strong> install Node 20+ from{" "}
-            <a href="https://nodejs.org" className="text-amber-400 hover:underline">
-              nodejs.org
-            </a>{" "}
-            and run again.
-          </li>
-          <li>
-            <strong>Port 3000 already in use:</strong> stop the other process
-            using it, or close the previous app window, then re-run.
-          </li>
-        </ul>
       </Panel>
 
       <Panel title="A calculation looks wrong">
         <p className="text-sm text-slate-300">
-          All battle mechanics are <strong>provisional</strong> — Pokémon
+          All battle mechanics are <strong>provisional</strong>. Pokémon
           Champions&apos; formulas are not publicly documented, so damage, speed,
-          abilities, items, and residuals use mainline-derived placeholders and
-          are flagged as unverified throughout the app. Differences from the real
-          game are expected until the mechanics are confirmed.
+          abilities, items, and residual effects use mainline-derived placeholders
+          and are flagged as unverified throughout the app. Differences from the
+          real game are expected until the mechanics are confirmed - treat the
+          numbers as guidance, not gospel.
         </p>
       </Panel>
 
       <Panel title="Report a problem">
-        <p className="text-sm text-slate-300">
-          Open an issue and include:
-        </p>
+        <p className="text-sm text-slate-300">Open an issue and include:</p>
         <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-400">
-          <li>What you did and what you expected vs. what happened</li>
-          <li>The page/route (e.g. <code>/choicedex</code>) and your browser</li>
-          <li>Any red error text from the terminal window running the app</li>
+          <li>What you did, and what you expected versus what happened</li>
+          <li>The page (for example <code>/choicedex</code>) and your browser</li>
+          <li>A screenshot if the layout looks wrong</li>
         </ul>
         <a
           href={REPO_ISSUES}
@@ -107,7 +85,7 @@ export default function HelpPage() {
       </Panel>
 
       <Link href="/" className="inline-block text-sm text-amber-400 hover:underline">
-        ← Back to AssaultDex
+        &larr; Back to AssaultDex
       </Link>
     </div>
   );

@@ -61,10 +61,10 @@ export default async function BattleDetailPage({
                 <tr key={t.turn} className="border-t border-slate-800 align-top">
                   <td className="p-1 text-slate-500">{t.turn}</td>
                   <td className="p-1 text-slate-200">
-                    {t.actualActions.join("; ") || "—"}
+                    {t.actualActions.join("; ") || "-"}
                   </td>
                   <td className="p-1 text-slate-400">
-                    {t.recommendedActions.join("; ") || "—"}
+                    {t.recommendedActions.join("; ") || "-"}
                   </td>
                   <td
                     className={`p-1 text-right tabular-nums ${

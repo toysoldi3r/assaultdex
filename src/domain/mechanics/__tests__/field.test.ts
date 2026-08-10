@@ -8,7 +8,7 @@ import { isGrounded, terrainMultiplier, weatherMultiplier } from "../field";
 const atk = combatant({ name: "A", types: ["fire"], base: stats({ atk: 150, spa: 150 }) });
 const grounded = combatant({ name: "G", types: ["normal"], base: stats() });
 
-// [provisional] — all Champions field mechanics are unverified.
+// [provisional] - all Champions field mechanics are unverified.
 describe("[provisional] field mechanics", () => {
   it("grounding: Flying types are not grounded", () => {
     expect(isGrounded(["normal"])).toBe(true);

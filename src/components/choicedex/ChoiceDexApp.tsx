@@ -76,7 +76,7 @@ function emptyTeam(): (string | null)[] {
   return [null, null, null, null, null, null];
 }
 
-/** Selectable battle-stage backgrounds — a sky band over a ground band with a
+/** Selectable battle-stage backgrounds - a sky band over a ground band with a
  *  soft horizon glow, evoking in-game stages without any external image. */
 const BACKGROUNDS: { id: string; label: string; background: string }[] = [
   {
@@ -140,7 +140,7 @@ export function ChoiceDexApp({
   const [phase, setPhase] = useState<"preview" | "battle">("preview");
   const [userTeam, setUserTeam] = useState<(string | null)[]>(emptyTeam());
   const [oppTeam, setOppTeam] = useState<(string | null)[]>(emptyTeam());
-  // Known sets for mons loaded from a saved team, keyed `side:slug` — prefill.
+  // Known sets for mons loaded from a saved team, keyed `side:slug` - prefill.
   const [loadedSets, setLoadedSets] = useState<Record<string, KnownSet>>({});
 
   // Persist the preview/session so switching tabs and returning reopens it.
@@ -566,7 +566,7 @@ function BattleView({
   const [background, setBackground] = useState<string>("meadow");
 
   // Stable side-aware signature, so a saved battle only resumes for the same
-  // side assignments and slot order — not just the same twelve Pokémon.
+  // side assignments and slot order - not just the same twelve Pokémon.
   const teamSig = useMemo(
     () => `user:${userTeam.join("|")}::opponent:${oppTeam.join("|")}`,
     [userTeam, oppTeam],
@@ -632,7 +632,7 @@ function BattleView({
   const asTuple = (t: readonly PokemonType[]) =>
     t.slice(0, 2) as [PokemonType] | [PokemonType, PokemonType];
 
-  // Active battle forme for a mon: its Mega (if toggled), or — for Ditto — the
+  // Active battle forme for a mon: its Mega (if toggled), or - for Ditto - the
   // opposing active Pokémon it has Transformed into (copying stats except HP,
   // typing, ability, movepool, and sprite). Undefined = fights as its base self.
   const formeOf = (side: Side, slug: string): SlotForm["forme"] | undefined => {
@@ -746,7 +746,7 @@ function BattleView({
     const sibling = active[idx === 0 ? 1 : 0];
     const current = active[idx];
     return team
-      // Exclude the sibling (can't be in both spots) and fainted Pokémon — but
+      // Exclude the sibling (can't be in both spots) and fainted Pokémon - but
       // always keep whoever currently occupies this spot so it stays visible.
       .filter((s) => s !== sibling && (s === current || monOf(side, s).hpPct > 0))
       .map((s) => ({ slug: s, name: nameOf(s) }));
@@ -1025,10 +1025,10 @@ function BattleView({
       {battleOver ? (
         <p className="text-sm font-semibold text-amber-300">
           🏆 {userAlive === 0 && oppAlive === 0
-            ? "Both sides fainted — draw."
+            ? "Both sides fainted - draw."
             : userAlive === 0
-              ? "Opponent wins — your team fainted."
-              : "You win — opponent team fainted."}{" "}
+              ? "Opponent wins - your team fainted."
+              : "You win - opponent team fainted."}{" "}
           Use “New battle” above to restart.
         </p>
       ) : (
@@ -1084,7 +1084,7 @@ function MonChip({
   const typeArr = isMega ? mega!.types : refData?.types;
   const typeLine = typeArr?.length ? `\n${typeArr.join(" / ")}` : "";
   const title =
-    `${isMega ? mega!.name : name} — ${state.hpPct}% HP` +
+    `${isMega ? mega!.name : name} - ${state.hpPct}% HP` +
     (state.status !== "none" ? ` · ${state.status}` : "") +
     (isMega ? ` · ${mega!.ability}` : state.ability ? ` · ${state.ability}` : "") +
     (isMega ? ` · ${mega!.item}` : state.item && state.item !== "None" ? ` · ${state.item}` : "") +
@@ -1145,7 +1145,7 @@ function ActiveCard({
   abilities: string[];
   defaultAbility: string;
   items: string[];
-  /** This species' Mega/Primal forme, if any — enables the Mega button. */
+  /** This species' Mega/Primal forme, if any - enables the Mega button. */
   mega?: MegaForme;
   /** Species-specific in-battle form change (Ditto / Dondozo / Zoroark). */
   special?: SpecialForm;
@@ -1171,7 +1171,7 @@ function ActiveCard({
   const abilityOpts =
     formeAbility && !abilities.includes(formeAbility) ? [formeAbility, ...abilities] : abilities;
   const hoverInfo = slug
-    ? `${displayName} — ${state.hpPct}% HP` +
+    ? `${displayName} - ${state.hpPct}% HP` +
       (state.status !== "none" ? ` · ${state.status}` : "") +
       (abilityValue ? ` · ${abilityValue}` : "") +
       (itemValue && itemValue !== "None" ? ` · ${itemValue}` : "")
@@ -1212,7 +1212,7 @@ function ActiveCard({
         onChange={(e) => onSelect(e.target.value || null)}
         className="mb-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs"
       >
-        <option value="">—</option>
+        <option value="">-</option>
         {options.map((o) => <option key={o.slug} value={o.slug}>{o.name}</option>)}
       </select>
       <label className="flex items-center gap-1">
@@ -1270,7 +1270,7 @@ function ActiveCard({
           className="mt-1 w-full rounded border border-sky-700 bg-slate-900 px-1 py-0.5 text-[10px] text-sky-200"
         >
           <option value="">Transform into…</option>
-          {/* Keep the current copy selectable even after it has switched out —
+          {/* Keep the current copy selectable even after it has switched out -
               Transform persists once used. */}
           {(state.transformInto && !special.options.some((o) => o.slug === state.transformInto)
             ? [{ slug: state.transformInto, name: disguise?.name ?? state.transformInto }, ...special.options]
@@ -1292,7 +1292,7 @@ function ActiveCard({
         <select
           value={state.illusionAs ?? ""}
           onChange={(e) => onPatch({ illusionAs: e.target.value || null })}
-          title="Illusion: appear as a teammate (cosmetic — stats stay Zoroark's)"
+          title="Illusion: appear as a teammate (cosmetic - stats stay Zoroark's)"
           className="mt-1 w-full rounded border border-fuchsia-700 bg-slate-900 px-1 py-0.5 text-[10px] text-fuchsia-200"
         >
           <option value="">Illusion (disguise)…</option>

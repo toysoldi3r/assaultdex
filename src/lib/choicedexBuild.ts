@@ -97,9 +97,9 @@ export interface SlotForm {
     baseStats: BaseStats;
     types: [PokemonType] | [PokemonType, PokemonType];
     ability: string;
-    /** Overridden movepool — Transform copies the target's moves. */
+    /** Overridden movepool - Transform copies the target's moves. */
     moves?: MoveFixture[];
-    /** Icon species slug — Transform mirrors the target's sprite. */
+    /** Icon species slug - Transform mirrors the target's sprite. */
     species?: string;
   };
 }
@@ -115,7 +115,7 @@ export const COMMON_ITEMS = [
   "Muscle Band",
   "Wise Glasses",
   "Expert Belt",
-  // Reactive / residual items — take effect during simulations.
+  // Reactive / residual items - take effect during simulations.
   "Sitrus Berry",
   "Weakness Policy",
   "Focus Sash",
@@ -175,7 +175,7 @@ export function combatantFromRef(
   slot: SlotForm,
 ): Combatant {
   // A non-empty ability is trusted as-is, even if it is not one of the species'
-  // legal abilities — ability-changing moves (Skill Swap, Simple Beam, Worry
+  // legal abilities - ability-changing moves (Skill Swap, Simple Beam, Worry
   // Seed, Entrainment, …) can grant an off-species ability mid-battle. The
   // "(none)" sentinel suppresses the ability (Gastro Acid / Neutralizing Gas);
   // an empty string means "use the species' first ability".
@@ -248,7 +248,7 @@ function buildRawState(
 /**
  * Build a battle state with on-entry ability effects (Intimidate, weather /
  * terrain setters) applied, plus a log of what fired. Deterministic and
- * idempotent — always computed fresh from the form.
+ * idempotent - always computed fresh from the form.
  */
 export function buildStateWithEntry(
   form: TurnForm,

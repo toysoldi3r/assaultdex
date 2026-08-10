@@ -47,7 +47,7 @@ function write(key: string, items: NavItem[]): void {
   try {
     localStorage.setItem(key, JSON.stringify(items));
   } catch {
-    /* storage unavailable — degrade silently */
+    /* storage unavailable - degrade silently */
   }
 }
 

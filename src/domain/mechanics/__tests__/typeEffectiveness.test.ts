@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { typeEffectiveness } from "../typeEffectiveness";
 
-// [provisional] — asserts values from the unverified Champions type chart.
+// [provisional] - asserts values from the unverified Champions type chart.
 describe("[provisional] typeEffectiveness", () => {
   it("single super-effective matchup", () => {
     expect(typeEffectiveness("fire", ["grass"]).multiplier).toBe(2);

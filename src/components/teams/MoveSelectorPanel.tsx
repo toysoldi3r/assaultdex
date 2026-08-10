@@ -72,11 +72,11 @@ export function MoveSelectorPanel({
       </td>
       <td className="px-2 py-1">{r.meta && <TypeBadge type={r.meta.type} />}</td>
       <td className="px-2 py-1">{r.meta && <CategoryIcon category={r.meta.category} />}</td>
-      <td className="px-2 py-1 text-right tabular-nums text-slate-300">{r.meta?.power ?? "—"}</td>
+      <td className="px-2 py-1 text-right tabular-nums text-slate-300">{r.meta?.power ?? "-"}</td>
       <td className="px-2 py-1 text-right tabular-nums text-slate-300">
-        {r.meta ? (r.meta.accuracy == null ? "—" : `${r.meta.accuracy}%`) : ""}
+        {r.meta ? (r.meta.accuracy == null ? "-" : `${r.meta.accuracy}%`) : ""}
       </td>
-      <td className="px-2 py-1 text-right tabular-nums text-slate-400">{r.meta?.pp ?? "—"}</td>
+      <td className="px-2 py-1 text-right tabular-nums text-slate-400">{r.meta?.pp ?? "-"}</td>
       <td className="px-2 py-1 text-[11px] text-slate-500">{r.meta?.desc ?? ""}</td>
     </tr>
   );

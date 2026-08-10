@@ -65,7 +65,7 @@ function round2(n: number): number {
 }
 
 // Variable multi-hit moves (2–5 hits). Expected hits ≈ 3.2 normally, 5 with
-// Skill Link — so the readout doesn't assume the maximum every time.
+// Skill Link - so the readout doesn't assume the maximum every time.
 const VARIABLE_MULTIHIT = new Set([
   "Bullet Seed", "Rock Blast", "Pin Missile", "Icicle Spear", "Bone Rush",
   "Tail Slap", "Water Shuriken", "Scale Shot", "Fury Attack", "Comet Punch",
@@ -162,7 +162,7 @@ export function calculateDamage(
 
   let attack = offSource.stats[offKey] * stageMultiplier(attackStage);
   const defense = defender.stats[defKey] * stageMultiplier(defenseStage);
-  // Burn halves a burned attacker's physical damage — unless Guts ignores it.
+  // Burn halves a burned attacker's physical damage - unless Guts ignores it.
   if (isPhysical && attacker.status === "burn" && attacker.ability !== "Guts") {
     attack *= 0.5;
   }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "Guide — AssaultDex" };
+export const metadata = { title: "Guide - AssaultDex" };
 
 export default function GuidePage() {
   return (
@@ -22,11 +22,11 @@ export default function GuidePage() {
           and metagame statistics into one place.
         </p>
         <ul className="mt-2 list-disc space-y-1 pl-5">
-          <li><Link href="/pokemon" className="text-amber-400 hover:underline">Pokédex</Link> — stats, matchups, movepools, common sets and items per Pokémon.</li>
-          <li><Link href="/teams" className="text-amber-400 hover:underline">Teams</Link> — build and save teams; get legality and analysis (weaknesses, speed, coverage).</li>
-          <li><Link href="/choicedex" className="text-amber-400 hover:underline">ChoiceDex</Link> — set up both teams and get the best play each turn as you enter what happens.</li>
-          <li><Link href="/database" className="text-amber-400 hover:underline">Database</Link> — items, abilities, and a two-Pokémon damage calculator.</li>
-          <li><Link href="/types" className="text-amber-400 hover:underline">Types</Link> — full type chart and a move-vs-dual-type effectiveness grid.</li>
+          <li><Link href="/pokemon" className="text-amber-400 hover:underline">Pokédex</Link> - stats, matchups, movepools, common sets and items per Pokémon.</li>
+          <li><Link href="/teams" className="text-amber-400 hover:underline">Teams</Link> - build and save teams; get legality and analysis (weaknesses, speed, coverage).</li>
+          <li><Link href="/choicedex" className="text-amber-400 hover:underline">ChoiceDex</Link> - set up both teams and get the best play each turn as you enter what happens.</li>
+          <li><Link href="/database" className="text-amber-400 hover:underline">Database</Link> - items, abilities, and a two-Pokémon damage calculator.</li>
+          <li><Link href="/types" className="text-amber-400 hover:underline">Types</Link> - full type chart and a move-vs-dual-type effectiveness grid.</li>
         </ul>
       </Section>
 
@@ -38,7 +38,7 @@ export default function GuidePage() {
           selection, and speed control far more than 1-versus-1 singles.
         </p>
         <p className="mt-2">
-          A game is short — often 4–8 turns — so every decision matters. You bring
+          A game is short - often 4–8 turns - so every decision matters. You bring
           6 Pokémon, then pick 4 at team preview based on the matchup, and lead with
           2.
         </p>
@@ -48,7 +48,7 @@ export default function GuidePage() {
         <Term term="Base stats">
           Each Pokémon has six stats: HP, Attack (Atk), Defense (Def), Special
           Attack (SpA), Special Defense (SpD), and Speed (Spe). Higher isn&apos;t
-          always better — a role dictates which stats matter.
+          always better - a role dictates which stats matter.
         </Term>
         <Term term="EVs (Effort Values)">
           You distribute up to 508 EVs across stats (max 252 per stat) to tune a
@@ -99,7 +99,7 @@ export default function GuidePage() {
       <Section title="Where to learn more">
         <p>
           See the <Link href="/sources" className="text-amber-400 hover:underline">Sources</Link>{" "}
-          page for the major sites — Pokémon Showdown to test, Pikalytics and
+          page for the major sites - Pokémon Showdown to test, Pikalytics and
           Limitless VGC for stats, and Smogon/Bulbapedia for mechanics.
         </p>
       </Section>

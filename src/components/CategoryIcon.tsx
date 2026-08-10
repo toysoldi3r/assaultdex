@@ -1,5 +1,5 @@
 // Move-category icon approximating the in-game Physical / Special / Status
-// badges (self-contained inline SVG — no external asset, CSP-safe).
+// badges (self-contained inline SVG - no external asset, CSP-safe).
 
 import type { ReactNode } from "react";
 import type { MoveCategory } from "@/components/teams/moveTypes";

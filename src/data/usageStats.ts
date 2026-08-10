@@ -5,7 +5,7 @@
 // (private) repo, so nothing is fetched at runtime, no trail leads from the
 // live site to any data source, and the aggregated data is never exposed
 // publicly. The snapshot is refreshed out-of-band by scripts/refresh-usage.mjs
-// (run on a schedule in CI, committing back to this private repo) — see
+// (run on a schedule in CI, committing back to this private repo) - see
 // .github/workflows/refresh-usage.yml. The raw file it aggregates is team
 // compositions + battle counts, so we derive usage %, win rate, and teammates;
 // per-move/item/ability/EV data is not present in that source.
@@ -89,7 +89,7 @@ interface RankingRow {
 
 /**
  * Aggregate raw team-ranking rows into per-Pokémon usage, win rate, teammates.
- * Pure (no I/O) — the refresh script feeds it fetched rows; runtime never calls
+ * Pure (no I/O) - the refresh script feeds it fetched rows; runtime never calls
  * it (runtime serves the pre-aggregated snapshot only).
  */
 export function aggregateRankings(rows: RankingRow[]): UsageData {

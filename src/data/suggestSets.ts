@@ -1,7 +1,7 @@
 // Heuristic competitive set suggestions for a species. There is no offline
 // per-Pokémon usage/spread dataset for Champions, so these are archetype-based
 // suggestions (offensive / bulky / support) derived from base stats and the
-// legal movepool — not scraped "most common" sets. Labelled as such in the UI.
+// legal movepool - not scraped "most common" sets. Labelled as such in the UI.
 
 import type { BaseStats, MoveCategory, PokemonType, StatKey } from "@/domain/types/pokemon";
 

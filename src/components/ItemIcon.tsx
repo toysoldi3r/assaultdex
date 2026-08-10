@@ -4,7 +4,7 @@
 // PokeIcon. The sheet (public/itemicons-sheet.png) is large and not always
 // present, so the component probes it once: until the sheet loads it renders
 // nothing (callers always show the item name too), and it lights up automatically
-// the moment the asset is added. No external origin is ever requested — CSP stays
+// the moment the asset is added. No external origin is ever requested - CSP stays
 // "no external origins".
 
 import { useEffect, useState, type CSSProperties } from "react";

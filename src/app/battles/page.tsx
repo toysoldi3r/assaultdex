@@ -15,10 +15,10 @@ export const dynamic = "force-dynamic";
 
 const ERR_MESSAGES: Record<string, string> = {
   missing: "Pick a Pokémon in every slot.",
-  build: "Could not build the battle — re-run the seed.",
+  build: "Could not build the battle - re-run the seed.",
   json: "Import failed: not valid JSON.",
   shape: "Import failed: JSON is not a valid provisional replay.",
-  rate: "Too many requests — please wait a moment and try again.",
+  rate: "Too many requests - please wait a moment and try again.",
 };
 
 export default async function BattlesPage({
@@ -42,7 +42,7 @@ export default async function BattlesPage({
       <p className="max-w-2xl text-sm text-slate-400">
         Post-battle analysis, a personal dashboard, and confidence calibration.
         No confirmed Pokémon Champions replay format exists yet, so replays use a
-        provisional internal format — generate a sample battle against the
+        provisional internal format - generate a sample battle against the
         practice AI, or import a provisional replay JSON.
       </p>
 
@@ -50,7 +50,7 @@ export default async function BattlesPage({
         <p className="text-sm text-rose-400">{ERR_MESSAGES[err]}</p>
       )}
 
-      <Panel title="Batch simulation — run many outcomes">
+      <Panel title="Batch simulation - run many outcomes">
         <p className="mb-3 text-sm text-slate-400">
           In a tricky spot? Pick the four active Pokémon and run dozens or hundreds
           of Monte-Carlo rollouts at once (with a progress bar) to see the win/loss
@@ -76,7 +76,7 @@ export default async function BattlesPage({
                 label="Win rate"
                 value={
                   dashboard.winRate === null
-                    ? "—"
+                    ? "-"
                     : `${(dashboard.winRate * 100).toFixed(0)}%`
                 }
               />
@@ -116,7 +116,7 @@ export default async function BattlesPage({
                     <td className="px-2 text-slate-500">observed</td>
                     {dashboard.koCalibration.buckets.map((b) => (
                       <td key={b.lower} className="px-2 text-center text-slate-300">
-                        {b.count === 0 ? "—" : b.observedFrequency.toFixed(2)}
+                        {b.count === 0 ? "-" : b.observedFrequency.toFixed(2)}
                       </td>
                     ))}
                   </tr>

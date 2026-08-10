@@ -16,7 +16,7 @@ const WEATHER_LABEL: Record<string, string> = {
 
 export function TeamAnalysisPanel({ analysis }: { analysis: TeamAnalysis }) {
   const maxSpeed = Math.max(1, ...analysis.speedTiers.map((s) => s.speed));
-  // Only real weaknesses (multiplier > 1) — neutral matchups are excluded.
+  // Only real weaknesses (multiplier > 1) - neutral matchups are excluded.
   const weaknesses = analysis.weaknesses.filter((w) => w.members.length > 0);
 
   return (
@@ -141,7 +141,7 @@ export function TeamAnalysisPanel({ analysis }: { analysis: TeamAnalysis }) {
           <h3 className="text-xs font-semibold uppercase text-slate-500">Coverage gaps</h3>
           {analysis.offensiveGaps.length === 0 ? (
             <p className="mt-1 text-xs text-emerald-300">
-              The team hits every type super-effectively — no coverage gaps.
+              The team hits every type super-effectively - no coverage gaps.
             </p>
           ) : (
             <div className="mt-1 flex flex-wrap items-center gap-1">

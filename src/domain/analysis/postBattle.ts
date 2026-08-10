@@ -1,5 +1,5 @@
 // Post-battle analysis (Phase 9). For each turn, compare the action actually
-// taken against the engine's recommendation, on EXPECTED value — which separates
+// taken against the engine's recommendation, on EXPECTED value - which separates
 // decision quality from the random result and from information learned later
 // (spec). Pure and provisional.
 

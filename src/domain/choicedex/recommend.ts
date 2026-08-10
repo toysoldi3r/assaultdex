@@ -92,7 +92,7 @@ function describeAction(state: BattleState, action: Action): string {
   return `${who}: ${action.moveName} → ${target?.name ?? "target"}`;
 }
 
-/** Human-readable labels for a combination (cheap — no damage evaluation). */
+/** Human-readable labels for a combination (cheap - no damage evaluation). */
 export function describeCombination(
   state: BattleState,
   combination: ActionCombination,

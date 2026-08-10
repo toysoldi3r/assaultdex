@@ -147,7 +147,7 @@ export const ASSUMPTIONS = {
   spreadGridPrior: {
     id: "spreadGridPrior",
     description:
-      "Opponent spreads are enumerated on a uniform grid (EV steps of 4, nature ±/0, IV 0/31) with equal priors. This is NOT usage-based — competitive-usage priors are deferred until a verified data source exists.",
+      "Opponent spreads are enumerated on a uniform grid (EV steps of 4, nature ±/0, IV 0/31) with equal priors. This is NOT usage-based - competitive-usage priors are deferred until a verified data source exists.",
     source: "fixture",
     verified: false,
   },

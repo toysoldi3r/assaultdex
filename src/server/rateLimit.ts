@@ -1,4 +1,4 @@
-// Minimal fixed-window rate limiter (Phase 10). In-memory only — suitable for a
+// Minimal fixed-window rate limiter (Phase 10). In-memory only - suitable for a
 // single instance. For multi-instance production, back this with Redis (spec:
 // "Redis only when needed"); the interface stays the same.
 
