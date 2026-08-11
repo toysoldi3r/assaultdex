@@ -16,7 +16,10 @@ const uKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 // Locale-independent grouping so it matches the client-rendered numbers.
 const grouped = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-export const dynamic = "force-dynamic";
+// ISR: data is static (committed usage snapshot + build-time seed), so render
+// once and regenerate hourly instead of on every request. A re-seed shows after
+// the next revalidate (or a redeploy).
+export const revalidate = 3600;
 
 export default async function HomePage() {
   const pokemon = await listPokemon();

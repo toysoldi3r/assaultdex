@@ -19,6 +19,7 @@ const config: Config = {
         accln: "var(--accln)",
         pos: "var(--pos)",
         neg: "var(--neg)",
+        warn: "var(--warn)",
       },
     },
   },

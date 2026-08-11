@@ -1,7 +1,6 @@
 import { Dex } from "@pkmn/dex";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Panel } from "@/components/ui";
 import { TeamBuilder, type MemberRef } from "@/components/teams/TeamBuilder";
 import type { MoveMeta } from "@/components/teams/moveTypes";
 import { POKEMON_TYPES } from "@/domain/types/pokemon";
@@ -94,54 +93,44 @@ export default async function TeamDetailPage({
   }));
 
   return (
-    <div className="space-y-6">
-      <Link href="/teams" className="text-sm text-amber-400 hover:underline">
-        ← Teams
-      </Link>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 text-2xl font-bold">
+    <div className="space-y-3.5">
+      <div>
+        <Link href="/teams" className="text-xs text-t2 hover:text-t1">← Teams</Link>
+        <div className="mt-1 flex flex-wrap items-center gap-2.5">
           {resolved && (
             <LegalityDot
               legal={resolved.validation.valid}
+              hasFlags={resolved.validation.warnings.length > 0}
               errors={[
                 ...resolved.missingSpecies.map((s) => `Missing from Pokédex: ${s}`),
-                ...resolved.validation.errors.map(
-                  (e) => `${e.species ? `${e.species}: ` : ""}${e.message}`,
-                ),
-                ...resolved.validation.warnings.map(
-                  (w) => `${w.species ? `${w.species}: ` : ""}${w.message}`,
-                ),
+                ...resolved.validation.errors.map((e) => `${e.species ? `${e.species}: ` : ""}${e.message}`),
+                ...resolved.validation.warnings.map((w) => `${w.species ? `${w.species}: ` : ""}${w.message}`),
               ]}
             />
           )}
-          {team.name}
-        </h1>
-        <TeamMenu
-          teamId={team.id}
-          notes={team.notes}
-          versions={menuVersions}
-          latest={latest.versionNumber}
-        />
+          <h1 className="text-[20px] font-[650] tracking-[-0.01em] text-t1">{team.name}</h1>
+          <span className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-t3">v{latest.versionNumber}</span>
+          <span className="ml-auto">
+            <TeamMenu teamId={team.id} notes={team.notes} versions={menuVersions} latest={latest.versionNumber} />
+          </span>
+        </div>
       </div>
 
-      {/* Collapsible team analysis (teams only, not boxes) */}
-      {resolved?.analysis && <TeamAnalysisPanel analysis={resolved.analysis} />}
+      <TeamBuilder
+        teamId={team.id}
+        isBox={team.isBox}
+        initialMembers={latest.snapshot.members}
+        refs={memberRefs}
+        pool={pool}
+        natures={NATURE_NAMES}
+        items={items}
+        abilityDesc={abilityDesc}
+        moveMeta={moveMeta}
+        tournament={tournament}
+      />
 
-      <Panel title="Teambuilder">
-        <TeamBuilder
-          teamId={team.id}
-          isBox={team.isBox}
-          initialMembers={latest.snapshot.members}
-          refs={memberRefs}
-          pool={pool}
-          natures={NATURE_NAMES}
-          items={items}
-          abilityDesc={abilityDesc}
-          moveMeta={moveMeta}
-          tournament={tournament}
-        />
-      </Panel>
+      {/* Team analysis - full width, below the builder (teams only, not boxes) */}
+      {resolved?.analysis && <TeamAnalysisPanel analysis={resolved.analysis} />}
     </div>
   );
 }

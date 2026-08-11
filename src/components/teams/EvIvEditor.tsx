@@ -1,53 +1,48 @@
 "use client";
 
-// EV/IV editor (image 4): per-stat base bar, a typed input and a slider for EVs,
-// an IV input, and the computed final stat. Legality is enforced (EV ≤ 252 per
-// stat, ≤ 508 total, IV 0–31) and a nature selector applies the ±10% modifier.
-// The "Popular spreads" dropdown is wired but empty until usage data exists.
+// Inline base-stats & EVs editor for a member card. Bars use statColor (base
+// segment solid, EV segment the same hue but hatched), so a green bar means the
+// same thing here as in the overview and the Pokédex. IVs are not edited in the
+// Champions format (assumed 31, or 0 where a suggested set wants it); the level
+// is fixed at 50.
 
 import { NATURES } from "@/data/fixtures/natures";
 import { computeStat } from "@/domain/mechanics/stats";
-import { STAT_KEYS, type StatKey } from "@/domain/types/pokemon";
+import { statColor } from "@/domain/mechanics/statColor";
+import { STAT_KEYS, type Nature, type StatKey } from "@/domain/types/pokemon";
 
 const EV_STAT_MAX = 252;
 const EV_TOTAL_MAX = 508;
 
 const STAT_LABELS: Record<StatKey, string> = {
-  hp: "HP",
-  atk: "Attack",
-  def: "Defense",
-  spa: "Sp. Atk",
-  spd: "Sp. Def",
-  spe: "Speed",
+  hp: "HP", atk: "Atk", def: "Def", spa: "SpA", spd: "SpD", spe: "Spe",
 };
 
 const clamp = (lo: number, hi: number, v: number) =>
   Math.max(lo, Math.min(hi, Number.isFinite(v) ? v : lo));
 
-/** Smogon-style archetype label guessed from the EV investment. */
-function guessSpread(evs: Record<StatKey, number>): string {
-  const atk = evs.atk || 0, spa = evs.spa || 0, hp = evs.hp || 0;
-  const def = evs.def || 0, spd = evs.spd || 0, spe = evs.spe || 0;
-  const physical = atk >= spa;
-  const off = physical ? atk : spa;
-  const word = physical ? "physical" : "special";
-  const cap = word[0]!.toUpperCase() + word.slice(1);
-  const fast = spe >= 100;
-  const bulky = hp >= 100;
-  if (off < 60 && bulky && (def >= 100 || spd >= 100))
-    return def >= spd ? "Physically defensive" : "Specially defensive";
-  if (off >= 100 && fast) return `Fast ${word} sweeper`;
-  if (off >= 100 && bulky) return `Bulky ${word} attacker`;
-  if (off >= 100) return `${cap} attacker`;
-  if (bulky && fast) return "Bulky pivot";
-  if (fast) return "Fast support";
-  if (bulky) return "Wall / support";
-  return "Custom spread";
-}
+const HATCH =
+  "repeating-linear-gradient(115deg, rgba(255,255,255,.6) 0 2px, rgba(255,255,255,0) 2px 5px)";
 
 export interface Spread {
   ivs: Record<StatKey, number>;
   evs: Record<StatKey, number>;
+}
+
+/** Base (solid) + EV (hatched) segments on a shared track. */
+export function StatBar({ base, ev, height = 8 }: { base: number; ev: number; height?: number }) {
+  const color = statColor(base);
+  const basePct = Math.min(100, (base / 255) * 100);
+  // An EV point is a quarter stat point, halved again at level 50 → ev / 8.
+  const evPct = Math.min(100 - basePct, ((ev / 8) / 255) * 100);
+  return (
+    <span className="block overflow-hidden rounded" style={{ height, background: "var(--raise)", borderRadius: 4 }}>
+      <span className="flex h-full">
+        <span className="h-full" style={{ width: `${basePct}%`, backgroundColor: color }} />
+        <span className="h-full" style={{ width: `${evPct}%`, backgroundColor: color, backgroundImage: HATCH }} />
+      </span>
+    </span>
+  );
 }
 
 export function EvIvEditor({
@@ -68,165 +63,95 @@ export function EvIvEditor({
   onNature: (n: string) => void;
 }) {
   const nat = NATURES[nature] ?? NATURES.Serious!;
+  const neutral = nat.boosted === nat.lowered;
   const totalEv = STAT_KEYS.reduce((s, k) => s + (spread.evs[k] || 0), 0);
   const remaining = EV_TOTAL_MAX - totalEv;
+  const baseTotal = STAT_KEYS.reduce((s, k) => s + (base[k] || 0), 0);
 
   const setEv = (k: StatKey, raw: number) => {
     let v = clamp(0, EV_STAT_MAX, Math.round(raw));
     const others = totalEv - (spread.evs[k] || 0);
-    if (others + v > EV_TOTAL_MAX) v = EV_TOTAL_MAX - others; // enforce 508 cap
+    if (others + v > EV_TOTAL_MAX) v = EV_TOTAL_MAX - others;
     onChange({ ...spread, evs: { ...spread.evs, [k]: v } });
   };
-  const setIv = (k: StatKey, raw: number) =>
-    onChange({ ...spread, ivs: { ...spread.ivs, [k]: clamp(0, 31, Math.round(raw)) } });
 
-  // Nature by its (boosted, lowered) pair - natures never touch HP.
-  const natureFor = (boost: StatKey, lower: StatKey) =>
-    Object.values(NATURES).find((n) => n.boosted === boost && n.lowered === lower)?.name ??
-    "Serious";
-  const setBoost = (k: StatKey) => k !== "hp" && onNature(natureFor(k, nat.lowered));
-  const setLower = (k: StatKey) => k !== "hp" && onNature(natureFor(nat.boosted, k));
+  const natureFor = (boost: StatKey, lower: StatKey): Nature["name"] =>
+    Object.values(NATURES).find((n) => n.boosted === boost && n.lowered === lower)?.name ?? "Serious";
+  const setBoost = (k: StatKey) =>
+    k !== "hp" && onNature(natureFor(k === nat.boosted ? nat.lowered : k, nat.lowered));
+  const setLower = (k: StatKey) =>
+    k !== "hp" && onNature(natureFor(nat.boosted, k === nat.lowered ? nat.boosted : k));
 
   return (
-    <div className="mt-3 space-y-2 rounded border border-slate-800 bg-slate-950/40 p-3 text-xs">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="flex items-center gap-2">
-          <span className="font-semibold uppercase tracking-wide text-slate-400">EV / IV spread</span>
-          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300" title="Guessed archetype from the EV investment">
-            {guessSpread(spread.evs)}
-          </span>
+    <div className="text-xs">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[11px] text-t3">
+          Nature <span className="text-t1">{nature}</span>
         </span>
-        <span className={remaining < 0 ? "text-rose-400" : "text-slate-500"}>
-          Remaining EVs: <span className="tabular-nums">{remaining}</span>
-        </span>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-1">
-          Nature
-          <select
-            value={nature}
-            onChange={(e) => onNature(e.target.value)}
-            className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
-          >
-            {natures.map((n) => {
-              const nn = NATURES[n];
-              const tag =
-                nn && nn.boosted !== nn.lowered
-                  ? ` (+${nn.boosted} −${nn.lowered})`
-                  : " (neutral)";
-              return (
-                <option key={n} value={n}>
-                  {n}
-                  {tag}
-                </option>
-              );
-            })}
-          </select>
-        </label>
-        <label className="flex items-center gap-1 text-slate-500">
-          Popular spreads
-          <select disabled className="rounded border border-slate-800 bg-slate-900/50 px-1 py-0.5">
-            <option>needs usage data</option>
-          </select>
-        </label>
-      </div>
-
-      <table className="w-full">
-        <thead className="text-[10px] uppercase text-slate-600">
-          <tr>
-            <th className="text-left">Stat</th>
-            <th className="text-right">Base</th>
-            <th className="text-right">IV</th>
-            <th className="text-right">EV</th>
-            <th className="text-center">±</th>
-            <th></th>
-            <th className="text-right">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {STAT_KEYS.map((k) => {
-            const ev = spread.evs[k] || 0;
-            const iv = spread.ivs[k] ?? 31;
-            const total = computeStat(base[k], iv, ev, level, k, nat);
-            const mod =
-              k === nat.boosted && nat.boosted !== nat.lowered
-                ? "text-emerald-400"
-                : k === nat.lowered && nat.boosted !== nat.lowered
-                  ? "text-rose-400"
-                  : "";
-            return (
-              <tr key={k} className="border-t border-slate-800/60">
-                <td className={`py-1 ${mod}`}>{STAT_LABELS[k]}</td>
-                <td className="text-right tabular-nums text-slate-500">{base[k]}</td>
-                <td className="text-right">
-                  <input
-                    type="number"
-                    min={0}
-                    max={31}
-                    value={iv}
-                    onChange={(e) => setIv(k, Number(e.target.value))}
-                    className="w-12 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right"
-                  />
-                </td>
-                <td className="text-right">
-                  <input
-                    type="number"
-                    min={0}
-                    max={252}
-                    step={4}
-                    value={ev}
-                    onChange={(e) => setEv(k, Number(e.target.value))}
-                    className="w-14 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right"
-                  />
-                </td>
-                <td className="text-center">
-                  {k !== "hp" && (
-                    <span className="inline-flex overflow-hidden rounded border border-slate-700">
-                      <button
-                        type="button"
-                        onClick={() => setBoost(k)}
-                        title="Boost with nature (+10%)"
-                        className={`px-1 leading-none ${
-                          k === nat.boosted && nat.boosted !== nat.lowered
-                            ? "bg-emerald-600 text-white"
-                            : "hover:bg-slate-800"
-                        }`}
-                      >
-                        +
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLower(k)}
-                        title="Lower with nature (−10%)"
-                        className={`border-l border-slate-700 px-1 leading-none ${
-                          k === nat.lowered && nat.boosted !== nat.lowered
-                            ? "bg-rose-600 text-white"
-                            : "hover:bg-slate-800"
-                        }`}
-                      >
-                        −
-                      </button>
-                    </span>
-                  )}
-                </td>
-                <td className="px-2">
-                  <input
-                    type="range"
-                    min={0}
-                    max={252}
-                    step={4}
-                    value={ev}
-                    onChange={(e) => setEv(k, Number(e.target.value))}
-                    className="w-full align-middle accent-amber-500"
-                  />
-                </td>
-                <td className={`text-right tabular-nums font-semibold ${mod}`}>{total}</td>
-              </tr>
-            );
+        <select
+          value={nature}
+          onChange={(e) => onNature(e.target.value)}
+          className="rounded border border-line bg-bg px-1 py-0.5 text-[11px] text-t1"
+        >
+          {natures.map((n) => {
+            const nn = NATURES[n];
+            const tag = nn && nn.boosted !== nn.lowered ? ` (+${nn.boosted} −${nn.lowered})` : " (neutral)";
+            return <option key={n} value={n}>{n}{tag}</option>;
           })}
-        </tbody>
-      </table>
+        </select>
+      </div>
+
+      <div className="space-y-1">
+        {STAT_KEYS.map((k) => {
+          const ev = spread.evs[k] || 0;
+          const iv = spread.ivs[k] ?? 31;
+          const total = computeStat(base[k], iv, ev, level, k, nat);
+          const boosted = !neutral && k === nat.boosted;
+          const lowered = !neutral && k === nat.lowered;
+          return (
+            <div key={k} className="grid items-center gap-2" style={{ gridTemplateColumns: "26px 24px 1fr 40px 30px" }}>
+              <span className="flex items-center gap-0.5 text-[11px] text-t2">
+                {STAT_LABELS[k]}
+                {k !== "hp" && (
+                  <span className="inline-flex flex-col leading-none">
+                    <button type="button" onClick={() => setBoost(k)} title="Nature +10%"
+                      className={`text-[9px] leading-none ${boosted ? "text-pos" : "text-t3 hover:text-t1"}`}>+</button>
+                    <button type="button" onClick={() => setLower(k)} title="Nature −10%"
+                      className={`text-[9px] leading-none ${lowered ? "text-neg" : "text-t3 hover:text-t1"}`}>−</button>
+                  </span>
+                )}
+              </span>
+              <span className="text-right text-[11px] tabular-nums text-t3">{base[k]}</span>
+              <StatBar base={base[k]} ev={ev} />
+              <input
+                type="number" min={0} max={252} step={4} value={ev}
+                onChange={(e) => setEv(k, Number(e.target.value))}
+                className="w-10 rounded border border-line bg-bg px-1 py-0.5 text-right text-[11px] tabular-nums"
+              />
+              <span className={`text-right text-[11px] font-semibold tabular-nums ${boosted ? "text-pos" : lowered ? "text-neg" : "text-t1"}`}>{total}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-1 grid items-center gap-2 border-t border-soft pt-1 text-[11px] text-t3" style={{ gridTemplateColumns: "26px 24px 1fr 40px 30px" }}>
+        <span>Tot</span>
+        <span className="text-right tabular-nums">{baseTotal}</span>
+        <span className="text-[10px] uppercase tracking-wide">base stat total</span>
+        <span />
+        <span />
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] text-t3">
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-2 w-3 rounded-sm" style={{ background: "var(--t2)" }} /> base
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-2 w-3 rounded-sm" style={{ background: "var(--t2)", backgroundImage: HATCH }} /> EV contribution
+        </span>
+        {remaining > 0 && <span className="text-warn">{remaining} unspent</span>}
+        {remaining < 0 && <span className="text-neg">{-remaining} over cap</span>}
+      </div>
     </div>
   );
 }
