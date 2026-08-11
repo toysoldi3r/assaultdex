@@ -77,13 +77,16 @@ export function DisplayMenu({
   ];
 
   return (
-    <div
-      ref={ref}
-      role="dialog"
-      aria-label="Display settings"
-      className="absolute right-5 top-14 z-30 w-[290px] rounded-[10px] border border-line bg-panel p-3.5"
-      style={{ boxShadow: "0 18px 40px rgba(0,0,0,.35)" }}
-    >
+    <>
+      {/* Dimmed scrim behind the bottom sheet on mobile; the popover has none. */}
+      <div className="fixed inset-0 z-30 bg-black/50 md:hidden" aria-hidden />
+      <div
+        ref={ref}
+        role="dialog"
+        aria-label="Display settings"
+        className="fixed inset-x-0 bottom-0 z-40 w-full rounded-t-2xl border-t border-line bg-panel p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:absolute md:inset-x-auto md:bottom-auto md:right-5 md:top-14 md:w-[290px] md:rounded-[10px] md:border md:p-3.5 md:pb-3.5"
+        style={{ boxShadow: "0 -18px 40px rgba(0,0,0,.35)" }}
+      >
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-t3">Display</span>
         <button onClick={onClose} className="text-[13px] text-t3 hover:text-t2" aria-label="Close">✕</button>
@@ -108,7 +111,8 @@ export function DisplayMenu({
       <OptGroup label="Type badges" storageKey={TYPE_KEY} defaultValue="text" options={typeOpts} />
 
       <p className="mt-3 text-[11px] leading-4 text-t3">Choices are remembered on this device.</p>
-    </div>
+      </div>
+    </>
   );
 }
 

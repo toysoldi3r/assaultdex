@@ -49,7 +49,7 @@ export default async function HomePage() {
     <>
       {/* Banner */}
       <div
-        className="flex flex-wrap items-center gap-[18px] rounded-lg border border-line bg-panel px-[18px] py-3.5"
+        className="flex flex-col gap-3 rounded-lg border border-line bg-panel px-[18px] py-3.5 md:flex-row md:flex-wrap md:items-center md:gap-[18px]"
         style={{ borderLeft: "2px solid var(--accln)" }}
       >
         <div className="min-w-0 flex-1">

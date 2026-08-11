@@ -91,7 +91,7 @@ export function MetaCards({
         </p>
         <div className="max-h-[560px] overflow-y-auto overflow-x-hidden">
           <div
-            className="sticky top-0 z-[1] grid items-center border-b border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3"
+            className="sticky top-0 z-[1] hidden items-center border-b border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3 md:grid"
             style={{ gridTemplateColumns: LADDER_COLS }}
           >
             <span>#</span>
@@ -109,24 +109,37 @@ export function MetaCards({
                 key={m.name}
                 href={`/pokemon/${uKey(m.name)}`}
                 title={`${m.usage}% usage · ${m.winRate}% win rate · ${m.teams} teams`}
-                className="grid items-center border-b border-soft px-3.5 py-[5px] hover:bg-soft"
+                className="block border-b border-soft px-3.5 py-2 hover:bg-soft md:grid md:items-center md:py-[5px]"
                 style={{ gridTemplateColumns: LADDER_COLS }}
               >
-                <span className="mono text-[11px] text-t3">{i + 1}</span>
-                <PokeIcon species={m.name} />
-                <span className="flex min-w-0 items-center gap-1 pr-2">
-                  <span className="truncate text-[13px] font-medium text-t1">{m.name}</span>
-                  <span className="flex flex-shrink-0 gap-1">
-                    {types.map((t) => <TypeBadge key={t} type={t} />)}
-                  </span>
+                {/* Mobile: rank · icon · name+badges · metric on one line, bar below.
+                    Desktop (md+): the grid cells below flow into LADDER_COLS. */}
+                <span className="mono hidden text-[11px] text-t3 md:inline">{i + 1}</span>
+                <span className="hidden md:inline">
+                  <PokeIcon species={m.name} />
                 </span>
-                <span className="h-[5px] rounded-[3px] bg-raise">
+                <div className="flex items-center gap-2 md:contents">
+                  <span className="mono w-4 flex-shrink-0 text-[11px] text-t3 md:hidden">{i + 1}</span>
+                  <span className="flex-shrink-0 md:hidden">
+                    <PokeIcon species={m.name} />
+                  </span>
+                  <span className="flex min-w-0 flex-1 items-center gap-1 md:pr-2">
+                    <span className="truncate text-[13px] font-medium text-t1">{m.name}</span>
+                    <span className="flex flex-shrink-0 gap-1">
+                      {types.map((t) => <TypeBadge key={t} type={t} />)}
+                    </span>
+                  </span>
+                  <span className={`mono flex-shrink-0 text-right text-xs md:hidden ${tab === "winrate" ? wrColor(m.winRate) : "text-t1"}`}>
+                    {tab === "teams" ? v : `${v}%`}
+                  </span>
+                </div>
+                <span className="mt-1.5 block h-[5px] rounded-[3px] bg-raise md:mt-0">
                   <span className="block h-full rounded-[3px] bg-acc" style={{ width: `${(v / max) * 100}%` }} />
                 </span>
-                <span className={`mono text-right text-xs ${tab === "winrate" ? wrColor(m.winRate) : "text-t1"}`}>
+                <span className={`mono hidden text-right text-xs md:inline ${tab === "winrate" ? wrColor(m.winRate) : "text-t1"}`}>
                   {tab === "teams" ? v : `${v}%`}
                 </span>
-                <span className="mono text-right text-[11px] text-t3">{grouped((m.usage / 100) * totalBattles)}</span>
+                <span className="mono hidden text-right text-[11px] text-t3 md:inline">{grouped((m.usage / 100) * totalBattles)}</span>
               </Link>
             );
           })}
