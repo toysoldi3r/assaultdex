@@ -3,7 +3,9 @@ import { PokedexBrowser, type PokedexEntry } from "@/components/PokedexBrowser";
 import { listDexEntries } from "@/data/pokedexSource";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 
-export const dynamic = "force-dynamic";
+// ISR: the Champions pool comes from the build-time seed, so render once and
+// regenerate hourly rather than querying the DB on every request.
+export const revalidate = 3600;
 
 export default async function PokedexPage() {
   // Champions view is the real 235-mon pool (formes included, e.g. Rotom-Wash),
