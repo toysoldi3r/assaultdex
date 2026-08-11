@@ -1,29 +1,26 @@
 "use client";
 
-// Pokémon Showdown-style team view: a tab bar (Team + one tab per Pokémon) over
-// a stack of editable Pokémon cards. Slice B covers the card layout + inline
-// editing (nickname, level, item, ability, moves, nature) + add/remove + save.
-// Rich searchable item/move/ability lists (with a Popular section) and the
-// slider EV/IV editor arrive in slices C and D; the click-to-edit seams are here.
+// Redesigned teambuilder: a 320px team-sheet rail (completeness matrix + flags)
+// beside the builder column (tab bar → overview grid or a member card). Legality
+// is relaxed for this format - a held item and a full four moves are optional,
+// so their absence shows as advisory flags, never errors.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PokeIcon } from "@/components/PokeIcon";
 import { ItemIcon } from "@/components/ItemIcon";
 import { CategoryIcon } from "@/components/CategoryIcon";
-import { TypeBadge } from "@/components/ui";
-import { type Option } from "@/components/teams/SelectorPanel";
-import { SelectorPanel } from "@/components/teams/SelectorPanel";
+import { TypeBadge, TYPE_HEX } from "@/components/ui";
+import { type Option, SelectorPanel } from "@/components/teams/SelectorPanel";
 import { MoveSelectorPanel, type MoveRow } from "@/components/teams/MoveSelectorPanel";
 import type { MoveMeta } from "@/components/teams/moveTypes";
-import { EvIvEditor } from "@/components/teams/EvIvEditor";
+import { EvIvEditor, StatBar } from "@/components/teams/EvIvEditor";
 import { NATURES } from "@/data/fixtures/natures";
 import { suggestSets } from "@/data/suggestSets";
-import { statColor } from "@/domain/mechanics/statColor";
+import { computeStat } from "@/domain/mechanics/stats";
 import { saveTeamSnapshotAction } from "@/app/teams/actions";
 import {
   STAT_KEYS,
   STAT_LABELS,
-  type Nature,
   type PokemonSet,
   type PokemonType,
   type StatKey,
@@ -39,37 +36,17 @@ export interface MemberRef {
   baseStats: Record<StatKey, number>;
 }
 
-/** Compact type + category + power tag for a selected move. */
-function MoveTag({ meta }: { meta?: MoveMeta }) {
-  if (!meta) return null;
-  return (
-    <span className="flex items-center gap-1">
-      <TypeBadge type={meta.type} />
-      <CategoryIcon category={meta.category} />
-      {meta.power != null && (
-        <span className="text-[10px] tabular-nums text-slate-400">{meta.power}</span>
-      )}
-    </span>
-  );
-}
-
-interface PopEntry {
-  name: string;
-  pct: number;
-}
+interface PopEntry { name: string; pct: number }
 export interface TournamentPopular {
   items: PopEntry[];
   abilities: PopEntry[];
   moves: PopEntry[];
 }
 
-type PanelKind = "item" | "ability" | "species" | "spread" | `move${number}`;
+type PanelKind = "item" | "ability" | "species" | `move${number}`;
 
-/** Join key to tournament data (matches @pkmn id): "Rotom-Heat" → "rotomheat". */
 const uKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-const asPopular = (e: PopEntry[] = []): Option[] =>
-  e.map((x) => ({ name: x.name, desc: `${x.pct}%` }));
-
+const asPopular = (e: PopEntry[] = []): Option[] => e.map((x) => ({ name: x.name, desc: `${x.pct}%` }));
 const zeroEvs = (): Record<StatKey, number> =>
   Object.fromEntries(STAT_KEYS.map((k) => [k, 0])) as Record<StatKey, number>;
 const maxIvs = (): Record<StatKey, number> =>
@@ -81,6 +58,24 @@ function fd(entries: Record<string, string>): FormData {
   return f;
 }
 
+const evTotalOf = (m: PokemonSet) => STAT_KEYS.reduce((s, k) => s + (m.spread.evs[k] || 0), 0);
+const isLegal = (m: PokemonSet) => !!m.ability && m.moves.filter(Boolean).length >= 1;
+
+/** Compact type + category + power label for a selected move. */
+function MoveMetaLine({ meta }: { meta?: MoveMeta }) {
+  if (!meta) return null;
+  return (
+    <span className="flex items-center gap-1.5">
+      <TypeBadge type={meta.type} />
+      <CategoryIcon category={meta.category} />
+      <span className="text-[10px] tabular-nums text-t3">
+        {meta.category === "status"
+          ? "status"
+          : `${meta.power ?? "-"} power · ${meta.accuracy == null ? "-" : `${meta.accuracy}%`} acc`}
+      </span>
+    </span>
+  );
+}
 
 export function TeamBuilder({
   teamId,
@@ -107,34 +102,24 @@ export function TeamBuilder({
 }) {
   const [members, setMembers] = useState<PokemonSet[]>(initialMembers);
   const [tab, setTab] = useState<"team" | "add" | number>("team");
-  // One inline panel open at a time. member -1 = "add Pokémon".
   const [panel, setPanel] = useState<{ member: number; kind: PanelKind } | null>(null);
   const openPanel = (member: number, kind: PanelKind) =>
     setPanel((p) => (p && p.member === member && p.kind === kind ? null : { member, kind }));
   const closePanel = () => setPanel(null);
   const [dirty, setDirty] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [flagsOpen, setFlagsOpen] = useState(true);
   const limit = isBox ? 60 : 6;
 
   const refOf = (species: string): MemberRef =>
-    refs[species] ?? {
-      name: species,
-      types: [],
-      abilities: [],
-      legalMoves: [],
-      baseStats: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
-    };
+    refs[species] ?? { name: species, types: [], abilities: [], legalMoves: [], baseStats: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 } };
 
   const update = (i: number, patch: Partial<PokemonSet>) => {
     setMembers((prev) => prev.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
     setDirty(true);
   };
 
-  // Auto-fill a new member with a doubles-oriented set. Prefer tournament data
-  // where available; otherwise use the heuristic suggester (which favours a
-  // STAB + coverage + Protect shell over raw highest-damage moves) so the
-  // preselected set is sensible for doubles.
   const defaultSet = (slug: string): PokemonSet => {
     const r = refOf(slug);
     const tm = tournament[uKey(slug)];
@@ -145,18 +130,14 @@ export function TeamBuilder({
       power: moveMeta[n]?.power ?? null,
     }));
     const suggestion = suggestSets(r.types, r.baseStats, r.abilities, moveLike)[0];
-
     const ability = tm?.abilities[0]?.name ?? suggestion?.ability ?? r.abilities[0] ?? null;
     const item = tm?.items[0]?.name ?? suggestion?.item ?? null;
-
     const legal = new Set(r.legalMoves);
     const popularMoves = (tm?.moves ?? []).map((x) => x.name).filter((n) => legal.has(n));
     const moves = (popularMoves.length ? popularMoves : suggestion?.moves ?? r.legalMoves.slice(0, 4)).slice(0, 4);
-
     const evs = { ...zeroEvs(), ...(suggestion?.evs ?? {}) };
     const ivs = { ...maxIvs(), ...(suggestion?.ivs ?? {}) };
     const nature = suggestion?.nature ?? "Serious";
-
     return { species: slug, level: 50, ability, item, nature, moves, spread: { ivs, evs } };
   };
 
@@ -164,24 +145,17 @@ export function TeamBuilder({
     if (!slug || members.length >= limit) return;
     setMembers((prev) => {
       const next = [...prev, defaultSet(slug)];
-      setTab(next.length - 1); // jump straight to the new member's card
+      setTab(next.length - 1);
       return next;
     });
     setDirty(true);
     setPanel(null);
   };
 
-  // Change a member's species, keeping display bits (nickname/level/nature/spread)
-  // and resetting ability + moves to the new species' legal defaults.
   const changeSpecies = (i: number, slug: string) => {
     if (!slug) return;
     setMembers((prev) =>
-      prev.map((m, idx) => {
-        if (idx !== i) return m;
-        // Full meta auto-fill for the new species; keep only nickname + level.
-        const base = defaultSet(slug);
-        return { ...base, nickname: m.nickname, level: m.level };
-      }),
+      prev.map((m, idx) => (idx !== i ? m : { ...defaultSet(slug), nickname: m.nickname, level: m.level })),
     );
     setDirty(true);
   };
@@ -189,58 +163,9 @@ export function TeamBuilder({
   const removeMember = (i: number) => {
     setMembers((prev) => prev.filter((_, idx) => idx !== i));
     if (typeof tab === "number" && tab >= i) setTab("team");
+    setPanel(null);
     setDirty(true);
   };
-
-  // Autosave: debounce after edits and flush on exit (unmount / tab hide).
-  const membersRef = useRef(members);
-  membersRef.current = members;
-  const dirtyRef = useRef(dirty);
-  dirtyRef.current = dirty;
-
-  const flush = useCallback(() => {
-    if (!dirtyRef.current) return;
-    dirtyRef.current = false;
-    setDirty(false);
-    setSaving(true);
-    saveTeamSnapshotAction(fd({ teamId, snapshot: JSON.stringify({ members: membersRef.current }) }))
-      .then((msg) => setStatus(msg))
-      .catch(() => setStatus("Save failed"))
-      .finally(() => setSaving(false));
-  }, [teamId]);
-
-  useEffect(() => {
-    if (!dirty) return;
-    const t = setTimeout(flush, 1200);
-    return () => clearTimeout(t);
-  }, [members, dirty, flush]);
-
-  useEffect(() => {
-    const onHide = () => flush();
-    window.addEventListener("pagehide", onHide);
-    return () => {
-      window.removeEventListener("pagehide", onHide);
-      flush(); // save on unmount (navigating away)
-    };
-  }, [flush]);
-
-  const shown = useMemo(
-    () =>
-      tab === "team"
-        ? members.map((_, i) => i)
-        : tab === "add"
-          ? []
-          : [tab as number],
-    [tab, members],
-  );
-
-  // Species options for the change/add panels: name-keyed, mapped back to slug.
-  const poolOptions = useMemo<Option[]>(() => pool.map((p) => ({ name: p.name })), [pool]);
-  const slugByName = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const p of pool) map[p.name] = p.slug;
-    return map;
-  }, [pool]);
 
   const setMove = (i: number, mi: number, v: string | null) => {
     const moves = [...members[i]!.moves];
@@ -249,384 +174,412 @@ export function TeamBuilder({
     update(i, { moves: moves.filter(Boolean) });
   };
 
-  // Nature ± straight from the stats view (no need to open the EV/IV editor).
-  // Natures never touch HP, so its ± is disabled.
-  const natureFor = (boost: StatKey, lower: StatKey): string =>
-    Object.values(NATURES).find((n) => n.boosted === boost && n.lowered === lower)?.name ??
-    "Serious";
-  const setBoost = (i: number, k: StatKey, nat: Nature) =>
-    k !== "hp" && update(i, { nature: natureFor(k === nat.boosted ? nat.lowered : k, nat.lowered) });
-  const setLower = (i: number, k: StatKey, nat: Nature) =>
-    k !== "hp" && update(i, { nature: natureFor(nat.boosted, k === nat.lowered ? nat.boosted : k) });
+  // Autosave.
+  const membersRef = useRef(members); membersRef.current = members;
+  const dirtyRef = useRef(dirty); dirtyRef.current = dirty;
+  const flush = useCallback(() => {
+    if (!dirtyRef.current) return;
+    dirtyRef.current = false;
+    setDirty(false);
+    setSaving(true);
+    saveTeamSnapshotAction(fd({ teamId, snapshot: JSON.stringify({ members: membersRef.current }) }))
+      .then(() => setSavedAt(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })))
+      .finally(() => setSaving(false));
+  }, [teamId]);
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(flush, 1200);
+    return () => clearTimeout(t);
+  }, [members, dirty, flush]);
+  useEffect(() => {
+    const onHide = () => flush();
+    window.addEventListener("pagehide", onHide);
+    return () => { window.removeEventListener("pagehide", onHide); flush(); };
+  }, [flush]);
 
-  function renderPanel(
-    i: number,
-    m: PokemonSet,
-    r: MemberRef,
-    tm: TournamentPopular | undefined,
-  ) {
+  const poolOptions = useMemo<Option[]>(() => pool.map((p) => ({ name: p.name })), [pool]);
+  const slugByName = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of pool) map[p.name] = p.slug;
+    return map;
+  }, [pool]);
+
+  // Advisory flags, recomputed from live state.
+  const flags = useMemo(() => {
+    const out: { i: number; kind: "Warning" | "Note"; text: string }[] = [];
+    members.forEach((m, i) => {
+      const name = refOf(m.species).name;
+      if (!m.item) out.push({ i, kind: "Note", text: `${name} holds no item (optional in this format).` });
+      const ev = evTotalOf(m);
+      if (ev < 508) out.push({ i, kind: "Warning", text: `${name} has ${508 - ev} EVs unspent.` });
+    });
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [members]);
+
+  const savedLabel = saving ? "Saving…" : dirty ? "Unsaved…" : savedAt ?? "-";
+  const completeCount = members.filter((m) => isLegal(m) && !!m.item && evTotalOf(m) === 508).length;
+
+  // -- picker for a member card --------------------------------------------
+  function renderPanel(i: number, m: PokemonSet, r: MemberRef, tm: TournamentPopular | undefined) {
     const kind = panel!.kind;
-    if (kind === "spread") {
-      return (
-        <EvIvEditor
-          base={r.baseStats}
-          spread={m.spread}
-          level={m.level}
-          nature={m.nature}
-          natures={natures}
-          onChange={(s) => update(i, { spread: s })}
-          onNature={(n) => update(i, { nature: n })}
-        />
-      );
-    }
+    const forLabel = `for ${r.name}`;
     if (kind === "item") {
       return (
         <SelectorPanel
-          title="Item"
-          options={items}
-          popular={asPopular(tm?.items)}
-          value={m.item}
-          allowClear
+          key={`item-${i}`} title="Item" forLabel={forLabel} options={items} popular={asPopular(tm?.items)}
+          value={m.item} clearLabel={m.item ? "No item - a held item is optional in this format." : undefined}
           leading={(o) => <ItemIcon item={o.name} />}
-          onSelect={(v) => update(i, { item: v })}
-          onClose={closePanel}
+          onSelect={(v) => update(i, { item: v })} onClose={closePanel}
         />
       );
     }
     if (kind === "ability") {
-      const opts = (r.abilities.length ? r.abilities : m.ability ? [m.ability] : []).map(
-        (a) => ({ name: a, desc: abilityDesc[a] }),
-      );
+      const opts = (r.abilities.length ? r.abilities : m.ability ? [m.ability] : []).map((a) => ({ name: a, desc: abilityDesc[a] }));
       return (
-        <SelectorPanel
-          title="Ability"
-          options={opts}
-          popular={asPopular(tm?.abilities)}
-          value={m.ability}
-          onSelect={(v) => update(i, { ability: v })}
-          onClose={closePanel}
-        />
+        <SelectorPanel key={`ability-${i}`} title="Ability" forLabel={forLabel} options={opts} popular={asPopular(tm?.abilities)}
+          value={m.ability} onSelect={(v) => update(i, { ability: v })} onClose={closePanel} />
       );
     }
     if (kind === "species") {
       return (
-        <SelectorPanel
-          key={`species-${i}`}
-          title="Change Pokémon"
-          options={poolOptions}
-          value={r.name}
-          onSelect={(v) => v && changeSpecies(i, slugByName[v] ?? "")}
-          onClose={closePanel}
-        />
+        <SelectorPanel key={`species-${i}`} title="Change Pokémon" forLabel={forLabel} options={poolOptions} value={r.name}
+          onSelect={(v) => v && changeSpecies(i, slugByName[v] ?? "")} onClose={closePanel} />
       );
     }
     const mi = Number(kind.slice(4));
     const rows: MoveRow[] = r.legalMoves.map((mv) => ({ name: mv, meta: moveMeta[mv] }));
-    const pop: MoveRow[] = (tm?.moves ?? []).map((x) => ({
-      name: x.name,
-      meta: moveMeta[x.name],
-      pct: `${x.pct}%`,
-    }));
+    const pop: MoveRow[] = (tm?.moves ?? []).map((x) => ({ name: x.name, meta: moveMeta[x.name], pct: `${x.pct}%` }));
+    const otherMoves = m.moves.filter((_, idx) => idx !== mi);
     return (
       <MoveSelectorPanel
-        // Remount per move slot so switching moves refocuses the search box and
-        // clears the previous query - otherwise you cannot type straight away.
-        key={`move-${i}-${mi}`}
-        title={`Move ${mi + 1}`}
-        rows={rows}
-        popular={pop}
-        value={m.moves[mi] ?? null}
-        onSelect={(v) => setMove(i, mi, v)}
-        onClose={closePanel}
+        key={`move-${i}-${mi}`} title={`Move ${mi + 1}`} forLabel={forLabel} rows={rows} popular={pop}
+        value={m.moves[mi] ?? null} exclude={otherMoves}
+        clearLabel={m.moves[mi] ? "Empty this slot - three moves are legal." : undefined}
+        onSelect={(v) => setMove(i, mi, v)} onClose={closePanel}
       />
     );
   }
 
-  return (
+  // -- one member card -----------------------------------------------------
+  function memberCard(i: number) {
+    const m = members[i]!;
+    const r = refOf(m.species);
+    const tm = tournament[uKey(m.species)];
+    return (
+      <div className="overflow-hidden rounded-lg border border-line bg-panel">
+        {/* Identity row */}
+        <div className="flex flex-wrap items-start gap-5 px-[18px] py-[14px]">
+          <span className="grid h-[76px] w-[76px] shrink-0 place-items-center overflow-hidden rounded-lg border border-line bg-bg">
+            <PokeIcon species={m.species} className="scale-[2.3]" />
+          </span>
+          <div className="flex flex-col gap-1">
+            <button onClick={() => openPanel(i, "species")} title="Change Pokémon"
+              className="w-[210px] rounded border border-line bg-bg px-2 py-1.5 text-left hover:border-accln">
+              <span className="text-[15px] font-[650] text-t1">{r.name}</span>
+              <span className="ml-1 text-[10px] text-t3">change</span>
+            </button>
+            <span className="flex gap-1">{r.types.map((t) => <TypeBadge key={t} type={t} />)}</span>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <Field label="Item">
+              <button onClick={() => openPanel(i, "item")}
+                className={`flex w-[170px] items-center gap-1.5 rounded px-2 py-1.5 text-[13px] ${
+                  m.item ? "border border-line bg-bg" : "border border-dashed border-line bg-bg text-t3"}`}>
+                {m.item ? <ItemIcon item={m.item} /> : null}
+                <span className="truncate">{m.item ?? "No item"}</span>
+              </button>
+            </Field>
+            <Field label="Ability">
+              <button onClick={() => openPanel(i, "ability")}
+                className="w-[170px] truncate rounded border border-line bg-bg px-2 py-1.5 text-left text-[13px] hover:border-accln">
+                {m.ability || <span className="text-t3">-</span>}
+              </button>
+            </Field>
+          </div>
+        </div>
+
+        {/* Details row */}
+        <div className="flex flex-wrap items-end gap-4 border-b border-line px-[18px] pb-[14px]">
+          <Field label="Nickname">
+            <input value={m.nickname ?? ""} onChange={(e) => update(i, { nickname: e.target.value || undefined })}
+              placeholder={r.name} className="w-[170px] rounded border border-line bg-bg px-2 py-1.5 text-[13px]" />
+          </Field>
+          <Field label="Level">
+            <span title="Every battle is set to level 50" className="inline-block rounded bg-raise px-3 py-1.5 text-[13px] text-t3">50</span>
+          </Field>
+          <Field label="Gender">
+            <select value={m.gender ?? ""} onChange={(e) => update(i, { gender: (e.target.value || undefined) as "M" | "F" | undefined })}
+              className="w-[96px] rounded border border-line bg-bg px-2 py-1.5 text-[13px]">
+              <option value="">-</option><option value="M">♂ M</option><option value="F">♀ F</option>
+            </select>
+          </Field>
+          <Field label="Shiny">
+            <select value={m.shiny ? "yes" : "no"} onChange={(e) => update(i, { shiny: e.target.value === "yes" })}
+              className="w-[96px] rounded border border-line bg-bg px-2 py-1.5 text-[13px]">
+              <option value="no">No</option><option value="yes">Yes</option>
+            </select>
+          </Field>
+        </div>
+
+        {/* Body: moves | stats */}
+        <div className="grid md:grid-cols-2">
+          <div className="space-y-1.5 border-line px-[18px] py-[14px] md:border-r">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-t3">Moves</span>
+            {[0, 1, 2, 3].map((mi) => {
+              const mv = m.moves[mi];
+              const meta = mv ? moveMeta[mv] : undefined;
+              const stripe = meta ? TYPE_HEX[meta.type] : "transparent";
+              return (
+                <button key={mi} onClick={() => openPanel(i, `move${mi}`)}
+                  className={`relative flex w-full items-center gap-2 overflow-hidden rounded pl-3 pr-2 py-1.5 text-left ${
+                    mv ? "border border-line bg-bg" : "border border-dashed border-line bg-bg"}`}>
+                  <span className="absolute left-0 top-0 h-full w-[3px]" style={{ background: stripe }} />
+                  {mv ? (
+                    <>
+                      <span className="flex-1 truncate text-[13px] text-t1">{mv}</span>
+                      <MoveMetaLine meta={meta} />
+                    </>
+                  ) : (
+                    <span className="text-[13px] text-t3">Empty slot - optional</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <div className="px-[18px] py-[14px]">
+            <span className="mb-2 block text-[10px] font-semibold uppercase tracking-wide text-t3">Base stats &amp; EVs</span>
+            <EvIvEditor base={r.baseStats} spread={m.spread} level={m.level} nature={m.nature} natures={natures}
+              onChange={(s) => update(i, { spread: s })} onNature={(n) => update(i, { nature: n })} />
+          </div>
+        </div>
+
+        {panel?.member === i && (
+          <div className="border-t border-line bg-bg px-[18px] py-[14px]">{renderPanel(i, m, r, tm)}</div>
+        )}
+      </div>
+    );
+  }
+
+  // -- overview grid card --------------------------------------------------
+  function overviewCard(i: number) {
+    const m = members[i]!;
+    const r = refOf(m.species);
+    const nat = NATURES[m.nature] ?? NATURES.Serious!;
+    const ev = evTotalOf(m);
+    const legal = isLegal(m);
+    const open = flags.some((f) => f.i === i);
+    return (
+      <button key={i} onClick={() => setTab(i)}
+        className={`rounded-lg bg-panel p-3 text-left ${open ? "border border-warn" : "border border-line"}`}>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-6 w-6 items-center justify-center overflow-hidden"><PokeIcon species={m.species} className="scale-125" /></span>
+          <span className="text-[13px] font-[600] text-t1">{r.name}</span>
+          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: legal ? "var(--pos)" : "var(--warn)" }} />
+          <span className="ml-auto flex gap-1">{r.types.map((t) => <TypeBadge key={t} type={t} />)}</span>
+        </div>
+        <div className="mt-2 grid gap-3.5 md:grid-cols-2">
+          <ul className="space-y-0.5">
+            {[0, 1, 2, 3].map((mi) => {
+              const mv = m.moves[mi];
+              const meta = mv ? moveMeta[mv] : undefined;
+              return (
+                <li key={mi} className="flex items-center gap-1.5 text-[11.5px]">
+                  <span className="h-[11px] w-[3px] shrink-0 rounded-sm" style={{ background: meta ? TYPE_HEX[meta.type] : "var(--line)" }} />
+                  <span className={mv ? "text-t2" : "text-t3"}>{mv ?? "empty slot"}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="w-[148px] space-y-0.5">
+            {STAT_KEYS.map((k) => (
+              <div key={k} className="grid items-center gap-1.5" style={{ gridTemplateColumns: "22px 1fr 26px" }}>
+                <span className="text-[10px] uppercase text-t3">{STAT_LABELS[k]}</span>
+                <StatBar base={r.baseStats[k]} ev={m.spread.evs[k] || 0} height={6} />
+                <span className="text-right text-[10px] tabular-nums text-t2">
+                  {computeStat(r.baseStats[k], m.spread.ivs[k] ?? 31, m.spread.evs[k] || 0, m.level, k, nat)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="mt-2 flex items-center justify-between text-[11px]">
+          <span className="text-t3">{m.item ?? "no item"}</span>
+          <span className={ev < 508 ? "text-warn" : "text-t3"}>{ev}/508</span>
+        </div>
+      </button>
+    );
+  }
+
+  const rightColumn = (
     <div className="space-y-3">
       {/* Tab bar */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-slate-800 pb-2">
-        <button
-          onClick={() => setTab("team")}
-          className={`rounded px-3 py-1 text-sm font-medium ${
-            tab === "team" ? "bg-amber-500 text-black" : "bg-slate-800 hover:bg-slate-700"
-          }`}
-        >
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button onClick={() => setTab("team")}
+          className={`rounded-md border px-[11px] py-[5px] text-[12px] font-medium ${
+            tab === "team" ? "border-accln bg-accbg text-acc" : "border-line text-t2 hover:text-t1"}`}>
           {isBox ? "Box" : "Team"} ({members.length})
         </button>
         {members.map((m, i) => (
-          <button
-            key={i}
-            onClick={() => {
-              setTab(i);
-              // Selecting a member opens the Pokémon list so it can be switched fast.
-              setPanel({ member: i, kind: "species" });
-            }}
-            className={`flex items-center gap-1 rounded px-2 py-1 text-sm ${
-              tab === i ? "bg-amber-500 text-black" : "bg-slate-800 hover:bg-slate-700"
-            }`}
-          >
+          <button key={i} onClick={() => setTab(i)}
+            className={`flex items-center gap-1 rounded-md px-[10px] py-[5px] text-[12px] font-medium ${
+              tab === i ? "bg-accbg text-acc" : "text-t3 hover:text-t1"}`}>
             <PokeIcon species={m.species} />
             <span className="max-w-[6rem] truncate">{refOf(m.species).name}</span>
           </button>
         ))}
-        {/* Empty slots render as add buttons in the tab bar → individual add view. */}
-        {Array.from({ length: Math.max(0, limit - members.length) }).slice(0, isBox ? 1 : 6).map((_, k) => (
-          <button
-            key={`empty-${k}`}
-            onClick={() => { setPanel(null); setTab("add"); }}
-            title="Add a Pokémon"
-            className={`flex h-8 w-10 items-center justify-center rounded border border-dashed text-slate-500 hover:border-amber-500 hover:text-amber-400 ${
-              tab === "add" && k === 0 ? "border-amber-500 text-amber-400" : "border-slate-600"
-            }`}
-          >
+        {members.length < limit && (
+          <button onClick={() => { setPanel(null); setTab("add"); }}
+            className={`rounded-md border border-dashed px-[10px] py-[5px] text-[12px] ${
+              tab === "add" ? "border-accln text-acc" : "border-line text-t3 hover:text-t1"}`}>
             ＋
           </button>
-        ))}
-        <div className="ml-auto flex items-center gap-2 text-xs">
-          <span className={dirty || saving ? "text-slate-400" : "text-emerald-400"}>
-            {saving ? "Saving…" : dirty ? "Unsaved changes" : status || "All changes saved"}
-          </span>
-        </div>
+        )}
+        <span className="ml-auto flex items-center gap-1.5 text-[11px] text-t3">
+          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: dirty || saving ? "var(--warn)" : "var(--pos)" }} />
+          {saving ? "Saving…" : dirty ? "Unsaved changes" : "All changes saved"}
+        </span>
       </div>
 
-      {/* Add view (individual): opened by the + tab, shown at the top. */}
-      {tab === "add" && members.length < limit && (
-        <div className="rounded-lg border border-amber-800/50 bg-slate-900/40 p-4">
-          <div className="mb-1 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-amber-300">Add a Pokémon</h3>
-            <button onClick={() => setTab("team")} className="text-xs text-slate-400 hover:text-slate-200">Cancel</button>
+      {tab === "add" && members.length < limit ? (
+        <div className="rounded-lg border border-line bg-panel p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-t1">Add a Pokémon</h3>
+            <button onClick={() => setTab("team")} className="text-xs text-t3 hover:text-t1">Cancel</button>
           </div>
-          <SelectorPanel
-            title="Pokémon"
-            options={poolOptions}
-            onSelect={(v) => v && addMember(slugByName[v] ?? "")}
-            onClose={() => setTab("team")}
-          />
+          <SelectorPanel title="Pokémon" options={poolOptions}
+            onSelect={(v) => v && addMember(slugByName[v] ?? "")} onClose={() => setTab("team")} />
         </div>
+      ) : tab === "team" ? (
+        members.length === 0 ? (
+          <button onClick={() => setTab("add")}
+            className="rounded-lg border border-dashed border-line px-4 py-6 text-sm text-t2 hover:border-accln hover:text-t1">
+            ＋ Add your first Pokémon
+          </button>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {members.map((_, i) => overviewCard(i))}
+          </div>
+        )
+      ) : (
+        memberCard(tab as number)
       )}
+    </div>
+  );
 
-      {/* Cards */}
-      <div className="space-y-3">
-        {shown.map((i) => {
-          const m = members[i]!;
-          const r = refOf(m.species);
-          const tm = tournament[uKey(m.species)];
-          return (
-            <div key={i} className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
-              {/* Showdown-style identity strip: nickname + sprite + species on
-                  the left, then details, item, and ability. Level and nature
-                  live in the EV/IV editor; nature stays editable there. */}
-              <div className="mb-3 flex flex-wrap items-start gap-x-5 gap-y-3">
-                {/* Nickname / sprite / species */}
-                <div className="flex w-32 flex-col gap-1">
-                  <div>
-                    <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-500">Nickname</span>
-                    <input
-                      value={m.nickname ?? ""}
-                      onChange={(e) => update(i, { nickname: e.target.value || undefined })}
-                      placeholder={r.name}
-                      className="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm font-semibold"
-                    />
-                  </div>
-                  <div className="flex justify-center py-1">
-                    <span className="inline-flex h-20 w-20 items-center justify-center overflow-hidden">
-                      <PokeIcon species={m.species} className="scale-[2.8]" />
-                    </span>
-                  </div>
-                  <div>
-                    <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-500">Pokémon</span>
-                    <button
-                      onClick={() => openPanel(i, "species")}
-                      title="Change Pokémon"
-                      className="w-full truncate rounded border border-slate-700 bg-slate-900 px-2 py-1 text-left text-sm font-semibold hover:border-amber-500"
-                    >
-                      {r.name}
-                    </button>
-                  </div>
-                </div>
+  if (isBox) return <div className="space-y-3.5">{rightColumn}</div>;
 
-                {/* Details: gender + shiny (level intentionally omitted) */}
-                <div className="space-y-1 text-xs">
-                  <span className="block text-[10px] font-semibold uppercase text-slate-500">Details</span>
-                  <label className="flex items-center justify-between gap-2">
-                    Gender
-                    <select
-                      value={m.gender ?? ""}
-                      onChange={(e) => update(i, { gender: (e.target.value || undefined) as "M" | "F" | undefined })}
-                      className="w-16 rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
-                    >
-                      <option value="">-</option>
-                      <option value="M">♂ M</option>
-                      <option value="F">♀ F</option>
-                    </select>
-                  </label>
-                  <label className="flex items-center justify-between gap-2">
-                    Shiny
-                    <select
-                      value={m.shiny ? "yes" : "no"}
-                      onChange={(e) => update(i, { shiny: e.target.value === "yes" })}
-                      className="w-16 rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
-                    >
-                      <option value="no">No</option>
-                      <option value="yes">Yes</option>
-                    </select>
-                  </label>
-                </div>
-
-                {/* Item: sprite above the selector */}
-                <div className="text-xs">
-                  <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-500">Item</span>
-                  <button
-                    onClick={() => openPanel(i, "item")}
-                    className="flex w-28 flex-col items-center gap-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 hover:border-amber-500"
-                  >
-                    <span className="flex h-6 items-center">
-                      {m.item ? <ItemIcon item={m.item} /> : <span className="text-slate-600">-</span>}
-                    </span>
-                    <span className="w-full truncate text-center">{m.item ?? "None"}</span>
-                  </button>
-                </div>
-
-                {/* Ability: type badges above the selector */}
-                <div className="text-xs">
-                  <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-500">Ability</span>
-                  <div className="mb-1 flex h-6 items-center gap-1">
-                    {r.types.map((t) => <TypeBadge key={t} type={t} />)}
-                  </div>
-                  <button
-                    onClick={() => openPanel(i, "ability")}
-                    className="w-32 truncate rounded border border-slate-700 bg-slate-900 px-2 py-1 text-left hover:border-amber-500"
-                  >
-                    {m.ability || <span className="text-slate-600">-</span>}
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => removeMember(i)}
-                  className="ml-auto rounded bg-slate-800 px-2 py-1 text-xs text-rose-300 hover:bg-slate-700"
-                >
-                  Delete
-                </button>
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-3">
-                {/* Moves */}
-                <div className="space-y-1 text-xs md:col-span-2">
-                  <span className="font-semibold uppercase text-slate-500">Moves</span>
-                  {[0, 1, 2, 3].map((mi) => {
-                    const mv = m.moves[mi];
-                    return (
-                      <div key={mi} className="flex items-center gap-1">
-                        <button
-                          onClick={() => openPanel(i, `move${mi}`)}
-                          className="flex flex-1 items-center gap-2 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-left hover:border-amber-500"
-                        >
-                          <span className="min-w-0 max-w-[9rem] truncate">
-                            {mv || <span className="text-slate-600">- (empty)</span>}
-                          </span>
-                          {mv && <MoveTag meta={moveMeta[mv]} />}
-                        </button>
-                        {mv && (
-                          <button
-                            onClick={() => setMove(i, mi, null)}
-                            title="Remove move"
-                            className="rounded px-1 text-rose-400 hover:text-rose-300"
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Stats (base + EV points; ± sets nature without opening editor) */}
-                <div className="space-y-0.5 text-xs">
-                  <span className="font-semibold uppercase text-slate-500">Stats</span>
-                  {STAT_KEYS.map((k) => {
-                    const nat = NATURES[m.nature] ?? NATURES.Serious!;
-                    const neutral = nat.boosted === nat.lowered;
-                    const boosted = !neutral && k === nat.boosted;
-                    const lowered = !neutral && k === nat.lowered;
-                    const mod = boosted ? "text-emerald-400" : lowered ? "text-rose-400" : "text-slate-400";
-                    return (
-                    <div key={k} className="flex items-center gap-1">
-                      <span className={`w-8 ${mod}`}>{STAT_LABELS[k]}</span>
-                      <span className="h-2 flex-1 overflow-hidden rounded bg-slate-800">
-                        <span
-                          className="block h-full"
-                          style={{
-                            width: `${Math.min(100, (r.baseStats[k] / 255) * 100)}%`,
-                            backgroundColor: statColor(r.baseStats[k]),
-                          }}
-                        />
-                      </span>
-                      {k !== "hp" && (
-                        <span className="inline-flex overflow-hidden rounded border border-slate-700 leading-none">
-                          <button
-                            type="button"
-                            onClick={() => setBoost(i, k, nat)}
-                            title="Nature +10%"
-                            className={`px-1 ${boosted ? "bg-emerald-600 text-white" : "text-slate-400 hover:bg-slate-800"}`}
-                          >
-                            +
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setLower(i, k, nat)}
-                            title="Nature −10%"
-                            className={`border-l border-slate-700 px-1 ${lowered ? "bg-rose-600 text-white" : "text-slate-400 hover:bg-slate-800"}`}
-                          >
-                            −
-                          </button>
-                        </span>
-                      )}
-                      <span className="w-8 text-right tabular-nums text-slate-500">
-                        {m.spread.evs[k] || "-"}
-                      </span>
-                    </div>
-                    );
-                  })}
-                  <button
-                    onClick={() => openPanel(i, "spread")}
-                    className="mt-1 w-full rounded bg-slate-800 px-2 py-1 text-[11px] hover:bg-slate-700"
-                  >
-                    {panel?.member === i && panel.kind === "spread"
-                      ? "Hide EV/IV"
-                      : "⚙ Edit EV/IV"}
-                  </button>
-                </div>
-              </div>
-
-              {panel?.member === i && renderPanel(i, m, r, tm)}
-            </div>
-          );
-        })}
-
-        {members.length === 0 && (
-          <button
-            onClick={() => setTab("add")}
-            className="rounded bg-amber-500 px-3 py-1.5 text-sm font-semibold text-black hover:bg-amber-400"
-          >
-            ＋ Add Pokémon
-          </button>
-        )}
-
-        {/* Add box at the bottom of the Team view, so a Pokémon can be added
-            without scrolling back up to the tab-bar + button. */}
-        {tab === "team" && members.length > 0 && members.length < limit && (
-          <button
-            onClick={() => { setPanel(null); setTab("add"); }}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700 py-4 text-sm text-slate-400 hover:border-amber-500 hover:text-amber-400"
-          >
-            ＋ Add Pokémon
-          </button>
-        )}
+  return (
+    <div className="space-y-3.5">
+      {/* Status strip */}
+      <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-line sm:grid-cols-4" style={{ gap: 1, background: "var(--line)" }}>
+        <StatCell value={`${members.length} / ${limit}`} label="Slots filled" />
+        <StatCell value="Reg M-B" suffix="Bo3" label="Champions VGC 2026" />
+        <StatCell value={String(flags.length)} valueClass={flags.length ? "text-warn" : "text-pos"}
+          suffix={flags.length ? "to look at" : "clear"} label="Open flags" />
+        <StatCell value={savedLabel} label="Last saved" />
       </div>
 
-      {/* Extra bottom whitespace so an open panel never sits against the edge. */}
-      <div className="h-32" />
+      <div className="grid items-start gap-4 lg:grid-cols-[320px_1fr]">
+        {/* Left rail */}
+        <div className="space-y-3.5">
+          {/* Team sheet */}
+          <div className="overflow-hidden rounded-lg border border-line bg-panel">
+            <div className="flex items-center justify-between px-[10px] py-2">
+              <span className="text-[13px] font-[600] text-t1">Team sheet</span>
+              <span className="text-[11px] tabular-nums text-t3">{completeCount} / {limit} sets complete</span>
+            </div>
+            <div className="grid items-center px-[10px] py-[5px] text-[9px] uppercase tracking-wide text-t3"
+              style={{ gridTemplateColumns: "1fr repeat(4, 20px) 24px" }}>
+              <span>Member</span>
+              <span title="Item (optional)" className="text-center">It</span>
+              <span title="Ability" className="text-center">Ab</span>
+              <span title="508 EVs spent" className="text-center">EV</span>
+              <span title="Passes legality" className="text-center">Lg</span>
+              <span />
+            </div>
+            {members.map((m, i) => {
+              const r = refOf(m.species);
+              const checks = [!!m.item, !!m.ability, evTotalOf(m) === 508, isLegal(m)];
+              const selected = tab === i;
+              return (
+                <div key={i} className="grid items-center border-b border-soft px-[10px] py-1.5"
+                  style={{ gridTemplateColumns: "1fr repeat(4, 20px) 24px", borderLeft: `2px solid ${selected ? "var(--acc)" : "transparent"}`, background: selected ? "var(--soft)" : "transparent" }}>
+                  <button onClick={() => setTab(i)} className="flex items-center gap-1.5 truncate text-left">
+                    <PokeIcon species={m.species} />
+                    <span className="truncate text-[12px] font-medium text-t1">{r.name}</span>
+                  </button>
+                  {checks.map((ok, ci) => (
+                    <span key={ci} className="mx-auto inline-flex h-[18px] w-[18px] items-center justify-center rounded text-[10px] font-bold"
+                      style={{ background: ok ? "rgba(111,196,143,0.14)" : "rgba(215,176,106,0.16)", color: ok ? "var(--pos)" : "var(--warn)" }}>
+                      {ok ? "✓" : "•"}
+                    </span>
+                  ))}
+                  <button onClick={() => removeMember(i)} title="Remove from team" className="mx-auto h-5 w-5 text-[11px] text-t3 hover:text-neg">✕</button>
+                </div>
+              );
+            })}
+            <button onClick={() => members.length < limit && (setPanel(null), setTab("add"))}
+              disabled={members.length >= limit}
+              className="flex w-full items-center justify-between border-t border-line px-[10px] py-2 text-left disabled:cursor-default">
+              <span className="flex items-center gap-1.5 text-[12px] text-t2">
+                <span className="inline-flex h-[18px] w-[18px] items-center justify-center rounded border border-dashed border-line text-t3">＋</span>
+                {members.length >= limit ? `Team full - ${limit} / ${limit}` : "Add Pokémon"}
+              </span>
+              <span className="text-[11px] tabular-nums text-t3">{members.length} / {limit} slots filled</span>
+            </button>
+          </div>
+
+          {/* Flags */}
+          <div className="rounded-lg border border-line bg-panel" style={{ borderLeftColor: "var(--warn)", borderLeftWidth: 2 }}>
+            <button onClick={() => setFlagsOpen((o) => !o)} className="flex w-full items-center gap-2 px-[10px] py-2 text-left">
+              <span className="rounded px-1.5 py-0.5 text-[11px] font-semibold tabular-nums" style={{ background: "rgba(215,176,106,0.16)", color: "var(--warn)" }}>{flags.length}</span>
+              <span className="text-[11.5px] font-[600] text-t1">things to look at on this team</span>
+              <span className="ml-auto text-[11px] text-t3">{flagsOpen ? "Hide ▴" : "Show ▾"}</span>
+            </button>
+            {flagsOpen && flags.length > 0 && (
+              <ul className="border-t border-soft">
+                {flags.map((f, idx) => (
+                  <li key={idx}>
+                    <button onClick={() => setTab(f.i)} className="flex w-full items-start gap-2 border-b border-soft px-[10px] py-1.5 text-left last:border-0">
+                      <PokeIcon species={members[f.i]!.species} />
+                      <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${f.kind === "Warning" ? "text-warn" : "bg-raise text-t2"}`}
+                        style={f.kind === "Warning" ? { background: "rgba(215,176,106,0.16)" } : undefined}>{f.kind}</span>
+                      <span className="text-[11.5px] leading-[15px] text-t2">{f.text}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {flagsOpen && flags.length === 0 && (
+              <p className="border-t border-soft px-[10px] py-2 text-[11.5px] text-pos">Nothing to look at - this team is clean.</p>
+            )}
+          </div>
+        </div>
+
+        {rightColumn}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-t3">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function StatCell({ value, suffix, label, valueClass }: { value: string; suffix?: string; label: string; valueClass?: string }) {
+  return (
+    <div className="bg-panel px-[14px] py-[10px]">
+      <div className={`flex items-baseline gap-1 text-[17px] font-bold tabular-nums ${valueClass ?? "text-t1"}`}>
+        {value}
+        {suffix && <span className="text-[11px] font-normal text-t3">{suffix}</span>}
+      </div>
+      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-t3">{label}</div>
     </div>
   );
 }

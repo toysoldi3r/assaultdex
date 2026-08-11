@@ -22,6 +22,7 @@ html[data-theme="dark"] {
   --accln: rgba(107, 147, 230, 0.38);
   --pos: #6fc48f;
   --neg: #e08a8a;
+  --warn: #d7b06a;
 }
 html[data-theme="light"] {
   color-scheme: light;
@@ -39,6 +40,7 @@ html[data-theme="light"] {
   --accln: rgba(47, 95, 196, 0.30);
   --pos: #2e7d51;
   --neg: #b04a4a;
+  --warn: #9a7218;
 }
 
 /* Always reserve the scrollbar gutter so opening an inline panel doesn't shift

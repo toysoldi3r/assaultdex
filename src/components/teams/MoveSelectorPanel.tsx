@@ -1,8 +1,8 @@
 "use client";
 
-// Move picker rendered as a proper table: Name · Type · Category · Power ·
-// Accuracy · PP · Description. Consistent column widths so the type icon does
-// not dwarf the numbers. Search + Popular section like the generic selector.
+// Move picker as a table: Move · Type · Pow · Acc · PP · Effect. Popular moves
+// first, moves already on the set hidden, and a leading "clear" row to empty the
+// slot (three moves are legal in this format).
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TypeBadge } from "@/components/ui";
@@ -12,26 +12,29 @@ import type { MoveMeta } from "./moveTypes";
 export interface MoveRow {
   name: string;
   meta?: MoveMeta;
-  /** Optional popularity string, e.g. "42%". */
   pct?: string;
 }
 
 export function MoveSelectorPanel({
   title,
+  forLabel,
   rows,
   popular = [],
   value,
+  exclude = [],
+  clearLabel,
   onSelect,
   onClose,
-  allowClear = true,
 }: {
   title: string;
+  forLabel?: string;
   rows: MoveRow[];
   popular?: MoveRow[];
   value?: string | null;
+  exclude?: string[];
+  clearLabel?: string;
   onSelect: (value: string | null) => void;
   onClose: () => void;
-  allowClear?: boolean;
 }) {
   const [q, setQ] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -45,90 +48,92 @@ export function MoveSelectorPanel({
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
+  const excludeSet = useMemo(() => new Set(exclude), [exclude]);
+  const popularNames = useMemo(() => new Set(popular.map((p) => p.name)), [popular]);
+
   const filtered = useMemo(() => {
     const n = q.trim().toLowerCase();
-    if (!n) return rows;
-    return rows.filter(
-      (r) =>
-        r.name.toLowerCase().includes(n) ||
-        (r.meta?.type ?? "").toLowerCase().includes(n) ||
-        (r.meta?.category ?? "").toLowerCase().includes(n),
-    );
-  }, [q, rows]);
+    const match = (r: MoveRow) =>
+      !n ||
+      r.name.toLowerCase().includes(n) ||
+      (r.meta?.type ?? "").toLowerCase().includes(n) ||
+      (r.meta?.category ?? "").toLowerCase().includes(n);
+    const pop = popular.filter((r) => !excludeSet.has(r.name) && match(r));
+    const rest = rows.filter((r) => !excludeSet.has(r.name) && !popularNames.has(r.name) && match(r));
+    return { pop, rest };
+  }, [q, rows, popular, excludeSet, popularNames]);
 
-  const Row = ({ r }: { r: MoveRow }) => (
+  const Row = ({ r, tag }: { r: MoveRow; tag?: "popular" }) => (
     <tr
-      onClick={() => {
-        onSelect(r.name);
-        onClose();
-      }}
-      className={`cursor-pointer border-t border-slate-800/60 hover:bg-slate-800/60 ${
-        r.name === value ? "bg-slate-800/50" : ""
-      }`}
+      onClick={() => { onSelect(r.name); onClose(); }}
+      className={`cursor-pointer border-b border-soft hover:bg-soft ${r.name === value ? "bg-soft" : ""}`}
     >
-      <td className="px-2 py-1 font-medium text-slate-100">
-        {r.name}
-        {r.pct && <span className="ml-1 text-[10px] text-amber-400">{r.pct}</span>}
+      <td className="px-2 py-1 font-medium text-t1">
+        <span className="w-full">{r.name}</span>
+        {tag === "popular" && <span className="ml-1 text-[9px] uppercase text-acc">popular</span>}
       </td>
       <td className="px-2 py-1">{r.meta && <TypeBadge type={r.meta.type} />}</td>
       <td className="px-2 py-1">{r.meta && <CategoryIcon category={r.meta.category} />}</td>
-      <td className="px-2 py-1 text-right tabular-nums text-slate-300">{r.meta?.power ?? "-"}</td>
-      <td className="px-2 py-1 text-right tabular-nums text-slate-300">
+      <td className="px-2 py-1 text-right tabular-nums text-t2">{r.meta?.power ?? "-"}</td>
+      <td className="px-2 py-1 text-right tabular-nums text-t2">
         {r.meta ? (r.meta.accuracy == null ? "-" : `${r.meta.accuracy}%`) : ""}
       </td>
-      <td className="px-2 py-1 text-right tabular-nums text-slate-400">{r.meta?.pp ?? "-"}</td>
-      <td className="px-2 py-1 text-[11px] text-slate-500">{r.meta?.desc ?? ""}</td>
+      <td className="px-2 py-1 text-right tabular-nums text-t3">{r.meta?.pp ?? "-"}</td>
+      <td className="px-2 py-1 text-[11px] text-t3">{r.meta?.desc ?? ""}</td>
     </tr>
   );
 
   return (
-    <div className="mt-3 rounded border border-slate-800 bg-slate-950/40">
-      <div className="flex items-center gap-2 border-b border-slate-800 p-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">{title}</span>
+    <div className="rounded border border-line bg-bg">
+      <div className="flex items-center gap-2 border-b border-line p-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-t2">{title}</span>
+        {forLabel && <span className="text-[11px] text-t3">{forLabel}</span>}
+        <span className="flex-1" />
+        <button type="button" onClick={onClose} className="rounded bg-raise px-2 py-1 text-xs text-t2 hover:text-t1">✕</button>
+      </div>
+      <div className="p-2">
         <input
           ref={inputRef}
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search moves…"
-          className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm"
+          placeholder="Filter moves…"
+          className="w-full rounded border border-accln bg-panel px-2 py-1 text-sm"
         />
-        {allowClear && (
-          <button type="button" onClick={() => { onSelect(null); onClose(); }} className="rounded bg-slate-800 px-2 py-1 text-xs hover:bg-slate-700">
-            Clear
-          </button>
-        )}
-        <button type="button" onClick={onClose} className="rounded bg-slate-800 px-2 py-1 text-xs hover:bg-slate-700">✕</button>
       </div>
 
-      <div className="max-h-80 overflow-auto">
+      <div className="max-h-[246px] overflow-auto">
         <table className="w-full text-left text-xs">
-          <thead className="sticky top-0 bg-slate-950/90 text-[10px] uppercase text-slate-500">
+          <thead className="sticky top-0 bg-bg text-[10px] uppercase text-t3">
             <tr>
               <th className="px-2 py-1 font-normal">Move</th>
               <th className="px-2 py-1 font-normal">Type</th>
-              <th className="px-2 py-1 font-normal">Cat</th>
               <th className="px-2 py-1 text-right font-normal">Pow</th>
               <th className="px-2 py-1 text-right font-normal">Acc</th>
               <th className="px-2 py-1 text-right font-normal">PP</th>
-              <th className="px-2 py-1 font-normal">Description</th>
+              <th className="px-2 py-1 font-normal">Effect</th>
             </tr>
           </thead>
           <tbody>
-            {!q && popular.length > 0 && (
-              <>
-                <tr><td colSpan={7} className="px-2 py-0.5 text-[10px] uppercase text-slate-600">Popular</td></tr>
-                {popular.map((r) => <Row key={`pop-${r.name}`} r={r} />)}
-                <tr><td colSpan={7} className="px-2 py-0.5 text-[10px] uppercase text-slate-600">All moves</td></tr>
-              </>
+            {clearLabel && !q && (
+              <tr onClick={() => { onSelect(null); onClose(); }} className="cursor-pointer border-b border-soft hover:bg-soft">
+                <td className="px-2 py-1 text-[9px] uppercase text-t3">clear</td>
+                <td colSpan={6} className="px-2 py-1 text-[11px] text-t3">{clearLabel}</td>
+              </tr>
             )}
-            {filtered.length === 0 ? (
-              <tr><td colSpan={7} className="px-2 py-2 text-slate-600">No matches.</td></tr>
-            ) : (
-              filtered.map((r) => <Row key={r.name} r={r} />)
+            {filtered.pop.map((r) => <Row key={`pop-${r.name}`} r={r} tag="popular" />)}
+            {filtered.rest.map((r) => <Row key={r.name} r={r} />)}
+            {filtered.pop.length === 0 && filtered.rest.length === 0 && (
+              <tr><td colSpan={7} className="px-2 py-2 text-t3">No matches.</td></tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {exclude.length > 0 && (
+        <p className="border-t border-soft px-2 py-1 text-[10px] text-t3">
+          {exclude.length} move{exclude.length === 1 ? "" : "s"} already on this set hidden.
+        </p>
+      )}
     </div>
   );
 }

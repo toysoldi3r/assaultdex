@@ -1,7 +1,7 @@
 import type { PokemonType } from "@/domain/types/pokemon";
 
 // Current-generation game type colours.
-const TYPE_HEX: Record<PokemonType, string> = {
+export const TYPE_HEX: Record<PokemonType, string> = {
   normal: "#9FA19F", fire: "#E8503A", water: "#2980EF", electric: "#F7C325", grass: "#43A93C",
   ice: "#3DCEF3", fighting: "#FF8000", poison: "#9141CB", ground: "#A9702F", flying: "#81B9EF",
   psychic: "#EF4179", bug: "#9CAA22", rock: "#B7AF7E", ghost: "#7B4E8C", dragon: "#5060E1",
