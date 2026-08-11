@@ -23,31 +23,60 @@ export interface DbItem {
   mega: boolean;
 }
 
-// Common competitive held items (beyond the modeled ones) shown in the default
-// "Champions" item view. Everything else is only in the full list.
-const COMPETITIVE_ITEMS = new Set<string>([
-  "Leftovers", "Rocky Helmet", "Sitrus Berry", "Focus Sash", "Safety Goggles",
-  "Covert Cloak", "Clear Amulet", "Booster Energy", "Mental Herb", "Light Clay",
-  "Eviolite", "Weakness Policy", "Throat Spray", "Wide Lens", "Zoom Lens",
-  "Grassy Seed", "Electric Seed", "Psychic Seed", "Misty Seed", "Room Service",
-  "Loaded Dice", "Protective Pads", "Air Balloon", "Red Card", "Eject Button",
-  "Eject Pack", "Blunder Policy", "Adrenaline Orb", "Power Herb", "White Herb",
-  "Lum Berry", "Chesto Berry", "Aguav Berry", "Figy Berry", "Iapapa Berry",
-  "Mago Berry", "Wiki Berry", "Occa Berry", "Passho Berry", "Wacan Berry",
-  "Rindo Berry", "Yache Berry", "Chople Berry", "Kebia Berry", "Shuca Berry",
-  "Coba Berry", "Payapa Berry", "Tanga Berry", "Charti Berry", "Kasib Berry",
-  "Haban Berry", "Colbur Berry", "Babiri Berry", "Chilan Berry", "Roseli Berry",
-  "Assault Vest", "Life Orb", "Choice Band", "Choice Specs", "Choice Scarf",
-  "Mystic Water", "Charcoal", "Metronome", "Muscle Band", "Wise Glasses",
-  "Expert Belt", "Iron Ball", "Black Sludge", "Toxic Orb", "Flame Orb",
-  "Heavy-Duty Boots", "Utility Umbrella", "Mirror Herb", "Ability Shield",
-  "Punching Glove", "Custap Berry", "Leppa Berry",
+// The authoritative set of items legal in Pokémon Champions. This is a curated
+// allowlist (not a heuristic): an item is shown in the default "Champions" item
+// view and flagged legal iff its name appears here. Several entries are Mega
+// Stones that @pkmn/dex marks isNonstandard: "Future" (Champions-specific megas
+// that never shipped in the mainline games); those are still legal here and are
+// kept in the item lists via `isLegalItem` below.
+const CHAMPIONS_LEGAL_ITEMS = new Set<string>([
+  "Abomasite", "Absolite", "Aerodactylite", "Aggronite", "Alakazite",
+  "Altarianite", "Ampharosite", "Aspear Berry", "Audinite", "Babiri Berry",
+  "Banettite", "Barbaracite", "Beedrillite", "Big Root", "Black Belt",
+  "Black Glasses", "Blastoisinite", "Blazikenite", "Bright Powder", "Cameruptite",
+  "Chandelurite", "Charcoal", "Charizardite X", "Charizardite Y", "Charti Berry",
+  "Cheri Berry", "Chesnaughtite", "Chesto Berry", "Chilan Berry", "Chimechite",
+  "Choice Scarf", "Chople Berry", "Clefablite", "Coba Berry", "Colbur Berry",
+  "Crabominite", "Damp Rock", "Delphoxite", "Dragalgite", "Dragon Fang",
+  "Dragoninite", "Drampanite", "Eelektrossite", "Emboarite", "Excadrite",
+  "Expert Belt", "Fairy Feather", "Falinksite", "Feraligite", "Floettite",
+  "Focus Band", "Focus Sash", "Froslassite", "Galladite", "Garchompite",
+  "Gardevoirite", "Gengarite", "Glalitite", "Glimmoranite", "Golurkite",
+  "Greninjite", "Gyaradosite", "Haban Berry", "Hard Stone", "Hawluchanite",
+  "Heat Rock", "Heracronite", "Houndoominite", "Icy Rock", "Iron Ball",
+  "Kangaskhanite", "Kasib Berry", "Kebia Berry", "King's Rock", "Leftovers",
+  "Leppa Berry", "Life Orb", "Light Ball", "Light Clay", "Lopunnite",
+  "Lucarionite", "Lum Berry", "Magnet", "Malamarite", "Manectite",
+  "Mawilite", "Medichamite", "Meganiumite", "Mental Herb", "Meowsticite",
+  "Metagrossite", "Metal Coat", "Metronome", "Miracle Seed", "Muscle Band",
+  "Mystic Water", "Never-Melt Ice", "Occa Berry", "Oran Berry", "Passho Berry",
+  "Payapa Berry", "Pecha Berry", "Persim Berry", "Pidgeotite", "Pinsirite",
+  "Poison Barb", "Pyroarite", "Quick Claw", "Raichunite X", "Raichunite Y",
+  "Rawst Berry", "Rindo Berry", "Roseli Berry", "Sablenite", "Sceptilite",
+  "Scizorite", "Scolipite", "Scope Lens", "Scovillainite", "Scraftinite",
+  "Sharp Beak", "Sharpedonite", "Shed Shell", "Shell Bell", "Shuca Berry",
+  "Silk Scarf", "Silver Powder", "Sitrus Berry", "Skarmorite", "Slowbronite",
+  "Smooth Rock", "Soft Sand", "Spell Tag", "Staraptite", "Starminite",
+  "Steelixite", "Swampertite", "Tanga Berry", "Twisted Spoon", "Tyranitarite",
+  "Venusaurite", "Victreebelite", "Wacan Berry", "White Herb", "Wide Lens",
+  "Wise Glasses", "Yache Berry", "Zoom Lens",
 ]);
 
-// Mega Stones and the primal orbs - legal held items that trigger a Mega/Primal
-// forme. Flagged competitive so they show in the default "Champions" item view.
+// Mega Stones and the primal orbs - held items that trigger a Mega/Primal forme.
+// Drives the `mega` flag (used by the "Hide mega stones" filter). Note this is
+// broader than Champions legality: some mega stones/orbs exist in @pkmn/dex but
+// are not in CHAMPIONS_LEGAL_ITEMS, so `mega` and `competitive` are independent.
 const isMegaItem = (i: { megaStone?: unknown; name: string }): boolean =>
   !!i.megaStone || i.name === "Blue Orb" || i.name === "Red Orb";
+
+// An item belongs in the Database item lists if it's a real (standard/Past) item
+// OR it's a Champions-legal item that @pkmn/dex flags nonstandard (the "Future"
+// Champions megas) - otherwise those legal megas would be dropped entirely.
+const isListedItem = (i: {
+  exists: boolean;
+  isNonstandard?: string | null;
+  name: string;
+}): boolean => isReal(i) || CHAMPIONS_LEGAL_ITEMS.has(i.name);
 
 export interface DbAbility {
   name: string;
@@ -220,14 +249,14 @@ const ITEM_INTERACTION: Record<string, string> = {
 /** Item by name, with description, fling, modelled calc, and interaction note. */
 export function getDbItem(nameOrId: string): (DbItem & { interaction: string | null }) | null {
   const i = gen.items.get(nameOrId);
-  if (!isReal(i)) return null;
+  if (!isListedItem(i)) return null;
   return {
     name: i.name,
     spritenum: (i as unknown as { spritenum?: number }).spritenum ?? 0,
     desc: i.desc || i.shortDesc || "",
     fling: i.fling?.basePower ?? null,
     calc: ITEM_CALC[i.name] ?? null,
-    competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name) || isMegaItem(i),
+    competitive: CHAMPIONS_LEGAL_ITEMS.has(i.name),
     berry: i.name.endsWith("Berry"),
     mega: isMegaItem(i),
     interaction: ITEM_INTERACTION[i.name] ?? null,
@@ -238,14 +267,14 @@ let cachedItems: DbItem[] | undefined;
 export function listDbItems(): DbItem[] {
   return (cachedItems ??= gen.items
     .all()
-    .filter(isReal)
+    .filter(isListedItem)
     .map((i) => ({
       name: i.name,
       spritenum: (i as unknown as { spritenum?: number }).spritenum ?? 0,
       desc: i.desc || i.shortDesc || "",
       fling: i.fling?.basePower ?? null,
       calc: ITEM_CALC[i.name] ?? null,
-      competitive: !!ITEM_CALC[i.name] || COMPETITIVE_ITEMS.has(i.name) || isMegaItem(i),
+      competitive: CHAMPIONS_LEGAL_ITEMS.has(i.name),
       berry: i.name.endsWith("Berry"),
       mega: isMegaItem(i),
     }))
