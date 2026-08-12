@@ -6,16 +6,18 @@ import { ItemsTable } from "./ItemsTable";
 import { AbilitiesTable } from "./AbilitiesTable";
 import { MovesTable } from "./MovesTable";
 import { Terminology } from "./Terminology";
+import { Rulesets } from "./Rulesets";
 import { BattleCalculator } from "./BattleCalculator";
 import type { DbItem, DbAbility, DbMove } from "@/data/dexDatabase";
 import type { PokemonRef } from "@/lib/choicedexBuild";
 
-type Tab = "items" | "abilities" | "moves" | "calc" | "terms";
+type Tab = "items" | "abilities" | "moves" | "calc" | "terms" | "rulesets";
 const TABS: { id: Tab; label: string }[] = [
   { id: "items", label: "Items" },
   { id: "abilities", label: "Abilities" },
   { id: "moves", label: "Moves" },
   { id: "calc", label: "Calculator" },
+  { id: "rulesets", label: "Rulesets" },
   { id: "terms", label: "Knowledgebase" },
 ];
 
@@ -65,6 +67,7 @@ export function DatabaseApp({
       {tab === "abilities" && <AbilitiesTable abilities={abilities} championsAbilities={championsAbilities} />}
       {tab === "moves" && <MovesTable moves={moves} championsMoves={championsMoves} />}
       {tab === "calc" && <BattleCalculator pokemon={pokemon} />}
+      {tab === "rulesets" && <Rulesets />}
       {tab === "terms" && <Terminology />}
     </div>
   );

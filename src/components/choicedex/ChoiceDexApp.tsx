@@ -850,21 +850,38 @@ function BattleView({
     const s = monOf(side, slug);
     return s.ability || abilitiesFor(slug)[0] || "";
   };
+  // Only fire when the SET of field-setting abilities on the board changes (a
+  // setter entered / left / Mega Evolved), not on every render. This lets the
+  // user freely pick a different weather/terrain afterwards - including turning
+  // it off when its few turns run out - without it snapping back.
+  const fieldAbilFirst = useRef(true);
+  const weatherAbilSig = useRef("");
+  const terrainAbilSig = useRef("");
   useEffect(() => {
     const onField = [
       activeAbility("user", activeUser[0]), activeAbility("user", activeUser[1]),
       activeAbility("opponent", activeOpp[0]), activeAbility("opponent", activeOpp[1]),
     ].filter(Boolean);
-    if (weather === "none") {
-      const w = onField.map((a) => WEATHER_SETTERS[a]).find(Boolean);
-      if (w) setWeather(w);
+    const w = onField.map((a) => WEATHER_SETTERS[a]).find(Boolean) ?? "";
+    const t = onField.map((a) => TERRAIN_SETTERS[a]).find(Boolean) ?? "";
+    if (fieldAbilFirst.current) {
+      // On mount, seed the signatures and only fill a still-unset field, so a
+      // restored/manual weather is respected instead of clobbered.
+      fieldAbilFirst.current = false;
+      weatherAbilSig.current = w;
+      terrainAbilSig.current = t;
+      if (w && weather === "none") setWeather(w);
+      if (t && terrain === "none") setTerrain(t);
+      return;
     }
-    if (terrain === "none") {
-      const t = onField.map((a) => TERRAIN_SETTERS[a]).find(Boolean);
-      if (t) setTerrain(t);
-    }
+    // A newly-arrived setter overrides the field (as it does in-game); once
+    // applied, the same setter staying out won't re-apply over a manual change.
+    if (w && w !== weatherAbilSig.current) setWeather(w);
+    weatherAbilSig.current = w;
+    if (t && t !== terrainAbilSig.current) setTerrain(t);
+    terrainAbilSig.current = t;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeUser, activeOpp, mon, weather, terrain]);
+  }, [activeUser, activeOpp, mon]);
 
   const abilitiesFor = (slug: string | null) => (slug ? refBySlug.get(slug)?.abilities ?? [] : []);
   // Legal options for a spot: the side's team minus whoever is in the OTHER spot
@@ -1025,6 +1042,10 @@ function BattleView({
           {/* Shared field */}
           <div className="space-y-2 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Field (both sides)</h3>
+            <p className="text-[10px] text-slate-500">
+              Weather/terrain from an ability applies on entry but only lasts a
+              few turns - set it back to “none” when it runs out.
+            </p>
             <div>
               <span className="mb-1 block text-[10px] uppercase text-slate-500">Weather</span>
               <div className="flex flex-wrap gap-1">

@@ -35,11 +35,14 @@ export function PokeIcon({
   title?: string;
 }) {
   const style = cssToObject(Icons.getPokemon(species).style.split(CDN).join(LOCAL));
+  // An empty title means "no own tooltip" (omit the attribute entirely) so a
+  // parent element's tooltip shows over the icon; a real string overrides it.
+  const tip = title === "" ? undefined : (title ?? species);
   return (
     <span
       role="img"
       aria-label={species}
-      title={title ?? species}
+      title={tip}
       className={className}
       style={style}
     />
