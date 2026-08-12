@@ -12,6 +12,13 @@ export function ItemsTable({ items }: { items: DbItem[] }) {
   const [hideBerries, setHideBerries] = useState(false);
   const [hideMega, setHideMega] = useState(false);
 
+  // Count in the active scope (before the text query), so the search
+  // placeholder matches the Champions / Full-list toggle.
+  const scopeCount = useMemo(
+    () => items.filter((i) => !champsOnly || i.competitive).length,
+    [items, champsOnly],
+  );
+
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = items.filter(
@@ -34,7 +41,7 @@ export function ItemsTable({ items }: { items: DbItem[] }) {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder={`Search ${items.length} items…`}
+          placeholder={`Search ${scopeCount} ${champsOnly ? "Champions" : ""} items…`}
           className="w-64 rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm"
         />
         <div className="flex overflow-hidden rounded border border-slate-700 text-xs">

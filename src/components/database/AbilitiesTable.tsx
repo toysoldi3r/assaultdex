@@ -15,6 +15,11 @@ export function AbilitiesTable({
   const [champsOnly, setChampsOnly] = useState(true);
   const champs = useMemo(() => new Set(championsAbilities), [championsAbilities]);
 
+  const scopeCount = useMemo(
+    () => abilities.filter((a) => !champsOnly || champs.has(a.name)).length,
+    [abilities, champsOnly, champs],
+  );
+
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return abilities.filter(
@@ -32,7 +37,7 @@ export function AbilitiesTable({
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder={`Search ${abilities.length} abilities…`}
+          placeholder={`Search ${scopeCount} ${champsOnly ? "Champions" : ""} abilities…`}
           className="w-64 rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm"
         />
         <div className="flex overflow-hidden rounded border border-slate-700 text-xs">

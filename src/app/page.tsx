@@ -2,7 +2,7 @@ import Link from "next/link";
 import { MetaCards } from "@/components/home/MetaCards";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import type { PokemonType } from "@/domain/types/pokemon";
-import { listDbItems } from "@/data/dexDatabase";
+import { listDbItems, listDbMoves } from "@/data/dexDatabase";
 import {
   getCores,
   getTopTeams,
@@ -28,9 +28,14 @@ export default async function HomePage() {
   );
 
   const totalBattles = getTotalBattles();
-  // Legal moves = distinct moves across every Champions mon's legal movepool.
-  const legalMoves = new Set(pokemon.flatMap((p) => p.movepool)).size;
-  const legalItems = listDbItems().length;
+  // Legal counts match the Database "Champions" filters exactly:
+  //  - moves: real moves whose name is in some Champions mon's legal movepool
+  //  - items: items flagged competitive/legal for the Champions format
+  const championsMoves = new Set(
+    pokemon.flatMap((p) => (p.movepool.length ? p.movepool : p.moves.map((m) => m.name))),
+  );
+  const legalMoves = listDbMoves().filter((m) => championsMoves.has(m.name)).length;
+  const legalItems = listDbItems().filter((i) => i.competitive).length;
   const stats = [
     { value: grouped(totalBattles), label: "Battles in snapshot" },
     { value: String(pokemon.length), label: "Valid pokemons" },

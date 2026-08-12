@@ -21,6 +21,11 @@ export function MovesTable({
   const [fCat, setFCat] = useState<string>("");
   const [minPow, setMinPow] = useState(0);
 
+  const scopeCount = useMemo(
+    () => moves.filter((m) => !champsOnly || champs.has(m.name)).length,
+    [moves, champsOnly, champs],
+  );
+
   const filtered = useMemo(() => {
     const n = q.trim().toLowerCase();
     return moves.filter(
@@ -39,7 +44,7 @@ export function MovesTable({
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder={`Search ${moves.length} moves…`}
+          placeholder={`Search ${scopeCount} ${champsOnly ? "Champions" : ""} moves…`}
           className="w-56 rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm"
         />
         <div className="flex overflow-hidden rounded border border-slate-700">
