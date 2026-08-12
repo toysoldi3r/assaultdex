@@ -67,7 +67,7 @@ export function MetaCards({
   const cores = coreSize === 2 ? cores2 : coreSize === 3 ? cores3 : cores4;
 
   return (
-    <div className="grid min-w-0 gap-[18px] lg:grid-cols-[1.35fr_1fr]">
+    <div className="grid min-w-0 items-start gap-[18px] lg:grid-cols-[1.35fr_1fr]">
       {/* Ladder */}
       <section className="overflow-hidden rounded-lg border border-line bg-panel">
         <div className="flex items-center gap-3 border-b border-line px-3.5 py-[9px]">

@@ -16,7 +16,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "abilities", label: "Abilities" },
   { id: "moves", label: "Moves" },
   { id: "calc", label: "Calculator" },
-  { id: "terms", label: "Terminology" },
+  { id: "terms", label: "Knowledgebase" },
 ];
 
 export function DatabaseApp({

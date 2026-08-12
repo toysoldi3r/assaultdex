@@ -33,8 +33,8 @@ export default async function HomePage() {
   const legalItems = listDbItems().length;
   const stats = [
     { value: grouped(totalBattles), label: "Battles in snapshot" },
-    { value: String(pokemon.length), label: "Valid pokemons" },
-    { value: grouped(legalMoves), label: "Legal moves" },
+    { value: String(pokemon.length), label: "Valid pokemons", href: "/pokemon" },
+    { value: grouped(legalMoves), label: "Legal moves", href: "/database?tab=moves" },
     { value: grouped(legalItems), label: "Legal items" },
     { value: "Reg M-B", label: "Format · Bo3" },
   ];
@@ -73,12 +73,23 @@ export default async function HomePage() {
 
       {/* Stat strip */}
       <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-line sm:grid-cols-3 lg:grid-cols-5" style={{ gap: 1, background: "var(--line)" }}>
-        {stats.map((s) => (
-          <div key={s.label} className="bg-panel px-3.5 py-[11px]">
-            <div className="mono text-[18px] font-bold text-t1">{s.value}</div>
-            <div className="mt-0.5 text-[10px] uppercase tracking-[0.06em] text-t3">{s.label}</div>
-          </div>
-        ))}
+        {stats.map((s) =>
+          s.href ? (
+            <Link
+              key={s.label}
+              href={s.href}
+              className="group bg-panel px-3.5 py-[11px] transition-colors hover:bg-soft"
+            >
+              <div className="mono text-[18px] font-bold text-t1 group-hover:text-acc">{s.value}</div>
+              <div className="mt-0.5 text-[10px] uppercase tracking-[0.06em] text-t3">{s.label}</div>
+            </Link>
+          ) : (
+            <div key={s.label} className="bg-panel px-3.5 py-[11px]">
+              <div className="mono text-[18px] font-bold text-t1">{s.value}</div>
+              <div className="mt-0.5 text-[10px] uppercase tracking-[0.06em] text-t3">{s.label}</div>
+            </div>
+          ),
+        )}
       </div>
 
       <MetaCards

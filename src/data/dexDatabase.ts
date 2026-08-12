@@ -21,6 +21,42 @@ export interface DbItem {
   berry: boolean;
   /** Mega Stone or primal orb. */
   mega: boolean;
+  /** Coarse category for the advanced filter (Power, Recovery, Defense, …). */
+  category: ItemCategory;
+}
+
+export type ItemCategory =
+  | "Mega Stone"
+  | "Berry"
+  | "Choice"
+  | "Power"
+  | "Recovery"
+  | "Defense"
+  | "Field"
+  | "Utility";
+
+/** All item categories, in display order (for filter menus). */
+export const ITEM_CATEGORIES: ItemCategory[] = [
+  "Power", "Recovery", "Defense", "Field", "Choice", "Berry", "Mega Stone", "Utility",
+];
+
+/** Coarse classification from the item's flags + effect text. Heuristic: used
+ *  only to power the optional advanced filter, not any battle calc. */
+function classifyItem(
+  desc: string,
+  berry: boolean,
+  mega: boolean,
+  isChoice: boolean,
+): ItemCategory {
+  if (mega) return "Mega Stone";
+  if (berry) return "Berry";
+  if (isChoice) return "Choice";
+  const d = desc.toLowerCase();
+  if (/power|1\.\dx damage|attacks do|super effective|attack is 1|damage of moves/.test(d)) return "Power";
+  if (/restores|regains|recover|heal|gains 1\//.test(d)) return "Recovery";
+  if (/rain dance|sunny day|sandstorm|snow|aurora veil|light screen|reflect|lasts 8 turns|terrain/.test(d)) return "Field";
+  if (/sp\. def|defense is|loses 1\/6|survive an attack|1 hp|takes.*damage|reduces/.test(d)) return "Defense";
+  return "Utility";
 }
 
 // The authoritative set of items legal in Pokémon Champions. This is a curated
@@ -259,6 +295,7 @@ export function getDbItem(nameOrId: string): (DbItem & { interaction: string | n
     competitive: CHAMPIONS_LEGAL_ITEMS.has(i.name),
     berry: i.name.endsWith("Berry"),
     mega: isMegaItem(i),
+    category: classifyItem(i.desc || i.shortDesc || "", i.name.endsWith("Berry"), isMegaItem(i), !!(i as unknown as { isChoice?: boolean }).isChoice),
     interaction: ITEM_INTERACTION[i.name] ?? null,
   };
 }
@@ -277,6 +314,7 @@ export function listDbItems(): DbItem[] {
       competitive: CHAMPIONS_LEGAL_ITEMS.has(i.name),
       berry: i.name.endsWith("Berry"),
       mega: isMegaItem(i),
+      category: classifyItem(i.desc || i.shortDesc || "", i.name.endsWith("Berry"), isMegaItem(i), !!(i as unknown as { isChoice?: boolean }).isChoice),
     }))
     .sort((a, b) => a.name.localeCompare(b.name)));
 }
