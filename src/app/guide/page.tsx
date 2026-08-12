@@ -82,7 +82,7 @@ export default function GuidePage() {
           Champions is played best-of-three (Bo3), so adapting your picks and leads
           between games matters as much as any single turn. For the mechanics and
           jargon behind all of this, see the{" "}
-          <Link href="/database?tab=terms" className="text-amber-400 hover:underline">Terminology</Link>{" "}
+          <Link href="/database?tab=terms" className="text-amber-400 hover:underline">Knowledgebase</Link>{" "}
           tab in the Database.
         </p>
       </Section>

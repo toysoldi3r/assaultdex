@@ -21,7 +21,7 @@ const DESTINATIONS: Dest[] = [
   { label: "Moves", href: "/database?tab=moves", keywords: "move attack database" },
   { label: "Abilities", href: "/database?tab=abilities", keywords: "ability database" },
   { label: "Items", href: "/database?tab=items", keywords: "item held database" },
-  { label: "Terminology", href: "/database?tab=terms", keywords: "terms glossary jargon" },
+  { label: "Knowledgebase", href: "/database?tab=terms", keywords: "knowledgebase terms glossary jargon explainer" },
   { label: "Guide", href: "/guide", keywords: "guide start help how" },
   { label: "Sources", href: "/sources", keywords: "source data credit" },
   { label: "Home", href: "/", keywords: "home meta ladder dashboard" },
