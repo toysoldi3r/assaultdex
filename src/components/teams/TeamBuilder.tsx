@@ -108,17 +108,29 @@ export function TeamBuilder({
     setDirty(true);
   };
 
-  const defaultSet = (slug: string): PokemonSet => {
-    const r = refOf(slug);
-    const tm = tournament[uKey(slug)];
-    const moveLike = r.legalMoves.map((n) => ({
+  const moveLikeOf = (r: MemberRef) =>
+    r.legalMoves.map((n) => ({
       name: n,
       type: moveMeta[n]?.type ?? null,
       category: moveMeta[n]?.category ?? ("status" as const),
       power: moveMeta[n]?.power ?? null,
     }));
-    const suggestion = suggestSets(r.types, r.baseStats, r.abilities, moveLike)[0];
+  const suggestionsOf = (r: MemberRef) => suggestSets(r.types, r.baseStats, r.abilities, moveLikeOf(r));
+
+  const defaultSet = (slug: string): PokemonSet => {
+    const r = refOf(slug);
+    const tm = tournament[uKey(slug)];
+    const suggestions = suggestionsOf(r);
+    // Pick the archetype that fits the species instead of always the first
+    // (offensive) one, so the default item varies across the roster rather than
+    // defaulting every Pokémon to the offensive set's Life Orb.
+    const bulky = (r.baseStats.hp ?? 0) >= 90 && Math.max(r.baseStats.def ?? 0, r.baseStats.spd ?? 0) >= 90;
+    const suggestion =
+      (bulky && suggestions.find((s) => s.label === "Bulky attacker" || s.label === "Balanced")) ||
+      suggestions[0];
     const ability = tm?.abilities[0]?.name ?? suggestion?.ability ?? r.abilities[0] ?? null;
+    // Most common held item when tournament usage is available, else the item
+    // from the chosen suggested set.
     const item = tm?.items[0]?.name ?? suggestion?.item ?? null;
     const legal = new Set(r.legalMoves);
     const popularMoves = (tm?.moves ?? []).map((x) => x.name).filter((n) => legal.has(n));
@@ -229,10 +241,18 @@ export function TeamBuilder({
   function renderPanel(i: number, m: PokemonSet, r: MemberRef, tm: TournamentPopular | undefined) {
     const kind = panel!.kind;
     const forLabel = `for ${r.name}`;
+    // Suggested-set items/moves float to the top as "recommended" even when
+    // there is no tournament usage, ahead of the full alphabetical list.
+    const suggestions = suggestionsOf(r);
     if (kind === "item") {
+      const tmItems = asPopular(tm?.items);
+      const seen = new Set(tmItems.map((o) => o.name));
+      const recItems = [...new Set(suggestions.map((s) => s.item).filter(Boolean))]
+        .filter((n) => !seen.has(n))
+        .map((n) => ({ name: n, desc: "suggested" }));
       return (
         <SelectorPanel
-          key={`item-${i}`} title="Item" forLabel={forLabel} options={items} popular={asPopular(tm?.items)}
+          key={`item-${i}`} title="Item" forLabel={forLabel} options={items} popular={[...tmItems, ...recItems]}
           value={m.item} clearLabel={m.item ? "No item - a held item is optional in this format." : undefined}
           leading={(o) => <ItemIcon item={o.name} />}
           onSelect={(v) => update(i, { item: v })} onClose={closePanel}
@@ -254,7 +274,13 @@ export function TeamBuilder({
     }
     const mi = Number(kind.slice(4));
     const rows: MoveRow[] = r.legalMoves.map((mv) => ({ name: mv, meta: moveMeta[mv] }));
-    const pop: MoveRow[] = (tm?.moves ?? []).map((x) => ({ name: x.name, meta: moveMeta[x.name], pct: `${x.pct}%` }));
+    const legalSet = new Set(r.legalMoves);
+    const tmMoves: MoveRow[] = (tm?.moves ?? []).map((x) => ({ name: x.name, meta: moveMeta[x.name], pct: `${x.pct}%` }));
+    const seenMoves = new Set(tmMoves.map((x) => x.name));
+    const recMoves: MoveRow[] = [...new Set(suggestions.flatMap((s) => s.moves))]
+      .filter((n) => legalSet.has(n) && !seenMoves.has(n))
+      .map((n) => ({ name: n, meta: moveMeta[n] }));
+    const pop: MoveRow[] = [...tmMoves, ...recMoves];
     const otherMoves = m.moves.filter((_, idx) => idx !== mi);
     return (
       <MoveSelectorPanel
@@ -533,9 +559,16 @@ export function TeamBuilder({
               return (
                 <div key={i} className="grid items-center border-b border-soft px-[10px] py-1.5"
                   style={{ gridTemplateColumns: "1fr repeat(4, 20px) 24px", borderLeft: `2px solid ${selected ? "var(--acc)" : "transparent"}`, background: selected ? "var(--soft)" : "transparent" }}>
-                  <button onClick={() => setTab(i)} className="flex items-center gap-1.5 truncate text-left">
-                    <PokeIcon species={m.species} />
-                    <span className="truncate text-[12px] font-medium text-t1">{r.name}</span>
+                  <button onClick={() => setTab(i)} className="flex min-w-0 items-center gap-1.5 text-left">
+                    <span className="grid h-[26px] w-8 shrink-0 place-items-center overflow-hidden">
+                      <PokeIcon species={m.species} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[12px] font-medium text-t1">{r.name}</span>
+                      <span className="flex gap-0.5">
+                        {r.types.map((t) => <TypeBadge key={t} type={t} />)}
+                      </span>
+                    </span>
                   </button>
                   {checks.map((ok, ci) => (
                     <span key={ci} className="mx-auto inline-flex h-[18px] w-[18px] items-center justify-center rounded text-[10px] font-bold"
@@ -569,11 +602,13 @@ export function TeamBuilder({
               <ul className="border-t border-soft">
                 {flags.map((f, idx) => (
                   <li key={idx}>
-                    <button onClick={() => setTab(f.i)} className="flex w-full items-start gap-2 border-b border-soft px-[10px] py-1.5 text-left last:border-0">
-                      <PokeIcon species={members[f.i]!.species} />
+                    <button onClick={() => setTab(f.i)} className="flex w-full items-center gap-2 border-b border-soft px-[10px] py-1.5 text-left last:border-0">
+                      <span className="grid h-[26px] w-8 shrink-0 place-items-center overflow-hidden">
+                        <PokeIcon species={members[f.i]!.species} />
+                      </span>
                       <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${f.kind === "Warning" ? "text-warn" : "bg-raise text-t2"}`}
                         style={f.kind === "Warning" ? { background: "rgba(215,176,106,0.16)" } : undefined}>{f.kind}</span>
-                      <span className="text-[11.5px] leading-[15px] text-t2">{f.text}</span>
+                      <span className="min-w-0 flex-1 text-[11.5px] leading-[15px] text-t2">{f.text}</span>
                     </button>
                   </li>
                 ))}

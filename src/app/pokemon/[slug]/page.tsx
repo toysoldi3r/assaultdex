@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Dex } from "@pkmn/dex";
 import { Panel, TypeBadge } from "@/components/ui";
 import { changeHistory, speciesMeta } from "@/data/pkmnEnrich";
 import { PokeIcon } from "@/components/PokeIcon";
 import { ItemIcon } from "@/components/ItemIcon";
 import { getDexSpecies, getSpeciesForms } from "@/data/pokedexSource";
 import { CHAMPIONS_FORMAT_LABEL, getMonUsage } from "@/data/usageStats";
-import { suggestSets, type MegaInfo } from "@/data/suggestSets";
+import { suggestSets } from "@/data/suggestSets";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { statColor } from "@/domain/mechanics/statColor";
 import { POKEMON_TYPES, STAT_KEYS, STAT_LABELS, type PokemonType } from "@/domain/types/pokemon";
@@ -22,24 +21,6 @@ function matchupCard(m: number): { text: string; card: string } {
   if (m < 1) return { text: `${m}×`, card: "bg-emerald-600 text-white" };
   return { text: "1×", card: "bg-white text-slate-900" };
 }
-
-/** Mega/Primal forme (stone + forme ability), for a Mega suggested set. */
-function megaInfo(slug: string): MegaInfo | null {
-  const s = Dex.species.get(slug);
-  if (!s.exists) return null;
-  for (const fn of s.otherFormes ?? []) {
-    const f = Dex.species.get(fn);
-    if (f.exists && /Mega|Primal/.test(f.forme) && f.requiredItem) {
-      return {
-        stone: f.requiredItem,
-        ability: (Object.values(f.abilities)[0] as string) ?? "",
-        label: f.forme,
-      };
-    }
-  }
-  return null;
-}
-
 
 export default async function PokemonPage({
   params,
@@ -67,8 +48,10 @@ export default async function PokemonPage({
   const meta = speciesMeta(p.name, p.abilities);
   const history = changeHistory(p.name);
   const usage = await getMonUsage(p.name);
-  const mega = megaInfo(target);
-  const sets = suggestSets(p.types, p.baseStats, p.abilities, p.moves, mega ?? undefined);
+  // No Mega set on the base form: the Mega forme is its own switchable form
+  // (with its own stats + movesets), so suggesting a Mega set here would be a
+  // duplicate. Sets are always the ≤3 archetypes for the currently shown form.
+  const sets = suggestSets(p.types, p.baseStats, p.abilities, p.moves).slice(0, 3);
   const moveType = new Map<string, PokemonType>(
     p.moves.flatMap((m) => (m.type ? [[m.name, m.type] as [string, PokemonType]] : [])),
   );
@@ -178,7 +161,7 @@ export default async function PokemonPage({
             {meta.abilities.map((a) => (
               <li key={a.name} className="rounded bg-slate-800/50 px-3 py-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-100">{a.name}</span>
+                  <Link href={`/database/ability/${encodeURIComponent(a.name)}`} className="text-sm font-semibold text-amber-400 hover:underline">{a.name}</Link>
                   {a.hidden && (
                     <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-300">
                       Hidden
@@ -194,12 +177,13 @@ export default async function PokemonPage({
         ) : (
           <div className="flex flex-wrap gap-2">
             {p.abilities.map((a) => (
-              <span
+              <Link
                 key={a}
-                className="rounded bg-slate-800 px-2 py-1 text-sm text-slate-200"
+                href={`/database/ability/${encodeURIComponent(a)}`}
+                className="rounded bg-slate-800 px-2 py-1 text-sm text-amber-400 hover:underline"
               >
                 {a}
-              </span>
+              </Link>
             ))}
           </div>
         )}
