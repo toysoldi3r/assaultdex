@@ -61,21 +61,9 @@ function fd(entries: Record<string, string>): FormData {
 const evTotalOf = (m: PokemonSet) => STAT_KEYS.reduce((s, k) => s + (m.spread.evs[k] || 0), 0);
 const isLegal = (m: PokemonSet) => !!m.ability && m.moves.filter(Boolean).length >= 1;
 
-/** Compact type + category + power label for a selected move. */
-function MoveMetaLine({ meta }: { meta?: MoveMeta }) {
-  if (!meta) return null;
-  return (
-    <span className="flex items-center gap-1.5">
-      <TypeBadge type={meta.type} />
-      <CategoryIcon category={meta.category} />
-      <span className="text-[10px] tabular-nums text-t3">
-        {meta.category === "status"
-          ? "status"
-          : `${meta.power ?? "-"} power · ${meta.accuracy == null ? "-" : `${meta.accuracy}%`} acc`}
-      </span>
-    </span>
-  );
-}
+// Shared column template for the move rows so the name, type, category and
+// power/accuracy line up in columns across all four slots.
+const MOVE_COLS = "1fr 58px 20px 84px";
 
 export function TeamBuilder({
   teamId,
@@ -204,21 +192,38 @@ export function TeamBuilder({
     return map;
   }, [pool]);
 
+  // Item clause: no two Pokémon may hold the same item. Members sharing an item
+  // are marked illegal (both the offender and the earlier holder).
+  const dupItemIdx = useMemo(() => {
+    const seen = new Map<string, number>();
+    const dup = new Set<number>();
+    members.forEach((m, i) => {
+      if (!m.item) return;
+      const prev = seen.get(m.item);
+      if (prev !== undefined) { dup.add(i); dup.add(prev); }
+      else seen.set(m.item, i);
+    });
+    return dup;
+  }, [members]);
+
+  const memberLegal = (i: number) => isLegal(members[i]!) && !dupItemIdx.has(i);
+
   // Advisory flags, recomputed from live state.
   const flags = useMemo(() => {
     const out: { i: number; kind: "Warning" | "Note"; text: string }[] = [];
     members.forEach((m, i) => {
       const name = refOf(m.species).name;
       if (!m.item) out.push({ i, kind: "Note", text: `${name} holds no item (optional in this format).` });
+      else if (dupItemIdx.has(i)) out.push({ i, kind: "Warning", text: `${name} holds ${m.item}, which another Pokémon also holds - duplicate items are illegal.` });
       const ev = evTotalOf(m);
       if (ev < 508) out.push({ i, kind: "Warning", text: `${name} has ${508 - ev} EVs unspent.` });
     });
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [members]);
+  }, [members, dupItemIdx]);
 
   const savedLabel = saving ? "Saving…" : dirty ? "Unsaved…" : savedAt ?? "-";
-  const completeCount = members.filter((m) => isLegal(m) && !!m.item && evTotalOf(m) === 508).length;
+  const completeCount = members.filter((m, i) => memberLegal(i) && !!m.item && evTotalOf(m) === 508).length;
 
   // -- picker for a member card --------------------------------------------
   function renderPanel(i: number, m: PokemonSet, r: MemberRef, tm: TournamentPopular | undefined) {
@@ -284,8 +289,9 @@ export function TeamBuilder({
           <div className="flex flex-wrap gap-4">
             <Field label="Item">
               <button onClick={() => openPanel(i, "item")}
+                title={dupItemIdx.has(i) ? "Duplicate item - another Pokémon holds this too (illegal)." : undefined}
                 className={`flex w-[170px] items-center gap-1.5 rounded px-2 py-1.5 text-[13px] ${
-                  m.item ? "border border-line bg-bg" : "border border-dashed border-line bg-bg text-t3"}`}>
+                  dupItemIdx.has(i) ? "border border-neg bg-bg text-neg" : m.item ? "border border-line bg-bg" : "border border-dashed border-line bg-bg text-t3"}`}>
                 {m.item ? <ItemIcon item={m.item} /> : null}
                 <span className="truncate">{m.item ?? "No item"}</span>
               </button>
@@ -326,24 +332,46 @@ export function TeamBuilder({
         <div className="grid md:grid-cols-2">
           <div className="space-y-1.5 border-line px-[18px] py-[14px] md:border-r">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-t3">Moves</span>
+            <div className="grid items-center gap-2 pl-3 pr-7 text-[9px] uppercase tracking-wide text-t3" style={{ gridTemplateColumns: MOVE_COLS }}>
+              <span>Move</span>
+              <span>Type</span>
+              <span>Cat</span>
+              <span className="text-right">Pow · Acc</span>
+            </div>
             {[0, 1, 2, 3].map((mi) => {
               const mv = m.moves[mi];
               const meta = mv ? moveMeta[mv] : undefined;
               const stripe = meta ? TYPE_HEX[meta.type] : "transparent";
               return (
-                <button key={mi} onClick={() => openPanel(i, `move${mi}`)}
-                  className={`relative flex w-full items-center gap-2 overflow-hidden rounded pl-3 pr-2 py-1.5 text-left ${
+                <div key={mi}
+                  className={`relative flex items-center overflow-hidden rounded ${
                     mv ? "border border-line bg-bg" : "border border-dashed border-line bg-bg"}`}>
                   <span className="absolute left-0 top-0 h-full w-[3px]" style={{ background: stripe }} />
-                  {mv ? (
-                    <>
-                      <span className="flex-1 truncate text-[13px] text-t1">{mv}</span>
-                      <MoveMetaLine meta={meta} />
-                    </>
-                  ) : (
-                    <span className="text-[13px] text-t3">Empty slot - optional</span>
+                  <button onClick={() => openPanel(i, `move${mi}`)}
+                    className="grid min-w-0 flex-1 items-center gap-2 py-1.5 pl-3 pr-1 text-left"
+                    style={{ gridTemplateColumns: MOVE_COLS }}>
+                    {mv ? (
+                      <>
+                        <span className="truncate text-[13px] text-t1">{mv}</span>
+                        <span>{meta ? <TypeBadge type={meta.type} /> : null}</span>
+                        <span>{meta ? <CategoryIcon category={meta.category} /> : null}</span>
+                        <span className="text-right text-[10px] tabular-nums text-t3">
+                          {!meta || meta.category === "status"
+                            ? "status"
+                            : `${meta.power ?? "-"} · ${meta.accuracy == null ? "-" : `${meta.accuracy}%`}`}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="col-span-4 text-[13px] text-t3">Empty slot - optional</span>
+                    )}
+                  </button>
+                  {mv && (
+                    <button onClick={() => setMove(i, mi, null)} title="Remove move"
+                      className="mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded text-[11px] text-t3 hover:text-neg">
+                      ✕
+                    </button>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>
@@ -367,7 +395,7 @@ export function TeamBuilder({
     const r = refOf(m.species);
     const nat = NATURES[m.nature] ?? NATURES.Serious!;
     const ev = evTotalOf(m);
-    const legal = isLegal(m);
+    const legal = memberLegal(i);
     const open = flags.some((f) => f.i === i);
     return (
       <button key={i} onClick={() => setTab(i)}
@@ -500,7 +528,7 @@ export function TeamBuilder({
             </div>
             {members.map((m, i) => {
               const r = refOf(m.species);
-              const checks = [!!m.item, !!m.ability, evTotalOf(m) === 508, isLegal(m)];
+              const checks = [!!m.item, !!m.ability, evTotalOf(m) === 508, memberLegal(i)];
               const selected = tab === i;
               return (
                 <div key={i} className="grid items-center border-b border-soft px-[10px] py-1.5"

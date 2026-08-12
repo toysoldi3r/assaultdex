@@ -67,6 +67,24 @@ describe("validateTeam", () => {
     expect(r.errors.some((e) => e.field === "species")).toBe(true);
   });
 
+  it("enforces the item clause (no duplicate items)", () => {
+    const r = validateTeam([
+      member(),
+      member({ species: "landorustherian", item: "Assault Vest" }),
+    ]);
+    expect(r.valid).toBe(false);
+    expect(r.errors.some((e) => e.field === "item" && e.message.includes("Duplicate item"))).toBe(true);
+  });
+
+  it("allows distinct items and empty items", () => {
+    const r = validateTeam([
+      member(),
+      member({ species: "landorustherian", item: "Life Orb" }),
+      member({ species: "amoonguss", item: null }),
+    ]);
+    expect(r.errors.some((e) => e.field === "item")).toBe(false);
+  });
+
   it("warns on non-multiple-of-4 EVs without failing", () => {
     const r = validateTeam([
       member({
