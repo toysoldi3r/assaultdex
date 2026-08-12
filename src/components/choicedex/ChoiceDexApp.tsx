@@ -5,6 +5,7 @@ import { MonPanel } from "./MonPanel";
 import { Recommendations } from "./Recommendations";
 import { analyzeLeads } from "@/domain/choicedex/leads";
 import { recommend } from "@/domain/choicedex/recommend";
+import { TERRAIN_SETTERS, WEATHER_SETTERS } from "@/domain/mechanics/entry";
 import {
   DEFAULT_FIELD,
   NEUTRAL_STAGES,
@@ -542,6 +543,22 @@ const emptyCond = (): SideCond => ({
 const hasHazards = (c: SideCond): boolean =>
   c.stealthRock || c.spikes > 0 || c.toxicSpikes > 0 || c.stickyWeb;
 
+/** A full board snapshot used by the round history (step back a round). */
+interface RoundSnapshot {
+  uTeam: string[];
+  oTeam: string[];
+  activeUser: [string | null, string | null];
+  activeOpp: [string | null, string | null];
+  mon: Record<string, MonState>;
+  weather: Weather;
+  terrain: Terrain;
+  trickRoom: boolean;
+  gravity: boolean;
+  uCond: SideCond;
+  oCond: SideCond;
+  round: number;
+}
+
 function monFromSet(set: KnownSet | undefined): MonState {
   const base = emptyMon();
   if (!set) return base;
@@ -584,6 +601,9 @@ function BattleView({
     return [...set].sort();
   }, [userTeam, oppTeam, bySlug]);
   const [round, setRound] = useState(1);
+  // Snapshots of the whole board captured each time a round is advanced, so the
+  // user can step back to an earlier round and restore its state.
+  const [history, setHistory] = useState<RoundSnapshot[]>([]);
   // Teams are held in state so "swap sides" can flip perspective mid-battle.
   const [uTeam, setUTeam] = useState<string[]>(userTeam);
   const [oTeam, setOTeam] = useState<string[]>(oppTeam);
@@ -647,6 +667,7 @@ function BattleView({
           if (s.uCond) setUCond(s.uCond);
           if (s.oCond) setOCond(s.oCond);
           if (typeof s.round === "number") setRound(s.round);
+          if (Array.isArray(s.history)) setHistory(s.history);
           if (s.background) setBackground(s.background);
         }
       } catch {
@@ -657,12 +678,12 @@ function BattleView({
     try {
       localStorage.setItem(
         BATTLE_KEY,
-        JSON.stringify({ ts: Date.now(), sig: teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background }),
+        JSON.stringify({ ts: Date.now(), sig: teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background, history }),
       );
     } catch {
       /* ignore quota */
     }
-  }, [teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background]);
+  }, [teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background, history]);
 
   const monOf = (side: Side, slug: string | null): MonState =>
     (slug && mon[monKey(side, slug)]) || emptyMon();
@@ -677,6 +698,42 @@ function BattleView({
       next[idx] = slug;
       return next;
     });
+
+  // ---- Round history: advance and step back ------------------------------
+  const snapshot = (): RoundSnapshot => ({
+    uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round,
+  });
+  const restore = (s: RoundSnapshot) => {
+    setUTeam(s.uTeam);
+    setOTeam(s.oTeam);
+    setActiveUser(s.activeUser);
+    setActiveOpp(s.activeOpp);
+    setMon(s.mon);
+    setWeather(s.weather);
+    setTerrain(s.terrain);
+    setTrickRoom(s.trickRoom);
+    setGravity(s.gravity);
+    setUCond(s.uCond);
+    setOCond(s.oCond);
+    setRound(s.round);
+  };
+  const nextRound = () => {
+    setHistory((h) => [...h, snapshot()]);
+    setRound((r) => r + 1);
+  };
+  const prevRound = () => {
+    setHistory((h) => {
+      if (h.length === 0) return h;
+      restore(h[h.length - 1]!);
+      return h.slice(0, -1);
+    });
+  };
+
+  // ---- Mega Evolution: at most one per team ------------------------------
+  const sideMegaSlug = (side: Side): string | null => {
+    for (const s of side === "user" ? uTeam : oTeam) if (monOf(side, s).mega) return s;
+    return null;
+  };
 
   const asTuple = (t: readonly PokemonType[]) =>
     t.slice(0, 2) as [PokemonType] | [PokemonType, PokemonType];
@@ -783,6 +840,32 @@ function BattleView({
     [built],
   );
 
+  // Auto-apply field-setting abilities when a Pokémon enters, leaves, or Mega
+  // Evolves. E.g. Mega Raichu-X's Electric Surge sets Electric Terrain the
+  // moment it Mega Evolves. Only fills an unset field, so a manual choice wins.
+  const activeAbility = (side: Side, slug: string | null): string => {
+    if (!slug) return "";
+    const forme = formeOf(side, slug);
+    if (forme?.ability) return forme.ability;
+    const s = monOf(side, slug);
+    return s.ability || abilitiesFor(slug)[0] || "";
+  };
+  useEffect(() => {
+    const onField = [
+      activeAbility("user", activeUser[0]), activeAbility("user", activeUser[1]),
+      activeAbility("opponent", activeOpp[0]), activeAbility("opponent", activeOpp[1]),
+    ].filter(Boolean);
+    if (weather === "none") {
+      const w = onField.map((a) => WEATHER_SETTERS[a]).find(Boolean);
+      if (w) setWeather(w);
+    }
+    if (terrain === "none") {
+      const t = onField.map((a) => TERRAIN_SETTERS[a]).find(Boolean);
+      if (t) setTerrain(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeUser, activeOpp, mon, weather, terrain]);
+
   const abilitiesFor = (slug: string | null) => (slug ? refBySlug.get(slug)?.abilities ?? [] : []);
   // Legal options for a spot: the side's team minus whoever is in the OTHER spot
   // (a Pokémon can't be in both active spots at once).
@@ -851,6 +934,14 @@ function BattleView({
               {BACKGROUNDS.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
             </select>
           </label>
+          <button
+            onClick={prevRound}
+            disabled={history.length === 0}
+            title={history.length === 0 ? "No earlier round to go back to" : "Restore the previous round"}
+            className="rounded border border-slate-700 px-3 py-1 font-semibold hover:border-amber-500 disabled:opacity-40"
+          >
+            ← Back a round
+          </button>
           {battleOver ? (
             <button
               onClick={() => {
@@ -862,7 +953,7 @@ function BattleView({
               New battle
             </button>
           ) : (
-            <button onClick={() => setRound((r) => r + 1)} className="rounded bg-amber-500 px-3 py-1 font-semibold text-black hover:bg-amber-400">
+            <button onClick={nextRound} className="rounded bg-amber-500 px-3 py-1 font-semibold text-black hover:bg-amber-400">
               Next round →
             </button>
           )}
@@ -887,6 +978,7 @@ function BattleView({
                   defaultAbility={abilitiesFor(slug)[0] ?? ""}
                   items={items}
                   mega={slug ? megaForms[slug] : undefined}
+                  megaBlocked={!!slug && !monOf("opponent", slug).mega && sideMegaSlug("opponent") !== null}
                   special={specialFor("opponent", slug)}
                   disguise={disguiseFor("opponent", slug)}
                   formeAbility={slug ? formeOf("opponent", slug)?.ability : undefined}
@@ -913,6 +1005,7 @@ function BattleView({
                   defaultAbility={abilitiesFor(slug)[0] ?? ""}
                   items={items}
                   mega={slug ? megaForms[slug] : undefined}
+                  megaBlocked={!!slug && !monOf("user", slug).mega && sideMegaSlug("user") !== null}
                   special={specialFor("user", slug)}
                   disguise={disguiseFor("user", slug)}
                   formeAbility={slug ? formeOf("user", slug)?.ability : undefined}
@@ -1039,9 +1132,12 @@ function BattleView({
             const targets = spec.enemies.active
               .filter((c): c is Combatant => c !== null)
               .map((c) => ({ name: c.name, combatant: c }));
-            // For OUR mons, restrict the move readout to the team's confirmed set.
+            // For OUR mons, restrict the move readout to the team's confirmed
+            // set. Look up strictly by this mon's own side - a same-species
+            // copy on the opposing team must not borrow its known moves, which
+            // previously cross-linked the two Pokémon's damage/KO readouts.
             const known = !spec.foe
-              ? loadedSets[`user:${spec.slug}`]?.moves ?? loadedSets[`opponent:${spec.slug}`]?.moves
+              ? loadedSets[`user:${spec.slug}`]?.moves
               : undefined;
             const attacker =
               known && known.length
@@ -1144,7 +1240,7 @@ function MonChip({
       className={`relative inline-flex h-12 w-12 items-center justify-center overflow-hidden ${fainted ? "opacity-30 grayscale" : ""}`}
       title={title}
     >
-      <PokeIcon species={isMega ? mega!.name : slug} className="scale-[1.35]" />
+      <PokeIcon species={isMega ? mega!.name : slug} className="scale-[1.35]" title="" />
       {isMega && (
         <span className="absolute left-0 top-0 rounded bg-fuchsia-500 px-0.5 text-[7px] font-bold text-black">M</span>
       )}
@@ -1180,6 +1276,7 @@ function ActiveCard({
   defaultAbility,
   items,
   mega,
+  megaBlocked,
   special,
   disguise,
   formeAbility,
@@ -1196,6 +1293,8 @@ function ActiveCard({
   items: string[];
   /** This species' Mega/Primal forme, if any - enables the Mega button. */
   mega?: MegaForme;
+  /** True when this side already has another Mega Evolution (one per team). */
+  megaBlocked?: boolean;
   /** Species-specific in-battle form change (Ditto / Dondozo / Zoroark). */
   special?: SpecialForm;
   /** Sprite/name override from Transform or Illusion. */
@@ -1225,12 +1324,14 @@ function ActiveCard({
       (abilityValue ? ` · ${abilityValue}` : "") +
       (itemValue && itemValue !== "None" ? ` · ${itemValue}` : "")
     : undefined;
-  const toggleMega = () =>
+  const toggleMega = () => {
+    if (!state.mega && megaBlocked) return; // one Mega per team
     onPatch(
       state.mega
         ? { mega: false }
         : { mega: true, item: mega!.item, itemUsed: false },
     );
+  };
   return (
     <div
       title={hoverInfo}
@@ -1239,7 +1340,7 @@ function ActiveCard({
       <div className="mb-1 flex items-center gap-1">
         {slug && (
           <span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden">
-            <PokeIcon species={iconSpecies!} className="scale-[1.3]" />
+            <PokeIcon species={iconSpecies!} className="scale-[1.3]" title="" />
           </span>
         )}
         <span className="text-[10px] uppercase text-slate-500">{label}</span>
@@ -1247,8 +1348,15 @@ function ActiveCard({
           <button
             type="button"
             onClick={toggleMega}
-            title={isMega ? `Revert ${mega.name}` : `Mega Evolve (${mega.name}, ${mega.item})`}
-            className={`ml-auto rounded px-1 py-0.5 text-[9px] font-bold ${
+            disabled={!isMega && megaBlocked}
+            title={
+              isMega
+                ? `Revert ${mega.name}`
+                : megaBlocked
+                  ? "Only one Mega Evolution per team"
+                  : `Mega Evolve (${mega.name}, ${mega.item})`
+            }
+            className={`ml-auto rounded px-1 py-0.5 text-[9px] font-bold disabled:opacity-40 ${
               isMega ? "bg-fuchsia-500 text-black" : "border border-fuchsia-500/60 text-fuchsia-300 hover:bg-fuchsia-500/20"
             }`}
           >

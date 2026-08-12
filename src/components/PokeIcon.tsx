@@ -26,16 +26,20 @@ function cssToObject(css: string): CSSProperties {
 export function PokeIcon({
   species,
   className,
+  title,
 }: {
   species: string;
   className?: string;
+  /** Tooltip override. Defaults to the species name; pass "" to disable it so
+   *  a parent element's own tooltip shows over the icon instead. */
+  title?: string;
 }) {
   const style = cssToObject(Icons.getPokemon(species).style.split(CDN).join(LOCAL));
   return (
     <span
       role="img"
       aria-label={species}
-      title={species}
+      title={title ?? species}
       className={className}
       style={style}
     />
