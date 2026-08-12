@@ -43,55 +43,48 @@ export default function GuidePage() {
         </p>
         <p className="mt-2">
           A game is short - often 4–8 turns - so every decision matters. You bring
-          6 Pokémon, then pick 4 at team preview based on the matchup, and lead with
-          2.
+          6 Pokémon, then pick 4 at <strong>team preview</strong> based on the
+          matchup, and lead with 2. Picking the right 4 and the right lead is often
+          half the game: you can leave a Pokémon in the back specifically to answer
+          something you saw in preview.
         </p>
-      </Section>
-
-      <Section title="The building blocks">
-        <p className="mb-2 text-slate-400">
-          Click any term for a fuller explainer in the{" "}
-          <Link href="/database/knowledgebase" className="text-amber-400 hover:underline">Knowledgebase</Link>.
+        <h3 className="mt-4 text-sm font-semibold text-slate-100">What makes doubles different</h3>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>
+            <strong>Two actions a turn.</strong> With two Pokémon out you choose two
+            moves (and two targets) every turn, so plays combine: one Pokémon sets
+            up or supports while the other attacks.
+          </li>
+          <li>
+            <strong>Targeting &amp; spread moves.</strong> Many moves can hit both
+            opponents (Earthquake, Rock Slide, Dazzling Gleam). Spread moves deal
+            ×0.75 damage when they hit more than one target - a deliberate trade of
+            power for pressure.
+          </li>
+          <li>
+            <strong>Protect is everywhere.</strong> Most teams run Protect on
+            multiple Pokémon to stall a turn, dodge a double-up, or wait out a
+            threat. Reading Protect is a core mind-game.
+          </li>
+          <li>
+            <strong>Support tools.</strong> Redirection (Follow Me / Rage Powder),
+            Fake Out flinches, Intimidate, screens, and Helping Hand let one Pokémon
+            multiply what its partner does. Doubles is a team of two, not two solo
+            Pokémon.
+          </li>
+          <li>
+            <strong>Speed control decides turn order.</strong> Tailwind, Trick Room,
+            Icy Wind, and Thunder Wave swing who moves first - and moving first in a
+            fast, high-damage format frequently wins the game.
+          </li>
+        </ul>
+        <p className="mt-3">
+          Champions is played best-of-three (Bo3), so adapting your picks and leads
+          between games matters as much as any single turn. For the mechanics and
+          jargon behind all of this, see the{" "}
+          <Link href="/database?tab=terms" className="text-amber-400 hover:underline">Terminology</Link>{" "}
+          tab in the Database.
         </p>
-        <Term term="Base stats" href="/database/knowledgebase/base-stats">
-          Each Pokémon has six stats: HP, Attack (Atk), Defense (Def), Special
-          Attack (SpA), Special Defense (SpD), and Speed (Spe). Higher isn&apos;t
-          always better - a role dictates which stats matter.
-        </Term>
-        <Term term="EVs (Effort Values)" href="/database/knowledgebase/evs">
-          You distribute up to 508 EVs across stats (max 252 per stat) to tune a
-          Pokémon. 4 EVs = 1 stat point at level 50 for most stats. This is how two
-          copies of the same Pokémon can play completely differently.
-        </Term>
-        <Term term="IVs (Individual Values)" href="/database/knowledgebase/ivs">
-          Fixed per-Pokémon values 0–31 per stat. You usually run 31 everywhere;
-          a common exception is a 0 Attack IV on special attackers to minimise
-          confusion and Foul Play damage.
-        </Term>
-        <Term term="Nature" href="/database/knowledgebase/nature">
-          Raises one stat by 10% and lowers another by 10%. Adamant (+Atk −SpA) and
-          Modest (+SpA −Atk) are common on attackers; Timid/Jolly boost Speed.
-        </Term>
-        <Term term="STAB (Same-Type Attack Bonus)" href="/database/knowledgebase/stab">
-          A move whose type matches the user&apos;s type deals ×1.5 damage. It&apos;s
-          why coverage moves off-type need higher base power to compete.
-        </Term>
-        <Term term="Speed control" href="/database/knowledgebase/speed-control">
-          Tools that decide who moves first: Tailwind (doubles your team&apos;s
-          Speed), Trick Room (slower Pokémon move first), and speed-lowering moves
-          like Icy Wind and Thunder Wave. Controlling turn order is central to
-          doubles.
-        </Term>
-        <Term term="Weather & terrain" href="/database/knowledgebase/weather-terrain">
-          Field effects (Sun, Rain, Sand, Snow; Electric/Grassy/Misty/Psychic
-          Terrain) that boost or weaken certain moves and enable specific
-          strategies.
-        </Term>
-        <Term term="Team roles" href="/database/knowledgebase/team-roles">
-          Common roles include restricted/attacker (offense), support (redirection,
-          screens, Fake Out), and speed control. A good team covers each role and
-          shares few weaknesses.
-        </Term>
       </Section>
 
       <Section title="Where to learn more">
@@ -114,25 +107,3 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Term({
-  term,
-  href,
-  children,
-}: {
-  term: string;
-  /** Knowledgebase page for this term; the name links to it. */
-  href?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <p className="mt-2 first:mt-0">
-      {href ? (
-        <Link href={href} className="font-semibold text-amber-400 hover:underline">{term}</Link>
-      ) : (
-        <span className="font-semibold text-slate-100">{term}</span>
-      )}
-      <span className="font-semibold text-slate-100">.</span>{" "}
-      <span className="text-slate-400">{children}</span>
-    </p>
-  );
-}

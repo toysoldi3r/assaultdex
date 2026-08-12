@@ -9,10 +9,10 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const entry = getKbEntry(slug);
-  return { title: entry ? `${entry.title} - AssaultDex` : "Knowledgebase - AssaultDex" };
+  return { title: entry ? `${entry.title} - AssaultDex` : "Terminology - AssaultDex" };
 }
 
-export default async function KnowledgebaseEntryPage({
+export default async function KbExplainerPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
@@ -24,8 +24,8 @@ export default async function KnowledgebaseEntryPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/database/knowledgebase" className="text-sm text-amber-400 hover:underline">
-          &larr; Knowledgebase
+        <Link href="/database?tab=terms" className="text-sm text-amber-400 hover:underline">
+          &larr; Terminology
         </Link>
         <h1 className="mt-2 text-2xl font-bold">{entry.title}</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-400">{entry.summary}</p>
@@ -55,7 +55,7 @@ export default async function KnowledgebaseEntryPage({
             {entry.related.map((r) => (
               <Link
                 key={r}
-                href={`/database/knowledgebase/${r}`}
+                href={`/database/terminology/kb/${r}`}
                 className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-amber-500"
               >
                 {kbTitle(r)}
