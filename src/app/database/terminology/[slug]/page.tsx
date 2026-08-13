@@ -10,7 +10,9 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const t = getTerm(slug);
-  return { title: t ? `${t.term} - AssaultDex` : "Terminology - AssaultDex" };
+  return t
+    ? { title: t.term, description: t.short }
+    : { title: "Terminology", description: "Competitive Pokémon terminology explained." };
 }
 
 export default async function TermPage({ params }: { params: Promise<{ slug: string }> }) {

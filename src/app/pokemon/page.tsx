@@ -7,6 +7,11 @@ import { listPokemon } from "@/server/repositories/pokemonRepo";
 // regenerate hourly rather than querying the DB on every request.
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "Pokédex",
+  description: "Browse the Pokémon Champions roster and the full National Dex - types, abilities, base stats, and legal movepools.",
+};
+
 export default async function PokedexPage() {
   // Champions view is the real 235-mon pool (formes included, e.g. Rotom-Wash),
   // each carrying its full legal movepool so the advanced "learns move" filter

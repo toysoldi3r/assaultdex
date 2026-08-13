@@ -5,6 +5,11 @@ import { importTeamAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Teams",
+  description: "Build, save, and manage your Pokémon Champions doubles teams.",
+};
+
 const IMPORT_MESSAGES: Record<string, string> = {
   empty: "Import failed: no Pokémon found in the pasted text.",
   unresolved: "Import failed: none of the pasted Pokémon are in the Champions pool.",

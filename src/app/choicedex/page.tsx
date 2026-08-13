@@ -12,6 +12,11 @@ import { listDbItems } from "@/data/dexDatabase";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "ChoiceDex",
+  description: "Live battle recommendations for Pokémon Champions doubles - enter what happens and get the best options each round.",
+};
+
 export default async function ChoiceDexPage() {
   const [pokemon, teams] = await Promise.all([listPokemon(), listTeams()]);
   const refs: PokemonRef[] = toPokemonRefs(pokemon);

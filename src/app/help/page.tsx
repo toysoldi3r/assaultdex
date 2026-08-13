@@ -2,7 +2,9 @@ import Link from "next/link";
 import { Panel } from "@/components/ui";
 
 export const metadata = {
-  title: "Help & troubleshooting - AssaultDex",
+  title: "Help & troubleshooting",
+  description:
+    "Fix common issues with AssaultDex: blank pages, empty Pokédex, stale battles, and provisional calculations.",
 };
 
 const REPO_ISSUES = "https://github.com/toystores/assaultdex/issues";

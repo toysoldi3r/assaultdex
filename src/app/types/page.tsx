@@ -1,6 +1,9 @@
 import { TypeMatchup } from "@/components/database/TypeMatchup";
 
-export const metadata = { title: "Type chart - AssaultDex" };
+export const metadata = {
+  title: "Type chart",
+  description: "The full 18-type effectiveness chart for Pokémon Champions doubles.",
+};
 
 export default function TypesPage() {
   return (

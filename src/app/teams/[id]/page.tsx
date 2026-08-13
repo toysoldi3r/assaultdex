@@ -21,6 +21,14 @@ export const dynamic = "force-dynamic";
 
 const NATURE_NAMES = Object.keys(NATURES);
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const team = await getTeam(id);
+  return team
+    ? { title: team.name, description: `${team.name} - a Pokémon Champions ${team.isBox ? "box" : "doubles team"} in AssaultDex.` }
+    : { title: "Team", description: "A Pokémon Champions team in AssaultDex." };
+}
+
 export default async function TeamDetailPage({
   params,
 }: {
