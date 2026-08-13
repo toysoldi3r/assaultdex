@@ -8,62 +8,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PokeIcon } from "@/components/PokeIcon";
-
-interface NavItem {
-  href: string;
-  label: string;
-}
-
-const SECTIONS: NavItem[] = [
-  { href: "/", label: "Home" },
-  { href: "/guide", label: "Guide" },
-  { href: "/pokemon", label: "Pokédex" },
-  { href: "/teams", label: "Teams" },
-  { href: "/choicedex", label: "ChoiceDex" },
-  { href: "/battles", label: "Battles" },
-  { href: "/database", label: "Database" },
-  { href: "/sources", label: "Sources" },
-];
-
-const RECENT_KEY = "assaultdex.recentNav";
-const PIN_KEY = "assaultdex.pinnedNav";
-const MAX_RECENT = 8;
-
-function labelFor(path: string): string {
-  if (path === "/") return "Home";
-  const seg = path.split("/").filter(Boolean);
-  const last = seg[seg.length - 1] ?? "";
-  const pretty = last.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-  if (seg.length > 1) {
-    const section = seg[0] === "pokemon" ? "Pokédex" : labelFor("/" + seg[0]);
-    return `${section} · ${pretty}`;
-  }
-  return seg[0] === "pokemon" ? "Pokédex" : pretty;
-}
-function read(key: string): NavItem[] {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as NavItem[]) : [];
-  } catch {
-    return [];
-  }
-}
-function write(key: string, items: NavItem[]): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(items));
-  } catch {
-    /* ignore */
-  }
-}
-/** Pokémon-detail routes get a sprite; other routes a neutral square. */
-function spriteSlug(href: string): string | null {
-  const m = /^\/pokemon\/([a-z0-9]+)$/.exec(href);
-  return m ? m[1]! : null;
-}
-
-function isActive(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
-}
+import {
+  isActive,
+  labelFor,
+  MAX_RECENT,
+  type NavItem,
+  PIN_KEY,
+  read,
+  RECENT_KEY,
+  SECTIONS,
+  spriteSlug,
+  write,
+} from "./nav";
 
 function RowIcon({ href }: { href: string }) {
   const slug = spriteSlug(href);

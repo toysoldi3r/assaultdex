@@ -5,7 +5,8 @@ import { TeamBuilder, type MemberRef } from "@/components/teams/TeamBuilder";
 import type { MoveMeta } from "@/components/teams/moveTypes";
 import { POKEMON_TYPES } from "@/domain/types/pokemon";
 import { NATURES } from "@/data/fixtures/natures";
-import { itemCatalog, poolDescMaps } from "@/data/catalog";
+import { poolDescMaps } from "@/data/catalog";
+import { listDbItems } from "@/data/dexDatabase";
 import { getMonTournament } from "@/data/tournamentStats";
 import { usageKey } from "@/data/usageStats";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
@@ -80,7 +81,12 @@ export default async function TeamDetailPage({
     }
   }
   const pool = toNameOptions(allMons);
-  const items = itemCatalog();
+  // Only Champions-legal items are selectable, matching the Database's legal
+  // set (including the Champions-specific mega stones @pkmn/dex flags as
+  // nonstandard, which the old full-catalog list was dropping).
+  const items = listDbItems()
+    .filter((i) => i.competitive)
+    .map((i) => ({ name: i.name, desc: i.desc }));
 
   // Tournament "Popular" lists per pool species (empty until the CI snapshot
   // is populated). Keyed by @pkmn id to match the teambuilder lookup.

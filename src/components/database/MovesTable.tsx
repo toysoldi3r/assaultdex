@@ -20,6 +20,13 @@ export function MovesTable({
   const [fType, setFType] = useState<string>("");
   const [fCat, setFCat] = useState<string>("");
   const [minPow, setMinPow] = useState(0);
+  const [maxPow, setMaxPow] = useState(0);
+
+  // Parse a plain (spinner-less) numeric field, clamped to 0–250; blank = 0.
+  const parsePow = (v: string) => {
+    const n = parseInt(v.replace(/\D/g, ""), 10);
+    return Number.isNaN(n) ? 0 : Math.min(250, n);
+  };
 
   const scopeCount = useMemo(
     () => moves.filter((m) => !champsOnly || champs.has(m.name)).length,
@@ -34,9 +41,10 @@ export function MovesTable({
         (!n || m.name.toLowerCase().includes(n)) &&
         (!fType || m.type.toLowerCase() === fType) &&
         (!fCat || m.category.toLowerCase() === fCat) &&
-        (minPow <= 0 || (m.power ?? 0) >= minPow),
+        (minPow <= 0 || (m.power ?? 0) >= minPow) &&
+        (maxPow <= 0 || (m.power ?? 0) <= maxPow),
     );
-  }, [moves, q, champsOnly, champs, fType, fCat, minPow]);
+  }, [moves, q, champsOnly, champs, fType, fCat, minPow, maxPow]);
 
   return (
     <div className="space-y-3">
@@ -63,7 +71,11 @@ export function MovesTable({
         </select>
         <label className="flex items-center gap-1 text-slate-400">
           Min power
-          <input type="number" min={0} max={250} step={10} value={minPow} onChange={(e) => setMinPow(Number(e.target.value) || 0)} className="w-16 rounded border border-slate-700 bg-slate-900 px-1 py-1" />
+          <input type="text" inputMode="numeric" value={minPow || ""} placeholder="0" onChange={(e) => setMinPow(parsePow(e.target.value))} className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-1 tabular-nums" />
+        </label>
+        <label className="flex items-center gap-1 text-slate-400">
+          Max power
+          <input type="text" inputMode="numeric" value={maxPow || ""} placeholder="∞" onChange={(e) => setMaxPow(parsePow(e.target.value))} className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-1 tabular-nums" />
         </label>
         <span className="text-slate-500">{filtered.length} shown</span>
       </div>

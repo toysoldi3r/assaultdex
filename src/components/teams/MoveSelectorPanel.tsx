@@ -58,30 +58,40 @@ export function MoveSelectorPanel({
       r.name.toLowerCase().includes(n) ||
       (r.meta?.type ?? "").toLowerCase().includes(n) ||
       (r.meta?.category ?? "").toLowerCase().includes(n);
-    const pop = popular.filter((r) => !excludeSet.has(r.name) && match(r));
-    const rest = rows.filter((r) => !excludeSet.has(r.name) && !popularNames.has(r.name) && match(r));
+    // Moves already on the set are kept in the list but flagged (see Row) rather
+    // than hidden, so a duplicate lookup shows it's already in the moveset.
+    const pop = popular.filter(match);
+    const rest = rows.filter((r) => !popularNames.has(r.name) && match(r));
     return { pop, rest };
-  }, [q, rows, popular, excludeSet, popularNames]);
+  }, [q, rows, popular, popularNames]);
 
-  const Row = ({ r, tag }: { r: MoveRow; tag?: "popular" }) => (
-    <tr
-      onClick={() => { onSelect(r.name); onClose(); }}
-      className={`cursor-pointer border-b border-soft hover:bg-soft ${r.name === value ? "bg-soft" : ""}`}
-    >
-      <td className="px-2 py-1 font-medium text-t1">
-        <span className="w-full">{r.name}</span>
-        {tag === "popular" && <span className="ml-1 text-[9px] uppercase text-acc">popular</span>}
-      </td>
-      <td className="px-2 py-1">{r.meta && <TypeBadge type={r.meta.type} />}</td>
-      <td className="px-2 py-1">{r.meta && <CategoryIcon category={r.meta.category} />}</td>
-      <td className="px-2 py-1 text-right tabular-nums text-t2">{r.meta?.power ?? "-"}</td>
-      <td className="px-2 py-1 text-right tabular-nums text-t2">
-        {r.meta ? (r.meta.accuracy == null ? "-" : `${r.meta.accuracy}%`) : ""}
-      </td>
-      <td className="px-2 py-1 text-right tabular-nums text-t3">{r.meta?.pp ?? "-"}</td>
-      <td className="px-2 py-1 text-[11px] text-t3">{r.meta?.desc ?? ""}</td>
-    </tr>
-  );
+  const Row = ({ r, tag }: { r: MoveRow; tag?: "popular" }) => {
+    const inSet = excludeSet.has(r.name);
+    return (
+      <tr
+        onClick={() => { if (!inSet) { onSelect(r.name); onClose(); } }}
+        aria-disabled={inSet}
+        className={`border-b border-soft ${inSet ? "cursor-not-allowed opacity-45" : "cursor-pointer hover:bg-soft"} ${r.name === value ? "bg-soft" : ""}`}
+      >
+        <td className="px-2 py-1 font-medium text-t1">
+          <span className="w-full">{r.name}</span>
+          {inSet ? (
+            <span className="ml-1 text-[9px] uppercase text-t3">in set</span>
+          ) : tag === "popular" ? (
+            <span className="ml-1 text-[9px] uppercase text-acc">popular</span>
+          ) : null}
+        </td>
+        <td className="px-2 py-1">{r.meta && <TypeBadge type={r.meta.type} />}</td>
+        <td className="px-2 py-1">{r.meta && <CategoryIcon category={r.meta.category} />}</td>
+        <td className="px-2 py-1 text-right tabular-nums text-t2">{r.meta?.power ?? "-"}</td>
+        <td className="px-2 py-1 text-right tabular-nums text-t2">
+          {r.meta ? (r.meta.accuracy == null ? "-" : `${r.meta.accuracy}%`) : ""}
+        </td>
+        <td className="px-2 py-1 text-right tabular-nums text-t3">{r.meta?.pp ?? "-"}</td>
+        <td className="px-2 py-1 text-[11px] text-t3">{r.meta?.desc ?? ""}</td>
+      </tr>
+    );
+  };
 
   return (
     <div className="rounded border border-line bg-bg">
@@ -101,7 +111,7 @@ export function MoveSelectorPanel({
         />
       </div>
 
-      <div className="max-h-[246px] overflow-auto">
+      <div className="max-h-[440px] overflow-auto">
         <table className="w-full text-left text-xs">
           <thead className="sticky top-0 bg-bg text-[10px] uppercase text-t3">
             <tr>
@@ -131,7 +141,7 @@ export function MoveSelectorPanel({
 
       {exclude.length > 0 && (
         <p className="border-t border-soft px-2 py-1 text-[10px] text-t3">
-          {exclude.length} move{exclude.length === 1 ? "" : "s"} already on this set hidden.
+          {exclude.length} move{exclude.length === 1 ? "" : "s"} already on this set (marked “in set”).
         </p>
       )}
     </div>
