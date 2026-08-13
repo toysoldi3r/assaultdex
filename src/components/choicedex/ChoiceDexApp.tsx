@@ -5,7 +5,6 @@ import { MonPanel } from "./MonPanel";
 import { Recommendations } from "./Recommendations";
 import { analyzeLeads } from "@/domain/choicedex/leads";
 import { recommend } from "@/domain/choicedex/recommend";
-import { TERRAIN_SETTERS, WEATHER_SETTERS } from "@/domain/mechanics/entry";
 import {
   DEFAULT_FIELD,
   NEUTRAL_STAGES,
@@ -16,7 +15,7 @@ import {
   type Weather,
 } from "@/domain/types/battle";
 import type { PokemonType, StatKey } from "@/domain/types/pokemon";
-import { TypeBadge } from "@/components/ui";
+import { TypeBadge, TYPE_HEX } from "@/components/ui";
 import { PokeIcon } from "@/components/PokeIcon";
 import { OnceTutorial } from "@/components/OnceTutorial";
 import { Walkthrough, type WalkStep } from "@/components/Walkthrough";
@@ -271,73 +270,86 @@ export function ChoiceDexApp({
     );
   }
 
+  const maxLeadScore = Math.max(0.001, ...leads.map((l) => l.score));
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-[18px]">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-slate-300">Set up your battle</span>
+        <span className="text-[13px] font-bold uppercase tracking-wide text-t2">Set up your battle</span>
         <Walkthrough id="choicedex-tour" steps={CD_TOUR} />
       </div>
 
       <OnceTutorial id="choicedex" title="How to use ChoiceDex" points={CD_TIPS} />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Team sheets + start column */}
+      <div className="grid items-start gap-4 lg:grid-cols-[1fr_minmax(132px,0.42fr)_1fr]">
         <TeamColumn
-          title="Your team"
-          side="user"
-          team={userTeam}
-          teams={teams}
-          pokemon={pokemon}
-          onLoad={(id) => loadTeam("user", id)}
-          onSet={(i, s) => setSlot("user", i, s)}
+          title="Your team" side="user" tone="pos" team={userTeam} teams={teams} pokemon={pokemon}
+          issue={userIssue}
+          onLoad={(id) => loadTeam("user", id)} onSet={(i, s) => setSlot("user", i, s)}
         />
+
+        <div className="flex flex-col items-stretch gap-2 self-center text-center">
+          <button
+            disabled={!canStart}
+            onClick={() => canStart && setPhase("battle")}
+            className="rounded-xl bg-acc px-4 py-3.5 text-sm font-extrabold text-bg hover:bg-accs disabled:opacity-50"
+            title={startMsg}
+          >
+            Start battle
+          </button>
+          {canStart ? (
+            <p className="text-[11px] text-t3">Both sides legal.</p>
+          ) : (
+            <p className="text-[11px] text-neg">{startMsg}</p>
+          )}
+        </div>
+
         <TeamColumn
-          title="Opponent team"
-          side="opponent"
-          team={oppTeam}
-          teams={teams}
-          pokemon={pokemon}
-          onLoad={(id) => loadTeam("opponent", id)}
-          onSet={(i, s) => setSlot("opponent", i, s)}
+          title="Opponent team" side="opponent" tone="neg" team={oppTeam} teams={teams} pokemon={pokemon}
+          issue={oppIssue}
+          onLoad={(id) => loadTeam("opponent", id)} onSet={(i, s) => setSlot("opponent", i, s)}
         />
       </div>
 
-      <div className="flex flex-col items-center gap-1">
-        <button
-          disabled={!canStart}
-          onClick={() => canStart && setPhase("battle")}
-          className="rounded-full bg-amber-500 px-6 py-2 font-bold text-black hover:bg-amber-400 disabled:opacity-40"
-          title={startMsg}
-        >
-          ⚔ Start battle
-        </button>
-        {!canStart && startMsg && (
-          <p className="text-xs text-rose-400">Can&apos;t start - {startMsg}</p>
-        )}
-      </div>
-
-      <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Best opening pairs
-        </h3>
+      {/* Pick your lead */}
+      <section className="rounded-[14px] border border-line bg-panel p-4">
+        <div className="mb-3 flex items-baseline gap-2">
+          <h3 className="text-[13px] font-extrabold text-t1">Pick your lead</h3>
+          <span className="text-[11px] text-t3">ranked against their six</span>
+        </div>
         {leads.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            Add at least 2 Pokémon to each team to rank opening pairs.
-          </p>
+          <p className="text-sm text-t3">Add at least 2 Pokémon to each team to rank opening pairs.</p>
         ) : (
-          <ol className="space-y-2">
-            {leads.map((l, i) => (
-              <li key={i} className="flex flex-wrap items-center gap-2 rounded border border-slate-800 p-2 text-sm">
-                <span className="rounded bg-amber-500 px-2 py-0.5 text-xs font-bold text-black">#{i + 1}</span>
-                <span className="font-medium">
-                  {nameOf(l.lead[0])} + {nameOf(l.lead[1])}
+          <div className="grid gap-[9px] sm:grid-cols-2 lg:grid-cols-3">
+            {leads.slice(0, 6).map((l, i) => (
+              <div
+                key={i}
+                className={`flex flex-col gap-2 rounded-xl p-[11px] ${
+                  i === 0 ? "border border-accln bg-accbg" : "border border-line bg-raise"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-extrabold ${i === 0 ? "bg-acc text-bg" : "bg-soft text-t2"}`}>#{i + 1}</span>
+                  <span className="font-mono text-[12px] tabular-nums text-t2">{l.score.toFixed(3)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {l.lead.map((s) => (
+                    <span key={s} className="inline-flex h-9 w-9 items-center justify-center overflow-hidden">
+                      <PokeIcon species={s} className="scale-[1.2]" />
+                    </span>
+                  ))}
+                </div>
+                <span className="text-[12px] font-bold text-t1">{nameOf(l.lead[0])} + {nameOf(l.lead[1])}</span>
+                <span className="h-1 overflow-hidden rounded bg-soft">
+                  <span className="block h-full rounded bg-acc" style={{ width: `${(l.score / maxLeadScore) * 100}%` }} />
                 </span>
-                <span className="font-mono text-amber-400">{l.score.toFixed(3)}</span>
-                <span className="text-xs text-slate-500">
-                  best vs {nameOf(l.bestAgainst)} · worst vs {nameOf(l.worstAgainst)}
+                <span className="text-[10px] leading-tight text-t3">
+                  best vs {nameOf(l.bestAgainst)}<br />worst vs {nameOf(l.worstAgainst)}
                 </span>
-              </li>
+              </div>
             ))}
-          </ol>
+          </div>
         )}
       </section>
     </div>
@@ -347,61 +359,83 @@ export function ChoiceDexApp({
 function TeamColumn({
   title,
   side,
+  tone,
   team,
   teams,
   pokemon,
+  issue,
   onLoad,
   onSet,
 }: {
   title: string;
   side: Side;
+  tone: "pos" | "neg";
   team: (string | null)[];
   teams: SavedTeam[];
   pokemon: PokemonRef[];
+  issue: string | null;
   onLoad: (id: string) => void;
   onSet: (idx: number, slug: string | null) => void;
 }) {
   const [editing, setEditing] = useState<number | null>(null);
   const bySlug = useMemo(() => bySlugMap(pokemon), [pokemon]);
+  const toneVar = tone === "pos" ? "var(--pos)" : "var(--neg)";
+  const filled = team.filter(Boolean).length;
 
   return (
-    <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">{title}</h3>
+    <section
+      className="rounded-[14px] bg-panel p-[14px]"
+      style={{ border: `1px solid color-mix(in srgb, ${toneVar} 35%, transparent)` }}
+    >
+      <div className="mb-3 flex items-center gap-2">
+        <span className="h-[9px] w-[9px] shrink-0 rounded-[3px]" style={{ background: toneVar }} />
+        <h3 className="text-[13px] font-extrabold text-t1">{title}</h3>
+        <span
+          className="whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-extrabold text-bg"
+          style={{ background: issue ? "var(--warn)" : "var(--pos)" }}
+        >
+          {issue ? "not legal" : `legal · ${filled}/6`}
+        </span>
         <select
           defaultValue=""
           onChange={(e) => { if (e.target.value) onLoad(e.target.value); e.target.value = ""; }}
-          className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100"
+          className="ml-auto rounded-[9px] border border-line bg-raise px-2 py-1 text-xs text-t1"
         >
           <option value="">{side === "opponent" ? "Load prebuilt…" : "Load your team…"}</option>
-          {teams.map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
-          ))}
+          {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2">
         {team.map((slug, i) => {
           const p = slug ? bySlug.get(slug) : undefined;
           return (
             <div key={i} className="relative">
-              <button
-                onClick={() => setEditing(editing === i ? null : i)}
-                className={`flex h-16 w-full flex-col items-center justify-center rounded border text-center ${
-                  p ? "border-slate-700 bg-slate-800/60" : "border-dashed border-slate-700 hover:border-amber-500"
-                }`}
-              >
-                {p ? (
-                  <>
-                    <span className="truncate px-1 text-xs font-medium">{p.name}</span>
-                    <span className="mt-1 flex gap-0.5">
-                      {p.types.map((t) => <TypeBadge key={t} type={t as PokemonType} />)}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-2xl text-slate-600">+</span>
-                )}
-              </button>
+              {p ? (
+                <button
+                  onClick={() => setEditing(editing === i ? null : i)}
+                  className="flex w-full flex-col items-center gap-1 rounded-xl border border-line bg-raise p-2"
+                >
+                  <span className="grid h-11 w-14 place-items-center overflow-hidden">
+                    <PokeIcon species={slug!} className="scale-[1.3]" />
+                  </span>
+                  <span className="truncate text-[11px] font-bold">{p.name}</span>
+                  <span className="flex gap-1">
+                    {p.types.map((t) => (
+                      <span key={t} className="h-[4px] w-[22px] rounded-full" style={{ background: TYPE_HEX[t as PokemonType] }} />
+                    ))}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setEditing(editing === i ? null : i)}
+                  className="flex h-[84px] w-full flex-col items-center justify-center rounded-xl border border-dashed bg-bg text-t3 hover:border-accln"
+                  style={{ borderColor: "var(--line)" }}
+                >
+                  <span className="text-xl text-t3">+</span>
+                  <span className="text-[10px]">empty</span>
+                </button>
+              )}
               {editing === i && (
                 <SlotPicker
                   pokemon={pokemon}
@@ -444,32 +478,38 @@ function SlotPicker({
   }, [q, pokemon]);
 
   return (
-    <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded border border-slate-700 bg-slate-900 p-2 shadow-xl">
+    <div
+      className="absolute left-0 top-full z-30 mt-1 w-[246px] max-w-[44vw] rounded-xl border border-line bg-panel p-2"
+      style={{ boxShadow: "0 20px 44px rgba(0,0,0,0.5)" }}
+    >
       <div className="mb-1 flex gap-1">
         <input
           autoFocus
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search…"
-          className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs"
+          placeholder="Search name, type, ability…"
+          className="w-full rounded-lg border border-accln bg-bg px-2 py-1 text-xs"
         />
-        <button onClick={onClose} className="rounded border border-slate-700 px-2 text-xs">✕</button>
+        <button onClick={onClose} className="rounded-lg border border-line px-2 text-xs text-t2">✕</button>
       </div>
-      <div className="max-h-48 overflow-y-auto">
+      <div className="max-h-[220px] overflow-y-auto">
         {results.map((p) => (
           <button
             key={p.slug}
             onClick={() => onPick(p.slug)}
-            className="flex w-full items-center justify-between gap-1 rounded px-2 py-1 text-left text-xs hover:bg-slate-800"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs hover:bg-soft"
           >
-            <span className="truncate">{p.name}</span>
+            <span className="inline-flex h-6 w-8 items-center justify-center overflow-hidden">
+              <PokeIcon species={p.slug} />
+            </span>
+            <span className="min-w-0 flex-1 truncate">{p.name}</span>
             <span className="flex shrink-0 gap-0.5">
               {p.types.map((t) => <TypeBadge key={t} type={t as PokemonType} />)}
             </span>
           </button>
         ))}
       </div>
-      <button onClick={onClear} className="mt-1 w-full rounded border border-slate-700 py-0.5 text-xs text-slate-400 hover:border-rose-500">
+      <button onClick={onClear} className="mt-1 w-full rounded-lg border border-line py-0.5 text-xs text-t3 hover:border-neg">
         Clear slot
       </button>
     </div>
@@ -543,20 +583,19 @@ const emptyCond = (): SideCond => ({
 const hasHazards = (c: SideCond): boolean =>
   c.stealthRock || c.spikes > 0 || c.toxicSpikes > 0 || c.stickyWeb;
 
-/** A full board snapshot used by the round history (step back a round). */
-interface RoundSnapshot {
-  uTeam: string[];
-  oTeam: string[];
-  activeUser: [string | null, string | null];
-  activeOpp: [string | null, string | null];
-  mon: Record<string, MonState>;
-  weather: Weather;
-  terrain: Terrain;
-  trickRoom: boolean;
-  gravity: boolean;
-  uCond: SideCond;
-  oCond: SideCond;
+/** A committed action for one of your active spots this round. */
+interface Order {
+  actor: string; // your acting mon's display name
+  move: string;
+  target: string; // target mon's display name
+}
+interface LogLine {
+  actor: "user" | "opp" | "neutral";
+  text: string;
+}
+interface LogRound {
   round: number;
+  lines: LogLine[];
 }
 
 function monFromSet(set: KnownSet | undefined): MonState {
@@ -601,9 +640,6 @@ function BattleView({
     return [...set].sort();
   }, [userTeam, oppTeam, bySlug]);
   const [round, setRound] = useState(1);
-  // Snapshots of the whole board captured each time a round is advanced, so the
-  // user can step back to an earlier round and restore its state.
-  const [history, setHistory] = useState<RoundSnapshot[]>([]);
   // Teams are held in state so "swap sides" can flip perspective mid-battle.
   const [uTeam, setUTeam] = useState<string[]>(userTeam);
   const [oTeam, setOTeam] = useState<string[]>(oppTeam);
@@ -633,6 +669,11 @@ function BattleView({
   const [uCond, setUCond] = useState<SideCond>(emptyCond());
   const [oCond, setOCond] = useState<SideCond>(emptyCond());
   const [background, setBackground] = useState<string>("meadow");
+  // This round's orders, one per your active spot. null = no order yet.
+  const [orders, setOrders] = useState<[Order | null, Order | null]>([null, null]);
+  // Committed rounds; each is a list of log lines. logIdx pages the view.
+  const [log, setLog] = useState<LogRound[]>([]);
+  const [logIdx, setLogIdx] = useState(0);
 
   // Stable side-aware signature, so a saved battle only resumes for the same
   // side assignments and slot order - not just the same twelve Pokémon.
@@ -667,7 +708,6 @@ function BattleView({
           if (s.uCond) setUCond(s.uCond);
           if (s.oCond) setOCond(s.oCond);
           if (typeof s.round === "number") setRound(s.round);
-          if (Array.isArray(s.history)) setHistory(s.history);
           if (s.background) setBackground(s.background);
         }
       } catch {
@@ -678,12 +718,12 @@ function BattleView({
     try {
       localStorage.setItem(
         BATTLE_KEY,
-        JSON.stringify({ ts: Date.now(), sig: teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background, history }),
+        JSON.stringify({ ts: Date.now(), sig: teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background }),
       );
     } catch {
       /* ignore quota */
     }
-  }, [teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background, history]);
+  }, [teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background]);
 
   const monOf = (side: Side, slug: string | null): MonState =>
     (slug && mon[monKey(side, slug)]) || emptyMon();
@@ -698,42 +738,6 @@ function BattleView({
       next[idx] = slug;
       return next;
     });
-
-  // ---- Round history: advance and step back ------------------------------
-  const snapshot = (): RoundSnapshot => ({
-    uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round,
-  });
-  const restore = (s: RoundSnapshot) => {
-    setUTeam(s.uTeam);
-    setOTeam(s.oTeam);
-    setActiveUser(s.activeUser);
-    setActiveOpp(s.activeOpp);
-    setMon(s.mon);
-    setWeather(s.weather);
-    setTerrain(s.terrain);
-    setTrickRoom(s.trickRoom);
-    setGravity(s.gravity);
-    setUCond(s.uCond);
-    setOCond(s.oCond);
-    setRound(s.round);
-  };
-  const nextRound = () => {
-    setHistory((h) => [...h, snapshot()]);
-    setRound((r) => r + 1);
-  };
-  const prevRound = () => {
-    setHistory((h) => {
-      if (h.length === 0) return h;
-      restore(h[h.length - 1]!);
-      return h.slice(0, -1);
-    });
-  };
-
-  // ---- Mega Evolution: at most one per team ------------------------------
-  const sideMegaSlug = (side: Side): string | null => {
-    for (const s of side === "user" ? uTeam : oTeam) if (monOf(side, s).mega) return s;
-    return null;
-  };
 
   const asTuple = (t: readonly PokemonType[]) =>
     t.slice(0, 2) as [PokemonType] | [PokemonType, PokemonType];
@@ -840,49 +844,6 @@ function BattleView({
     [built],
   );
 
-  // Auto-apply field-setting abilities when a Pokémon enters, leaves, or Mega
-  // Evolves. E.g. Mega Raichu-X's Electric Surge sets Electric Terrain the
-  // moment it Mega Evolves. Only fills an unset field, so a manual choice wins.
-  const activeAbility = (side: Side, slug: string | null): string => {
-    if (!slug) return "";
-    const forme = formeOf(side, slug);
-    if (forme?.ability) return forme.ability;
-    const s = monOf(side, slug);
-    return s.ability || abilitiesFor(slug)[0] || "";
-  };
-  // Only fire when the SET of field-setting abilities on the board changes (a
-  // setter entered / left / Mega Evolved), not on every render. This lets the
-  // user freely pick a different weather/terrain afterwards - including turning
-  // it off when its few turns run out - without it snapping back.
-  const fieldAbilFirst = useRef(true);
-  const weatherAbilSig = useRef("");
-  const terrainAbilSig = useRef("");
-  useEffect(() => {
-    const onField = [
-      activeAbility("user", activeUser[0]), activeAbility("user", activeUser[1]),
-      activeAbility("opponent", activeOpp[0]), activeAbility("opponent", activeOpp[1]),
-    ].filter(Boolean);
-    const w = onField.map((a) => WEATHER_SETTERS[a]).find(Boolean) ?? "";
-    const t = onField.map((a) => TERRAIN_SETTERS[a]).find(Boolean) ?? "";
-    if (fieldAbilFirst.current) {
-      // On mount, seed the signatures and only fill a still-unset field, so a
-      // restored/manual weather is respected instead of clobbered.
-      fieldAbilFirst.current = false;
-      weatherAbilSig.current = w;
-      terrainAbilSig.current = t;
-      if (w && weather === "none") setWeather(w);
-      if (t && terrain === "none") setTerrain(t);
-      return;
-    }
-    // A newly-arrived setter overrides the field (as it does in-game); once
-    // applied, the same setter staying out won't re-apply over a manual change.
-    if (w && w !== weatherAbilSig.current) setWeather(w);
-    weatherAbilSig.current = w;
-    if (t && t !== terrainAbilSig.current) setTerrain(t);
-    terrainAbilSig.current = t;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeUser, activeOpp, mon]);
-
   const abilitiesFor = (slug: string | null) => (slug ? refBySlug.get(slug)?.abilities ?? [] : []);
   // Legal options for a spot: the side's team minus whoever is in the OTHER spot
   // (a Pokémon can't be in both active spots at once).
@@ -933,196 +894,270 @@ function BattleView({
   const oppAlive = oTeam.filter((s) => monOf("opponent", s).hpPct > 0).length;
   const battleOver = userAlive === 0 || oppAlive === 0;
 
+  const ordersSet = orders.filter(Boolean).length;
+  const fieldBits = (): string[] => {
+    const b: string[] = [];
+    if (weather !== "none") b.push(weather);
+    if (terrain !== "none") b.push(`${terrain} terrain`);
+    if (trickRoom) b.push("Trick Room");
+    if (gravity) b.push("Gravity");
+    if (uCond.tailwind) b.push("your Tailwind");
+    return b;
+  };
+  const commitRound = () => {
+    const lines: LogLine[] = [];
+    for (const o of orders) if (o) lines.push({ actor: "user", text: `${o.actor} used ${o.move} → ${o.target}` });
+    const fb = fieldBits();
+    if (fb.length) lines.push({ actor: "neutral", text: `Field: ${fb.join(", ")}` });
+    if (lines.length === 0) lines.push({ actor: "neutral", text: "No orders recorded." });
+    setLog((l) => {
+      const next = [...l, { round, lines }];
+      setLogIdx(next.length - 1);
+      return next;
+    });
+    setRound((r) => r + 1);
+    setOrders([null, null]);
+  };
+  const backRound = () => {
+    if (round <= 1) return;
+    setRound((r) => r - 1);
+    setLog((l) => {
+      const next = l.slice(0, -1);
+      setLogIdx(Math.max(0, next.length - 1));
+      return next;
+    });
+    setOrders([null, null]);
+  };
+  const setOrder = (i: 0 | 1, o: Order | null) =>
+    setOrders((prev) => { const n = [...prev] as [Order | null, Order | null]; n[i] = o; return n; });
+
+  // Move options for one of your active spots, from the built attacker.
+  const movesForSpot = (i: 0 | 1): string[] =>
+    built?.state?.user.active[i]?.moves.map((m) => m.name) ?? [];
+  const oppNames = ([activeOpp[0], activeOpp[1]].filter(Boolean) as string[]).map(nameOf);
+
+  const Chip = ({ on, onClick, children, title }: { on: boolean; onClick: () => void; children: React.ReactNode; title?: string }) => (
+    <button type="button" title={title} onClick={onClick}
+      className={`whitespace-nowrap rounded-md px-1.5 py-0.5 text-[10px] font-bold leading-4 ${on ? "bg-acc text-bg" : "bg-raise text-t2 hover:text-t1"}`}>
+      {children}
+    </button>
+  );
+
+  const SideCard = ({ tone, cond, setCond, side }: { tone: "pos" | "neg"; cond: SideCond; setCond: (c: SideCond) => void; side: Side }) => {
+    const toneVar = tone === "pos" ? "var(--pos)" : "var(--neg)";
+    const screens: [keyof SideCond, string][] = [["tailwind", "Tailwind"], ["reflect", "Reflect"], ["lightScreen", "Light Screen"], ["auroraVeil", "Aurora Veil"]];
+    return (
+      <div className="space-y-2 rounded-xl p-[11px] text-xs" style={{ border: `1px solid color-mix(in srgb, ${toneVar} 40%, transparent)`, background: `color-mix(in srgb, ${toneVar} 7%, var(--panel))` }}>
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] font-extrabold" style={{ color: toneVar }}>{side === "user" ? "Your side" : "Opponent side"}</span>
+          {hasHazards(cond) && <span className="text-[9px] font-bold text-warn">⚠ hazards up</span>}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {screens.map(([k, lbl]) => (
+            <Chip key={k} on={cond[k] as boolean} onClick={() => setCond({ ...cond, [k]: !(cond[k] as boolean) })}>{lbl}</Chip>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <Chip on={cond.stealthRock} onClick={() => setCond({ ...cond, stealthRock: !cond.stealthRock })}>Stealth Rock</Chip>
+          <Chip on={cond.stickyWeb} onClick={() => setCond({ ...cond, stickyWeb: !cond.stickyWeb })}>Sticky Web</Chip>
+        </div>
+        <div className="grid items-center gap-1" style={{ gridTemplateColumns: "minmax(0,1fr) 78px" }}>
+          <span className="text-[10px] text-t3">Spikes</span>
+          <span className="grid" style={{ gridTemplateColumns: "repeat(3, 24px)" }}>
+            {[1, 2, 3].map((n) => <Chip key={n} on={cond.spikes === n} onClick={() => setCond({ ...cond, spikes: cond.spikes === n ? 0 : n })}>{n}</Chip>)}
+          </span>
+          <span className="text-[10px] text-t3">Toxic Spikes</span>
+          <span className="grid" style={{ gridTemplateColumns: "repeat(3, 24px)" }}>
+            {[1, 2].map((n) => <Chip key={n} on={cond.toxicSpikes === n} onClick={() => setCond({ ...cond, toxicSpikes: cond.toxicSpikes === n ? 0 : n })}>{n}</Chip>)}
+          </span>
+        </div>
+        <button onClick={() => allySwitch(side)} className="rounded border border-line px-2 py-0.5 text-[11px] text-t2 hover:border-accln">Ally Switch</button>
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-4">
-      {/* Top bar: back, round, background picker, and the Next Round action so it
-          is always reachable without scrolling. */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <button onClick={onBack} className="text-sm text-amber-400 hover:underline">← Team preview</button>
-        <div className="flex items-center gap-2 text-xs">
-          <span className="uppercase tracking-wide text-slate-500">Round {round}</span>
-          <label className="flex items-center gap-1 text-slate-400">
-            Stage
-            <select
-              value={background}
-              onChange={(e) => setBackground(e.target.value)}
-              className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5"
-            >
+    <div className="space-y-[14px]">
+      {/* Round toolbar */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2.5 text-xs">
+        <button onClick={onBack} className="font-bold text-acc hover:text-accs">← Team preview</button>
+        <span className="rounded-full bg-raise px-2 py-0.5 font-mono uppercase tabular-nums text-t2">Round {round}</span>
+        <span className="text-t3">{userAlive} vs {oppAlive} alive</span>
+        <div className="ml-auto flex items-center gap-2">
+          <button onClick={swapSides} title="Swap which side is yours" className="rounded border border-line px-2 py-1 text-t2 hover:border-accln">⇄ Swap sides</button>
+          <label className="flex items-center gap-1 text-t3">Stage
+            <select value={background} onChange={(e) => setBackground(e.target.value)} className="rounded border border-line bg-raise px-1 py-0.5 text-t1">
               {BACKGROUNDS.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
             </select>
           </label>
-          <button
-            onClick={prevRound}
-            disabled={history.length === 0}
-            title={history.length === 0 ? "No earlier round to go back to" : "Restore the previous round"}
-            className="rounded border border-slate-700 px-3 py-1 font-semibold hover:border-amber-500 disabled:opacity-40"
-          >
-            ← Back a round
-          </button>
+          <button onClick={backRound} disabled={round <= 1} className="rounded border border-line px-2 py-1 text-t2 hover:border-accln disabled:opacity-40">← Back a round</button>
           {battleOver ? (
-            <button
-              onClick={() => {
-                try { localStorage.removeItem(BATTLE_KEY); } catch { /* ignore */ }
-                onBack();
-              }}
-              className="rounded bg-amber-500 px-3 py-1 font-semibold text-black hover:bg-amber-400"
-            >
-              New battle
-            </button>
+            <button onClick={() => { try { localStorage.removeItem(BATTLE_KEY); } catch { /* ignore */ } onBack(); }}
+              className="rounded-lg bg-acc px-3 py-1.5 font-extrabold text-bg hover:bg-accs">New battle</button>
           ) : (
-            <button onClick={nextRound} className="rounded bg-amber-500 px-3 py-1 font-semibold text-black hover:bg-amber-400">
-              Next round →
-            </button>
+            <button onClick={commitRound} className="rounded-lg bg-acc px-3 py-1.5 font-extrabold text-bg hover:bg-accs" style={{ boxShadow: "0 0 0 3px var(--accbg)" }}>Next round →</button>
           )}
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        {/* Battle screen: opponent top-right, you bottom-left */}
-        <div className="relative min-h-[280px] overflow-hidden rounded-lg border border-slate-800 p-3" style={bgStyle(background)}>
-          <div className="absolute right-3 top-3 flex gap-2">
-            {[0, 1].map((i) => {
-              const slug = activeOpp[i as 0 | 1];
-              return (
-                <ActiveCard
-                  key={i}
-                  label="Opp"
-                  foe
-                  slug={slug}
-                  state={monOf("opponent", slug)}
-                  options={optionsFor("opponent", oTeam, activeOpp, i as 0 | 1)}
-                  abilities={matchAbilities}
-                  defaultAbility={abilitiesFor(slug)[0] ?? ""}
-                  items={items}
-                  mega={slug ? megaForms[slug] : undefined}
-                  megaBlocked={!!slug && !monOf("opponent", slug).mega && sideMegaSlug("opponent") !== null}
-                  special={specialFor("opponent", slug)}
-                  disguise={disguiseFor("opponent", slug)}
-                  formeAbility={slug ? formeOf("opponent", slug)?.ability : undefined}
-                  onSelect={(s) => {
-                    setActive("opponent", i as 0 | 1, s);
-                    if (s && s !== slug) patchMon("opponent", s, { stages: NEUTRAL_STAGES });
-                  }}
-                  onPatch={(p) => patchMon("opponent", slug, p)}
-                />
-              );
-            })}
+      {/* Best play this round */}
+      <div className="rounded-[14px] border border-accln bg-accbg p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="rounded bg-acc px-1.5 py-0.5 text-[10px] font-extrabold uppercase text-bg">Best play this round</span>
+          <span className="text-[11px] text-t3">Balanced profile</span>
+        </div>
+        {!built?.state ? (
+          <p className="text-sm text-neg">Assign a Pokémon to all four battle spots.</p>
+        ) : (
+          <Recommendations recommendations={recommendations} profileLabel="Balanced" />
+        )}
+      </div>
+
+      {/* Arena + side conditions */}
+      <div className="grid gap-3 lg:grid-cols-[minmax(166px,0.55fr)_minmax(0,2fr)_minmax(166px,0.55fr)]">
+        <SideCard tone="pos" cond={uCond} setCond={setUCond} side="user" />
+
+        <div className="relative overflow-hidden rounded-2xl border border-line p-2.5" style={bgStyle(background)}>
+          {/* Field card */}
+          <div className="mx-auto mb-2 w-[min(340px,100%)] space-y-1.5 rounded-xl border p-2 backdrop-blur"
+            style={{ borderColor: "rgba(255,255,255,0.18)", background: "rgba(20,24,30,0.82)" }}>
+            <div className="grid items-baseline gap-1" style={{ gridTemplateColumns: "48px minmax(0,1fr)" }}>
+              <span className="text-[9px] font-extrabold uppercase text-slate-300">Weather</span>
+              <span className="flex flex-wrap gap-1">
+                {WEATHERS.filter((w) => w !== "none").map((w) => <Chip key={w} on={weather === w} onClick={() => setWeather(weather === w ? "none" : w)}>{w}</Chip>)}
+              </span>
+            </div>
+            <div className="grid items-baseline gap-1" style={{ gridTemplateColumns: "48px minmax(0,1fr)" }}>
+              <span className="text-[9px] font-extrabold uppercase text-slate-300">Terrain</span>
+              <span className="flex flex-wrap gap-1">
+                {TERRAINS.filter((t) => t !== "none").map((t) => <Chip key={t} on={terrain === t} onClick={() => setTerrain(terrain === t ? "none" : t)}>{t}</Chip>)}
+              </span>
+            </div>
+            <div className="grid items-baseline gap-1" style={{ gridTemplateColumns: "48px minmax(0,1fr)" }}>
+              <span className="text-[9px] font-extrabold uppercase text-slate-300">Rooms</span>
+              <span className="flex flex-wrap gap-1">
+                <Chip on={trickRoom} onClick={() => setTrickRoom(!trickRoom)}>Trick Room</Chip>
+                <Chip on={gravity} onClick={() => setGravity(!gravity)}>Gravity</Chip>
+              </span>
+            </div>
           </div>
-          <div className="absolute bottom-3 left-3 flex gap-2">
-            {[0, 1].map((i) => {
-              const slug = activeUser[i as 0 | 1];
-              return (
-                <ActiveCard
-                  key={i}
-                  label="You"
-                  slug={slug}
-                  state={monOf("user", slug)}
-                  options={optionsFor("user", uTeam, activeUser, i as 0 | 1)}
-                  abilities={matchAbilities}
-                  defaultAbility={abilitiesFor(slug)[0] ?? ""}
-                  items={items}
-                  mega={slug ? megaForms[slug] : undefined}
-                  megaBlocked={!!slug && !monOf("user", slug).mega && sideMegaSlug("user") !== null}
-                  special={specialFor("user", slug)}
-                  disguise={disguiseFor("user", slug)}
-                  formeAbility={slug ? formeOf("user", slug)?.ability : undefined}
-                  onSelect={(s) => {
-                    setActive("user", i as 0 | 1, s);
-                    if (s && s !== slug) patchMon("user", s, { stages: NEUTRAL_STAGES });
-                  }}
-                  onPatch={(p) => patchMon("user", slug, p)}
-                />
-              );
-            })}
+
+          {/* Active editor cards: opponent right, you left */}
+          <div className="flex items-end justify-between gap-2">
+            <div className="flex gap-2">
+              {[0, 1].map((i) => {
+                const slug = activeUser[i as 0 | 1];
+                return (
+                  <ActiveCard key={i} label="You" slug={slug} state={monOf("user", slug)}
+                    options={optionsFor("user", uTeam, activeUser, i as 0 | 1)} abilities={matchAbilities}
+                    defaultAbility={abilitiesFor(slug)[0] ?? ""} items={items} mega={slug ? megaForms[slug] : undefined}
+                    special={specialFor("user", slug)} disguise={disguiseFor("user", slug)}
+                    formeAbility={slug ? formeOf("user", slug)?.ability : undefined}
+                    onSelect={(s) => { setActive("user", i as 0 | 1, s); if (s && s !== slug) patchMon("user", s, { stages: NEUTRAL_STAGES }); }}
+                    onPatch={(p) => patchMon("user", slug, p)} />
+                );
+              })}
+            </div>
+            <div className="flex gap-2">
+              {[0, 1].map((i) => {
+                const slug = activeOpp[i as 0 | 1];
+                return (
+                  <ActiveCard key={i} label="Opp" foe slug={slug} state={monOf("opponent", slug)}
+                    options={optionsFor("opponent", oTeam, activeOpp, i as 0 | 1)} abilities={matchAbilities}
+                    defaultAbility={abilitiesFor(slug)[0] ?? ""} items={items} mega={slug ? megaForms[slug] : undefined}
+                    special={specialFor("opponent", slug)} disguise={disguiseFor("opponent", slug)}
+                    formeAbility={slug ? formeOf("opponent", slug)?.ability : undefined}
+                    onSelect={(s) => { setActive("opponent", i as 0 | 1, s); if (s && s !== slug) patchMon("opponent", s, { stages: NEUTRAL_STAGES }); }}
+                    onPatch={(p) => patchMon("opponent", slug, p)} />
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Field & per-side tools, split so each side is unmistakable. */}
-        <div className="space-y-3 text-xs text-slate-300">
-          {/* Shared field */}
-          <div className="space-y-2 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Field (both sides)</h3>
-            <p className="text-[10px] text-slate-500">
-              Weather/terrain from an ability applies on entry but only lasts a
-              few turns - set it back to “none” when it runs out.
-            </p>
-            <div>
-              <span className="mb-1 block text-[10px] uppercase text-slate-500">Weather</span>
-              <div className="flex flex-wrap gap-1">
-                {WEATHERS.map((w) => (
-                  <button key={w} onClick={() => setWeather(w)}
-                    className={`rounded px-2 py-0.5 capitalize ${weather === w ? "bg-amber-500 text-black" : "bg-slate-800 hover:bg-slate-700"}`}>
-                    {w}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <span className="mb-1 block text-[10px] uppercase text-slate-500">Terrain</span>
-              <div className="flex flex-wrap gap-1">
-                {TERRAINS.map((t) => (
-                  <button key={t} onClick={() => setTerrain(t)}
-                    className={`rounded px-2 py-0.5 capitalize ${terrain === t ? "bg-amber-500 text-black" : "bg-slate-800 hover:bg-slate-700"}`}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={trickRoom} onChange={(e) => setTrickRoom(e.target.checked)} /> Trick Room
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={gravity} onChange={(e) => setGravity(e.target.checked)} /> Gravity
-              </label>
-            </div>
-          </div>
+        <SideCard tone="neg" cond={oCond} setCond={setOCond} side="opponent" />
+      </div>
 
-          {/* Your side */}
-          <div className="space-y-2 rounded-lg border border-emerald-800/60 bg-emerald-950/20 p-3">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
-              🟢 Your side
-              {hasHazards(uCond) && <span className="text-[10px] text-amber-300">⚠ hazards up</span>}
-            </h3>
-            <ConditionRow label="Screens &amp; hazards" cond={uCond} onChange={setUCond} />
-            <button onClick={() => allySwitch("user")} className="rounded border border-emerald-700 px-2 py-0.5 hover:border-emerald-400">
-              Ally Switch
+      {/* Orders + battle log */}
+      <div className="grid gap-3 md:grid-cols-2">
+        {/* Your orders */}
+        <div className="rounded-xl border border-accln bg-panel p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase text-t2">Your orders · round {round}</span>
+            <span className={`text-[11px] font-bold ${ordersSet === 2 ? "text-pos" : "text-warn"}`}>{ordersSet === 2 ? "both orders set" : `${ordersSet} of 2 set`}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {[0, 1].map((i) => {
+              const slug = activeUser[i as 0 | 1];
+              const moves = movesForSpot(i as 0 | 1);
+              const o = orders[i as 0 | 1];
+              return (
+                <div key={i} className="rounded-lg border p-2 text-xs" style={{ borderColor: o ? "var(--accln)" : "var(--line)" }}>
+                  <div className="mb-1 flex items-center gap-1">
+                    {slug && <span className="inline-flex h-7 w-7 items-center justify-center overflow-hidden"><PokeIcon species={slug} /></span>}
+                    <span className="truncate text-[11px] font-bold text-t1">{slug ? nameOf(slug) : "-"}</span>
+                    {o && <button onClick={() => setOrder(i as 0 | 1, null)} className="ml-auto text-t3 hover:text-neg">✕</button>}
+                  </div>
+                  <select value={o?.move ?? ""} disabled={!slug || moves.length === 0}
+                    onChange={(e) => { const mv = e.target.value; setOrder(i as 0 | 1, mv ? { actor: nameOf(slug!), move: mv, target: oppNames[0] ?? "target" } : null); }}
+                    className="w-full rounded border border-line bg-raise px-1 py-0.5 text-[11px]">
+                    <option value="">No order yet</option>
+                    {moves.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  {o && oppNames.length > 1 && (
+                    <select value={o.target} onChange={(e) => setOrder(i as 0 | 1, { ...o, target: e.target.value })}
+                      className="mt-1 w-full rounded border border-line bg-raise px-1 py-0.5 text-[10px] text-t3">
+                      {oppNames.map((n) => <option key={n} value={n}>→ {n}</option>)}
+                    </select>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[10px] text-t3">{fieldBits().length ? `Recorded field: ${fieldBits().join(", ")}.` : "No field effects recorded."}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <button onClick={backRound} disabled={round <= 1} className="rounded-lg border border-line px-2 py-1 text-[11px] text-t2 hover:border-accln disabled:opacity-40">← Back a round</button>
+            <button onClick={commitRound} className={`ml-auto rounded-lg px-3 py-1.5 text-[13px] font-extrabold text-bg ${ordersSet === 2 ? "bg-acc hover:bg-accs" : "bg-acc/60"}`}>
+              {ordersSet === 2 ? `Commit round ${round} & continue →` : `Commit round ${round} anyway →`}
             </button>
           </div>
+        </div>
 
-          {/* Opponent side */}
-          <div className="space-y-2 rounded-lg border border-rose-800/60 bg-rose-950/20 p-3">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-rose-300">
-              🔴 Opponent side
-              {hasHazards(oCond) && <span className="text-[10px] text-amber-300">⚠ hazards up</span>}
-            </h3>
-            <ConditionRow label="Screens &amp; hazards" cond={oCond} onChange={setOCond} />
-            <button onClick={() => allySwitch("opponent")} className="rounded border border-rose-700 px-2 py-0.5 hover:border-rose-400">
-              Ally Switch
-            </button>
+        {/* Battle log */}
+        <div className="rounded-xl border border-line bg-panel p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase text-t2">Battle log</span>
+            <span className="flex items-center gap-2 text-[11px]">
+              <button onClick={() => setLogIdx((i) => Math.max(0, i - 1))} disabled={logIdx <= 0} className="text-t2 disabled:text-t3/50">←</button>
+              <span className="font-mono tabular-nums text-t3">{log.length ? logIdx + 1 : 0} / {log.length}</span>
+              <button onClick={() => setLogIdx((i) => Math.min(log.length - 1, i + 1))} disabled={logIdx >= log.length - 1} className="text-t2 disabled:text-t3/50">→</button>
+            </span>
           </div>
+          {log.length === 0 ? (
+            <p className="text-xs text-t3">No rounds committed yet.</p>
+          ) : (
+            <div className="max-h-[264px] overflow-y-auto border-l-2 border-accln pl-2">
+              <p className="font-mono text-[9px] font-bold uppercase text-t3">Round {log[logIdx]?.round}</p>
+              {log[logIdx]?.lines.map((ln, j) => (
+                <p key={j} className="text-[12px]" style={{ color: ln.actor === "user" ? "var(--pos)" : ln.actor === "opp" ? "var(--neg)" : "var(--t2)" }}>{ln.text}</p>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Remaining Pokémon per side, clearly labelled, with HP/status warnings. */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+      {/* Remaining Pokémon per side */}
+      <div className="grid grid-cols-[1fr_1fr] items-start gap-3 rounded-xl border border-line bg-panel p-3">
         <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">🟢 Your team</p>
+          <p className="mb-1 text-[10px] font-extrabold uppercase text-pos">Your team</p>
           <div className="flex flex-wrap gap-1.5">
             {uTeam.map((s) => (
               <MonChip key={s} name={nameOf(s)} slug={s} state={monOf("user", s)} refData={refBySlug.get(s)} mega={megaForms[s]} />
             ))}
           </div>
         </div>
-        <button
-          onClick={swapSides}
-          title="Swap which side is yours"
-          className="mt-4 shrink-0 rounded border border-slate-700 px-2 py-1 text-xs hover:border-amber-500"
-        >
-          ⇄ Swap
-        </button>
         <div className="text-right">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-rose-300">🔴 Opponent&apos;s team</p>
+          <p className="mb-1 text-[10px] font-extrabold uppercase text-neg">Opponent&apos;s team</p>
           <div className="flex flex-wrap justify-end gap-1.5">
             {oTeam.map((s) => (
               <MonChip key={s} name={nameOf(s)} slug={s} state={monOf("opponent", s)} refData={refBySlug.get(s)} mega={megaForms[s]} />
@@ -1131,12 +1166,11 @@ function BattleView({
         </div>
       </div>
 
-      {/* Showdex-style detail panels: per-move damage/KO + full stat table.
-          Top row = your active (green), bottom row = opponent active (red). */}
+      {/* Detail panels: your active (top) + opponent active (bottom) */}
       {built?.state && (
-        <div className="flex items-center gap-3 text-[10px] uppercase tracking-wide">
-          <span className="text-emerald-300">🟢 Your active</span>
-          <span className="text-rose-300">🔴 Opponent active</span>
+        <div className="flex items-center gap-3 text-[10px] font-extrabold uppercase">
+          <span className="text-pos">Your active</span>
+          <span className="text-neg">Opponent active</span>
         </div>
       )}
       {built?.state && (
@@ -1153,12 +1187,9 @@ function BattleView({
             const targets = spec.enemies.active
               .filter((c): c is Combatant => c !== null)
               .map((c) => ({ name: c.name, combatant: c }));
-            // For OUR mons, restrict the move readout to the team's confirmed
-            // set. Look up strictly by this mon's own side - a same-species
-            // copy on the opposing team must not borrow its known moves, which
-            // previously cross-linked the two Pokémon's damage/KO readouts.
+            // For OUR mons, restrict the move readout to the team's confirmed set.
             const known = !spec.foe
-              ? loadedSets[`user:${spec.slug}`]?.moves
+              ? loadedSets[`user:${spec.slug}`]?.moves ?? loadedSets[`opponent:${spec.slug}`]?.moves
               : undefined;
             const attacker =
               known && known.length
@@ -1188,8 +1219,8 @@ function BattleView({
         </div>
       )}
 
-      {battleOver ? (
-        <p className="text-sm font-semibold text-amber-300">
+      {battleOver && (
+        <p className="rounded-lg border border-warn/40 bg-panel p-3 text-sm font-bold text-warn">
           🏆 {userAlive === 0 && oppAlive === 0
             ? "Both sides fainted - draw."
             : userAlive === 0
@@ -1197,20 +1228,7 @@ function BattleView({
               : "You win - opponent team fainted."}{" "}
           Use “New battle” above to restart.
         </p>
-      ) : (
-        <p className="text-xs text-slate-500">
-          {userAlive} vs {oppAlive} alive · enter HP/status/field, then “Next round →” at the top.
-        </p>
       )}
-
-      <div>
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Best options</h3>
-        {!built?.state ? (
-          <p className="text-sm text-rose-400">Assign a Pokémon to all four battle spots.</p>
-        ) : (
-          <Recommendations recommendations={recommendations} profileLabel="Balanced" />
-        )}
-      </div>
     </div>
   );
 }
@@ -1261,7 +1279,7 @@ function MonChip({
       className={`relative inline-flex h-12 w-12 items-center justify-center overflow-hidden ${fainted ? "opacity-30 grayscale" : ""}`}
       title={title}
     >
-      <PokeIcon species={isMega ? mega!.name : slug} className="scale-[1.35]" title="" />
+      <PokeIcon species={isMega ? mega!.name : slug} className="scale-[1.35]" />
       {isMega && (
         <span className="absolute left-0 top-0 rounded bg-fuchsia-500 px-0.5 text-[7px] font-bold text-black">M</span>
       )}
@@ -1297,7 +1315,6 @@ function ActiveCard({
   defaultAbility,
   items,
   mega,
-  megaBlocked,
   special,
   disguise,
   formeAbility,
@@ -1314,8 +1331,6 @@ function ActiveCard({
   items: string[];
   /** This species' Mega/Primal forme, if any - enables the Mega button. */
   mega?: MegaForme;
-  /** True when this side already has another Mega Evolution (one per team). */
-  megaBlocked?: boolean;
   /** Species-specific in-battle form change (Ditto / Dondozo / Zoroark). */
   special?: SpecialForm;
   /** Sprite/name override from Transform or Illusion. */
@@ -1345,14 +1360,12 @@ function ActiveCard({
       (abilityValue ? ` · ${abilityValue}` : "") +
       (itemValue && itemValue !== "None" ? ` · ${itemValue}` : "")
     : undefined;
-  const toggleMega = () => {
-    if (!state.mega && megaBlocked) return; // one Mega per team
+  const toggleMega = () =>
     onPatch(
       state.mega
         ? { mega: false }
         : { mega: true, item: mega!.item, itemUsed: false },
     );
-  };
   return (
     <div
       title={hoverInfo}
@@ -1361,7 +1374,7 @@ function ActiveCard({
       <div className="mb-1 flex items-center gap-1">
         {slug && (
           <span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden">
-            <PokeIcon species={iconSpecies!} className="scale-[1.3]" title="" />
+            <PokeIcon species={iconSpecies!} className="scale-[1.3]" />
           </span>
         )}
         <span className="text-[10px] uppercase text-slate-500">{label}</span>
@@ -1369,15 +1382,8 @@ function ActiveCard({
           <button
             type="button"
             onClick={toggleMega}
-            disabled={!isMega && megaBlocked}
-            title={
-              isMega
-                ? `Revert ${mega.name}`
-                : megaBlocked
-                  ? "Only one Mega Evolution per team"
-                  : `Mega Evolve (${mega.name}, ${mega.item})`
-            }
-            className={`ml-auto rounded px-1 py-0.5 text-[9px] font-bold disabled:opacity-40 ${
+            title={isMega ? `Revert ${mega.name}` : `Mega Evolve (${mega.name}, ${mega.item})`}
+            className={`ml-auto rounded px-1 py-0.5 text-[9px] font-bold ${
               isMega ? "bg-fuchsia-500 text-black" : "border border-fuchsia-500/60 text-fuchsia-300 hover:bg-fuchsia-500/20"
             }`}
           >
@@ -1477,61 +1483,6 @@ function ActiveCard({
           {special.options.map((o) => <option key={o.slug} value={o.slug}>{o.name}</option>)}
         </select>
       )}
-    </div>
-  );
-}
-
-function ConditionRow({
-  label,
-  cond,
-  onChange,
-}: {
-  label: string;
-  cond: SideCond;
-  onChange: (c: SideCond) => void;
-}) {
-  const screens: [keyof SideCond, string][] = [
-    ["tailwind", "Tailwind"],
-    ["reflect", "Reflect"],
-    ["lightScreen", "Light Screen"],
-    ["auroraVeil", "Aurora Veil"],
-  ];
-  return (
-    <div>
-      <p className="mb-1 text-[10px] uppercase text-slate-500">{label}</p>
-      <div className="flex flex-wrap gap-2">
-        {screens.map(([k, lbl]) => (
-          <label key={k} className="flex items-center gap-1">
-            <input type="checkbox" checked={cond[k] as boolean} onChange={(e) => onChange({ ...cond, [k]: e.target.checked })} />
-            {lbl}
-          </label>
-        ))}
-      </div>
-      <div className="mt-1 flex flex-wrap items-center gap-2 text-slate-400">
-        <span className="text-[10px] uppercase text-slate-500">Hazards</span>
-        <label className="flex items-center gap-1">
-          <input type="checkbox" checked={cond.stealthRock} onChange={(e) => onChange({ ...cond, stealthRock: e.target.checked })} />
-          SR
-        </label>
-        <label className="flex items-center gap-1">
-          Spikes
-          <select value={cond.spikes} onChange={(e) => onChange({ ...cond, spikes: Number(e.target.value) })}
-            className="rounded border border-slate-700 bg-slate-900 px-1">
-            {[0, 1, 2, 3].map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </label>
-        <label className="flex items-center gap-1">
-          T.Spikes
-          <select value={cond.toxicSpikes} onChange={(e) => onChange({ ...cond, toxicSpikes: Number(e.target.value) })}
-            className="rounded border border-slate-700 bg-slate-900 px-1">
-            {[0, 1, 2].map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </label>
-        <label className="flex items-center gap-1">
-          <input type="checkbox" checked={cond.stickyWeb} onChange={(e) => onChange({ ...cond, stickyWeb: e.target.checked })} />
-          Web
-        </label>
-      </div>
     </div>
   );
 }
