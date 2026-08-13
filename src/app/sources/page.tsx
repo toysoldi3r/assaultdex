@@ -1,4 +1,7 @@
-export const metadata = { title: "Sources - AssaultDex" };
+export const metadata = {
+  title: "Sources",
+  description: "Major Pokémon community sites, tools, and references AssaultDex draws on.",
+};
 
 interface Source {
   name: string;

@@ -1,6 +1,9 @@
 import { Panel } from "@/components/ui";
 
-export const metadata = { title: "Privacy - AssaultDex" };
+export const metadata = {
+  title: "Privacy",
+  description: "How AssaultDex handles your data: local teams, no third-party upload.",
+};
 
 export default function PrivacyPage() {
   return (

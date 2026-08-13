@@ -13,6 +13,11 @@ import {
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Battles",
+  description: "Review finished Pokémon Champions battles turn by turn, with a personal dashboard and confidence calibration.",
+};
+
 const ERR_MESSAGES: Record<string, string> = {
   missing: "Pick a Pokémon in every slot.",
   build: "Could not build the battle - re-run the seed.",

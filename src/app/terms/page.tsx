@@ -1,6 +1,9 @@
 import { Panel } from "@/components/ui";
 
-export const metadata = { title: "Terms - AssaultDex" };
+export const metadata = {
+  title: "Terms",
+  description: "Terms of use for AssaultDex, a fan-made Pokémon Champions toolkit.",
+};
 
 export default function TermsPage() {
   return (

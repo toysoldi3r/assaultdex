@@ -41,6 +41,17 @@ function megaInfo(slug: string): MegaInfo | null {
 }
 
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const p = await getDexSpecies(slug);
+  return p
+    ? {
+        title: p.name,
+        description: `${p.name} (#${p.num}) - ${p.types.join("/")} type. Base stats, abilities, defensive matchups, and legal moves for Pokémon Champions.`,
+      }
+    : { title: "Pokémon", description: "Pokémon reference for Pokémon Champions." };
+}
+
 export default async function PokemonPage({
   params,
   searchParams,

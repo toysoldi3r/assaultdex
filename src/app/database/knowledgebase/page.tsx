@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { KB_ENTRIES } from "@/data/knowledgebase";
 
-export const metadata = { title: "Knowledgebase - AssaultDex" };
+export const metadata = {
+  title: "Knowledgebase",
+  description: "Plain-language explainers for the competitive building blocks: base stats, EVs, IVs, natures.",
+};
 
 export default function KnowledgebasePage() {
   return (

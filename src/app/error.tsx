@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 export default function Error({
@@ -29,9 +30,9 @@ export default function Error({
         >
           Try again
         </button>
-        <a href="/help" className="text-sm text-amber-400 hover:underline">
+        <Link href="/help" className="text-sm text-amber-400 hover:underline">
           Help &amp; troubleshooting →
-        </a>
+        </Link>
       </div>
     </div>
   );

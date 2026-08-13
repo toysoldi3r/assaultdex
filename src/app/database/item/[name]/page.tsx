@@ -11,7 +11,9 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ name: string }> }) {
   const { name } = await params;
   const item = getDbItem(decodeURIComponent(name));
-  return { title: item ? `${item.name} - AssaultDex` : "Item - AssaultDex" };
+  return item
+    ? { title: item.name, description: item.desc || `${item.name} - held item reference for Pokémon Champions.` }
+    : { title: "Item", description: "Held item reference for Pokémon Champions." };
 }
 
 export default async function ItemPage({

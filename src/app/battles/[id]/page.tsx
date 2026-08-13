@@ -7,6 +7,11 @@ import { deleteBattleAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Battle review",
+  description: "Turn-by-turn review of a finished Pokémon Champions battle.",
+};
+
 export default async function BattleDetailPage({
   params,
 }: {

@@ -20,7 +20,10 @@ const mono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AssaultDex",
+  title: {
+    default: "AssaultDex - Competitive Pokémon Champions doubles toolkit",
+    template: "%s - AssaultDex",
+  },
   description:
     "Competitive Pokémon Champions doubles - Pokédex, team builder, ChoiceDex, and battle analysis.",
 };
@@ -50,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </span>
           <span className="flex items-center gap-x-3">
             <Link href="/help" className="underline hover:text-t2">Help</Link>
+            <Link href="/faq" className="underline hover:text-t2">FAQ</Link>
             <Link href="/privacy" className="underline hover:text-t2">Privacy</Link>
             <Link href="/terms" className="underline hover:text-t2">Terms</Link>
           </span>

@@ -6,6 +6,14 @@ import { listPokemon } from "@/server/repositories/pokemonRepo";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({ params }: { params: Promise<{ name: string }> }) {
+  const { name } = await params;
+  const ability = getDbAbility(decodeURIComponent(name));
+  return ability
+    ? { title: ability.name, description: ability.desc || `${ability.name} - ability reference for Pokémon Champions.` }
+    : { title: "Ability", description: "Ability reference for Pokémon Champions." };
+}
+
 export default async function AbilityPage({
   params,
 }: {

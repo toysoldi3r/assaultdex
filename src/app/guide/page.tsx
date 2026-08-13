@@ -1,6 +1,9 @@
 import Link from "next/link";
 
-export const metadata = { title: "Guide - AssaultDex" };
+export const metadata = {
+  title: "Guide",
+  description: "An intro to AssaultDex and to competitive Pokémon Champions doubles.",
+};
 
 export default function GuidePage() {
   return (
