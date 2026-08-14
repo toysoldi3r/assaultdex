@@ -1,5 +1,5 @@
 // Knowledgebase: short reference explainers for the competitive building blocks
-// (base stats, EVs, IVs, nature, …). Pure data so the /database/knowledgebase
+// (base stats, EVs, IVs, nature, …). Pure data so the /guide/knowledgebase
 // pages render generically and the Guide can deep-link each term.
 
 export interface KbSection {

@@ -26,7 +26,7 @@ export default async function KnowledgebaseEntryPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/database/knowledgebase" className="text-sm text-amber-400 hover:underline">
+        <Link href="/guide/knowledgebase" className="text-sm text-amber-400 hover:underline">
           &larr; Knowledgebase
         </Link>
         <h1 className="mt-2 text-2xl font-bold">{entry.title}</h1>
@@ -57,7 +57,7 @@ export default async function KnowledgebaseEntryPage({
             {entry.related.map((r) => (
               <Link
                 key={r}
-                href={`/database/knowledgebase/${r}`}
+                href={`/guide/knowledgebase/${r}`}
                 className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-amber-500"
               >
                 {kbTitle(r)}

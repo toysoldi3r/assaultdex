@@ -10,8 +10,8 @@ export default function KnowledgebasePage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/database" className="text-sm text-amber-400 hover:underline">
-          &larr; Database
+        <Link href="/guide" className="text-sm text-amber-400 hover:underline">
+          &larr; Guide
         </Link>
         <h1 className="mt-2 text-2xl font-bold">Knowledgebase</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-400">
@@ -24,7 +24,7 @@ export default function KnowledgebasePage() {
         {KB_ENTRIES.map((e) => (
           <li key={e.slug}>
             <Link
-              href={`/database/knowledgebase/${e.slug}`}
+              href={`/guide/knowledgebase/${e.slug}`}
               className="block rounded-lg border border-slate-800 bg-slate-900/40 p-3 hover:border-amber-500"
             >
               <span className="font-semibold text-amber-400">{e.title}</span>

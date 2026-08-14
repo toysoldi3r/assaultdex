@@ -54,43 +54,43 @@ export default function GuidePage() {
       <Section title="The building blocks">
         <p className="mb-2 text-slate-400">
           Click any term for a fuller explainer in the{" "}
-          <Link href="/database/knowledgebase" className="text-amber-400 hover:underline">Knowledgebase</Link>.
+          <Link href="/guide/knowledgebase" className="text-amber-400 hover:underline">Knowledgebase</Link>.
         </p>
-        <Term term="Base stats" href="/database/knowledgebase/base-stats">
+        <Term term="Base stats" href="/guide/knowledgebase/base-stats">
           Each Pokémon has six stats: HP, Attack (Atk), Defense (Def), Special
           Attack (SpA), Special Defense (SpD), and Speed (Spe). Higher isn&apos;t
           always better - a role dictates which stats matter.
         </Term>
-        <Term term="EVs (Effort Values)" href="/database/knowledgebase/evs">
+        <Term term="EVs (Effort Values)" href="/guide/knowledgebase/evs">
           You distribute up to 508 EVs across stats (max 252 per stat) to tune a
           Pokémon. 4 EVs = 1 stat point at level 50 for most stats. This is how two
           copies of the same Pokémon can play completely differently.
         </Term>
-        <Term term="IVs (Individual Values)" href="/database/knowledgebase/ivs">
+        <Term term="IVs (Individual Values)" href="/guide/knowledgebase/ivs">
           Fixed per-Pokémon values 0–31 per stat. You usually run 31 everywhere;
           a common exception is a 0 Attack IV on special attackers to minimise
           confusion and Foul Play damage.
         </Term>
-        <Term term="Nature" href="/database/knowledgebase/nature">
+        <Term term="Nature" href="/guide/knowledgebase/nature">
           Raises one stat by 10% and lowers another by 10%. Adamant (+Atk −SpA) and
           Modest (+SpA −Atk) are common on attackers; Timid/Jolly boost Speed.
         </Term>
-        <Term term="STAB (Same-Type Attack Bonus)" href="/database/knowledgebase/stab">
+        <Term term="STAB (Same-Type Attack Bonus)" href="/guide/knowledgebase/stab">
           A move whose type matches the user&apos;s type deals ×1.5 damage. It&apos;s
           why coverage moves off-type need higher base power to compete.
         </Term>
-        <Term term="Speed control" href="/database/knowledgebase/speed-control">
+        <Term term="Speed control" href="/guide/knowledgebase/speed-control">
           Tools that decide who moves first: Tailwind (doubles your team&apos;s
           Speed), Trick Room (slower Pokémon move first), and speed-lowering moves
           like Icy Wind and Thunder Wave. Controlling turn order is central to
           doubles.
         </Term>
-        <Term term="Weather & terrain" href="/database/knowledgebase/weather-terrain">
+        <Term term="Weather & terrain" href="/guide/knowledgebase/weather-terrain">
           Field effects (Sun, Rain, Sand, Snow; Electric/Grassy/Misty/Psychic
           Terrain) that boost or weaken certain moves and enable specific
           strategies.
         </Term>
-        <Term term="Team roles" href="/database/knowledgebase/team-roles">
+        <Term term="Team roles" href="/guide/knowledgebase/team-roles">
           Common roles include restricted/attacker (offense), support (redirection,
           screens, Fake Out), and speed control. A good team covers each role and
           shares few weaknesses.
