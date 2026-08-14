@@ -70,6 +70,10 @@ const ABILITY_CHANGE_RESULTS = [
   "(none)", "Simple", "Insomnia", "Truant", "Mummy", "Lingering Aroma",
   "Wandering Spirit",
 ];
+/** Status glyph shown on arena sprites. */
+const STATUS_GLYPH: Record<string, string> = {
+  burn: "🔥", paralysis: "ϟ", poison: "❋", toxic: "☠", sleep: "z", freeze: "❄",
+};
 const WEATHERS: Weather[] = ["none", "sun", "rain", "sand", "snow"];
 const TERRAINS: Terrain[] = ["none", "electric", "grassy", "misty", "psychic"];
 const STATUSES: StatusCondition[] = ["none", "burn", "paralysis", "poison", "toxic", "sleep", "freeze"];
@@ -126,13 +130,7 @@ const bgStyle = (id: string) => ({
 const CD_TOUR: WalkStep[] = [
   { title: "Welcome to ChoiceDex", body: "ChoiceDex is a live doubles assistant: set up both teams, start the battle, and it ranks your best play each turn. This quick tour explains every part - you can skip it anytime." },
   { title: "Build both teams", body: "Fill each side's slots with Pokémon by clicking an empty tile to search and pick; click a filled tile to change or clear it. Each side needs 2-6 Pokémon with no duplicate species." },
-  { title: "Load a saved team", body: "Use the “Load…” dropdown at the top of a column to drop in one of your saved teams. It also prefills that team's EVs, nature, item and moves so the readouts are accurate." },
   { title: "Best opening pairs", body: "Under the teams, ChoiceDex ranks the strongest opening pairs for your side against the opponent, with the best and worst matchups noted." },
-  { title: "Start the battle", body: "Once both sides are legal, press “Start battle” to open the live board. If the button is disabled, the note beneath it says why." },
-  { title: "The battle board", body: "Each active Pokémon has a card: set its HP, status, ability and item. Mega Evolve, or trigger form changes (Ditto Transform, Zoroark's Illusion, Dondozo's Commander) right here - stats and typing update live." },
-  { title: "Field & side conditions", body: "On the right, set weather, terrain, Trick Room and Gravity, plus each side's screens and hazards. Ally Switch and Skill Swap buttons handle those positional plays." },
-  { title: "Damage & KO readouts", body: "Below the board, each of your active Pokémon lists per-move damage ranges and KO chances against the opposing active Pokémon." },
-  { title: "Best options & next round", body: "The “Best options” list recommends your strongest plays for the turn. After it resolves, update HP/status/field and press “Next round →” to re-rank." },
   { title: "Advanced tools", body: "The Advanced tools section adds opponent stat/speed inference, a batch simulator, and battle analysis. That's the whole tool - enjoy!" },
 ];
 
@@ -936,6 +934,64 @@ function BattleView({
     built?.state?.user.active[i]?.moves.map((m) => m.name) ?? [];
   const oppNames = ([activeOpp[0], activeOpp[1]].filter(Boolean) as string[]).map(nameOf);
 
+  const hpColor = (pct: number) => (pct <= 0 ? "var(--t3)" : pct <= 20 ? "var(--neg)" : pct <= 50 ? "var(--warn)" : "var(--pos)");
+
+  // HP plate for one active spot: name, always-rendered status chip (toggled by
+  // visibility so it never resizes), type badges, HP bar + percentage.
+  const Plate = ({ side, idx }: { side: Side; idx: 0 | 1 }) => {
+    const slug = (side === "user" ? activeUser : activeOpp)[idx];
+    const ref = slug ? refBySlug.get(slug) : undefined;
+    const st = monOf(side, slug);
+    const forme = slug ? formeOf(side, slug) : undefined;
+    const types = (forme ? forme.types : ref?.types) ?? [];
+    const nm = forme ? forme.name : slug ? nameOf(slug) : "-";
+    const toneVar = side === "user" ? "var(--pos)" : "var(--neg)";
+    return (
+      <div className="min-w-0 max-w-[210px] flex-1 rounded-lg border px-2 py-1.5 backdrop-blur"
+        style={{ borderColor: `color-mix(in srgb, ${toneVar} 45%, transparent)`, background: "rgba(17,20,26,0.9)" }}>
+        <div className="flex h-[17px] items-center gap-1">
+          <span className="min-w-0 flex-1 truncate text-[13px] font-extrabold text-slate-100">{nm}</span>
+          <span className={`shrink-0 rounded px-1 text-[8px] font-bold uppercase text-black ${STATUS_COLOR[st.status] ?? ""}`}
+            style={{ visibility: st.status !== "none" ? "visible" : "hidden" }}>{st.status.slice(0, 3) || "brn"}</span>
+        </div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-1">
+          {types.map((t) => <TypeBadge key={t} type={t as PokemonType} />)}
+          <span className="flex min-w-[24px] flex-1 items-center gap-1">
+            <span className="h-1.5 flex-1 overflow-hidden rounded" style={{ background: "rgba(255,255,255,0.15)" }}>
+              <span className="block h-full rounded" style={{ width: `${st.hpPct}%`, background: hpColor(st.hpPct) }} />
+            </span>
+            <span className="font-mono text-[10px] tabular-nums text-slate-300">{st.hpPct}%</span>
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  // Arena sprite for one active spot: mirrored for your side, greyed if fainted,
+  // with a status glyph badge and a soft light pad beneath it.
+  const Sprite = ({ side, idx }: { side: Side; idx: 0 | 1 }) => {
+    const slug = (side === "user" ? activeUser : activeOpp)[idx];
+    if (!slug) return <span className="h-12 w-12" />;
+    const st = monOf(side, slug);
+    const dis = disguiseFor(side, slug);
+    const isMega = !!megaForms[slug] && st.mega;
+    const icon = isMega ? megaForms[slug]!.name : dis?.species ?? slug;
+    const fainted = st.hpPct <= 0;
+    const glyph = STATUS_GLYPH[st.status];
+    return (
+      <span className="relative flex flex-col items-center">
+        <span className="relative inline-flex h-12 w-12 items-center justify-center overflow-visible"
+          style={{ filter: fainted ? "grayscale(1) opacity(0.4)" : "drop-shadow(0 2px 3px rgba(0,0,0,0.6))" }}>
+          <PokeIcon species={icon} className={side === "user" ? "scale-x-[-1.5] scale-y-[1.5]" : "scale-[1.5]"} />
+          {glyph && !fainted && (
+            <span className="absolute -right-1 -top-1 text-[12px]" title={st.status}>{glyph}</span>
+          )}
+        </span>
+        <span className="mt-[-6px] h-2 w-10 rounded-[50%]" style={{ background: "radial-gradient(closest-side, rgba(255,255,255,0.35), transparent)" }} />
+      </span>
+    );
+  };
+
   const Chip = ({ on, onClick, children, title }: { on: boolean; onClick: () => void; children: React.ReactNode; title?: string }) => (
     <button type="button" title={title} onClick={onClick}
       className={`whitespace-nowrap rounded-md px-1.5 py-0.5 text-[10px] font-bold leading-4 ${on ? "bg-acc text-bg" : "bg-raise text-t2 hover:text-t1"}`}>
@@ -1042,40 +1098,58 @@ function BattleView({
             </div>
           </div>
 
-          {/* Active editor cards: opponent right, you left */}
-          <div className="flex items-end justify-between gap-2">
-            <div className="flex gap-2">
-              {[0, 1].map((i) => {
-                const slug = activeUser[i as 0 | 1];
-                return (
-                  <ActiveCard key={i} label="You" slug={slug} state={monOf("user", slug)}
-                    options={optionsFor("user", uTeam, activeUser, i as 0 | 1)} abilities={matchAbilities}
-                    defaultAbility={abilitiesFor(slug)[0] ?? ""} items={items} mega={slug ? megaForms[slug] : undefined}
-                    special={specialFor("user", slug)} disguise={disguiseFor("user", slug)}
-                    formeAbility={slug ? formeOf("user", slug)?.ability : undefined}
-                    onSelect={(s) => { setActive("user", i as 0 | 1, s); if (s && s !== slug) patchMon("user", s, { stages: NEUTRAL_STAGES }); }}
-                    onPatch={(p) => patchMon("user", slug, p)} />
-                );
-              })}
-            </div>
-            <div className="flex gap-2">
-              {[0, 1].map((i) => {
-                const slug = activeOpp[i as 0 | 1];
-                return (
-                  <ActiveCard key={i} label="Opp" foe slug={slug} state={monOf("opponent", slug)}
-                    options={optionsFor("opponent", oTeam, activeOpp, i as 0 | 1)} abilities={matchAbilities}
-                    defaultAbility={abilitiesFor(slug)[0] ?? ""} items={items} mega={slug ? megaForms[slug] : undefined}
-                    special={specialFor("opponent", slug)} disguise={disguiseFor("opponent", slug)}
-                    formeAbility={slug ? formeOf("opponent", slug)?.ability : undefined}
-                    onSelect={(s) => { setActive("opponent", i as 0 | 1, s); if (s && s !== slug) patchMon("opponent", s, { stages: NEUTRAL_STAGES }); }}
-                    onPatch={(p) => patchMon("opponent", slug, p)} />
-                );
-              })}
-            </div>
+          {/* HP plates: your two left, theirs right */}
+          <div className="mb-2 flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-1 gap-1.5">{[0, 1].map((i) => <Plate key={i} side="user" idx={i as 0 | 1} />)}</div>
+            <div className="flex min-w-0 flex-1 justify-end gap-1.5">{[0, 1].map((i) => <Plate key={i} side="opponent" idx={i as 0 | 1} />)}</div>
+          </div>
+
+          {/* Sprite row: yours left (mirrored), theirs right */}
+          <div className="flex items-end justify-between gap-2 pt-1">
+            <div className="flex items-end gap-3">{[0, 1].map((i) => <Sprite key={i} side="user" idx={i as 0 | 1} />)}</div>
+            <div className="flex items-end gap-3">{[0, 1].map((i) => <Sprite key={i} side="opponent" idx={i as 0 | 1} />)}</div>
           </div>
         </div>
 
         <SideCard tone="neg" cond={oCond} setCond={setOCond} side="opponent" />
+      </div>
+
+      {/* Active editor cards: your side | opponent side */}
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-xl border p-2" style={{ borderColor: "color-mix(in srgb, var(--pos) 35%, transparent)" }}>
+          <p className="mb-1.5 text-[10px] font-extrabold uppercase text-pos">Your active</p>
+          <div className="flex gap-2">
+            {[0, 1].map((i) => {
+              const slug = activeUser[i as 0 | 1];
+              return (
+                <ActiveCard key={i} label="You" slug={slug} state={monOf("user", slug)}
+                  options={optionsFor("user", uTeam, activeUser, i as 0 | 1)} abilities={matchAbilities}
+                  defaultAbility={abilitiesFor(slug)[0] ?? ""} items={items} mega={slug ? megaForms[slug] : undefined}
+                  special={specialFor("user", slug)} disguise={disguiseFor("user", slug)}
+                  formeAbility={slug ? formeOf("user", slug)?.ability : undefined}
+                  onSelect={(s) => { setActive("user", i as 0 | 1, s); if (s && s !== slug) patchMon("user", s, { stages: NEUTRAL_STAGES }); }}
+                  onPatch={(p) => patchMon("user", slug, p)} />
+              );
+            })}
+          </div>
+        </div>
+        <div className="rounded-xl border p-2" style={{ borderColor: "color-mix(in srgb, var(--neg) 35%, transparent)" }}>
+          <p className="mb-1.5 text-[10px] font-extrabold uppercase text-neg">Opponent active</p>
+          <div className="flex gap-2">
+            {[0, 1].map((i) => {
+              const slug = activeOpp[i as 0 | 1];
+              return (
+                <ActiveCard key={i} label="Opp" foe slug={slug} state={monOf("opponent", slug)}
+                  options={optionsFor("opponent", oTeam, activeOpp, i as 0 | 1)} abilities={matchAbilities}
+                  defaultAbility={abilitiesFor(slug)[0] ?? ""} items={items} mega={slug ? megaForms[slug] : undefined}
+                  special={specialFor("opponent", slug)} disguise={disguiseFor("opponent", slug)}
+                  formeAbility={slug ? formeOf("opponent", slug)?.ability : undefined}
+                  onSelect={(s) => { setActive("opponent", i as 0 | 1, s); if (s && s !== slug) patchMon("opponent", s, { stages: NEUTRAL_STAGES }); }}
+                  onPatch={(p) => patchMon("opponent", slug, p)} />
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Orders + battle log */}

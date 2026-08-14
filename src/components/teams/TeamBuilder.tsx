@@ -489,10 +489,6 @@ export function TeamBuilder({
             ＋
           </button>
         )}
-        <span className="ml-auto flex items-center gap-1.5 text-[11px] text-t3">
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: dirty || saving ? "var(--warn)" : "var(--pos)" }} />
-          {saving ? "Saving…" : dirty ? "Unsaved changes" : "All changes saved"}
-        </span>
       </div>
 
       {tab === "add" && members.length < limit ? (

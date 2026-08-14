@@ -46,7 +46,7 @@ export function TeamAnalysisPanel({ analysis }: { analysis: TeamAnalysis }) {
                   ×{w.members.length}{w.shared ? " shared" : ""}
                 </span>
                 <span className="ml-auto flex flex-wrap gap-0.5">
-                  {w.members.map((m) => <span key={m} title={m}><PokeIcon species={m} /></span>)}
+                  {w.members.map((m, mi) => <span key={`${m}-${mi}`} title={m}><PokeIcon species={m} /></span>)}
                 </span>
               </li>
             ))}
@@ -57,8 +57,8 @@ export function TeamAnalysisPanel({ analysis }: { analysis: TeamAnalysis }) {
         <div className="border-line px-3.5 py-3 md:border-r">
           <h3 className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-t3">Speed tiers (Lv 50)</h3>
           <ul className="space-y-1">
-            {analysis.speedTiers.map((s) => (
-              <li key={s.name} className="flex items-center gap-2 text-xs">
+            {analysis.speedTiers.map((s, si) => (
+              <li key={`${s.name}-${si}`} className="flex items-center gap-2 text-xs">
                 <span className="flex w-24 items-center gap-1 truncate">
                   <PokeIcon species={s.name} /><span className="truncate">{s.name}</span>
                 </span>
