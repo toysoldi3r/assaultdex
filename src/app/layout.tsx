@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Instrument_Sans, Space_Mono } from "next/font/google";
 import { TopBar } from "@/components/shell/TopBar";
 import { Shell } from "@/components/shell/Shell";
+import { MobileNavProvider } from "@/components/shell/MobileNav";
 import { CHAMPIONS_FORMAT_LABEL } from "@/data/usageStats";
 import "./globals.css";
 
@@ -44,8 +45,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to content
         </a>
-        <TopBar formatLabel={CHAMPIONS_FORMAT_LABEL} />
-        <Shell>{children}</Shell>
+        <MobileNavProvider>
+          <TopBar formatLabel={CHAMPIONS_FORMAT_LABEL} />
+          <Shell>{children}</Shell>
+        </MobileNavProvider>
         <footer className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line px-6 py-4 text-[11px] text-t3">
           <span>
             Fan-made and unofficial. Pokémon and all related names are trademarks

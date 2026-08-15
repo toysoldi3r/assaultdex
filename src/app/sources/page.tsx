@@ -9,6 +9,40 @@ interface Source {
   what: string;
 }
 
+// Self-contained site icon: a coloured tile with the site's initials. Real
+// favicons can't be used - the app's CSP forbids any external image origin
+// (img-src 'self' data:) - so this derives a stable colour + monogram instead.
+function initialsOf(name: string): string {
+  const cleaned = name.replace(/^r\//, "").replace(/[^A-Za-z0-9 ]/g, " ").trim();
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  if (name.startsWith("r/")) return "r/";
+  if (words.length >= 2) return (words[0]![0]! + words[1]![0]!).toUpperCase();
+  return cleaned.slice(0, 2).toUpperCase();
+}
+
+function hueOf(name: string): number {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
+  return h;
+}
+
+function SiteIcon({ name }: { name: string }) {
+  const hue = hueOf(name);
+  return (
+    <span
+      aria-hidden
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-md text-[11px] font-bold"
+      style={{
+        background: `hsl(${hue} 55% 22%)`,
+        color: `hsl(${hue} 85% 72%)`,
+        border: `1px solid hsl(${hue} 60% 40% / 0.5)`,
+      }}
+    >
+      {initialsOf(name)}
+    </span>
+  );
+}
+
 const SOURCES: { group: string; items: Source[] }[] = [
   {
     group: "Play & test",
@@ -145,16 +179,19 @@ export default function SourcesPage() {
           </h2>
           <ul className="grid gap-2 sm:grid-cols-2">
             {g.items.map((s) => (
-              <li key={s.name} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-                <a
-                  href={s.url}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="font-semibold text-amber-400 hover:underline"
-                >
-                  {s.name} ↗
-                </a>
-                <p className="mt-1 text-sm text-slate-300">{s.what}</p>
+              <li key={s.name} className="flex gap-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+                <SiteIcon name={s.name} />
+                <div className="min-w-0">
+                  <a
+                    href={s.url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="font-semibold text-amber-400 hover:underline"
+                  >
+                    {s.name} ↗
+                  </a>
+                  <p className="mt-1 text-sm text-slate-300">{s.what}</p>
+                </div>
               </li>
             ))}
           </ul>

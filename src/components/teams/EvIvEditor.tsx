@@ -122,10 +122,22 @@ export function EvIvEditor({
                 )}
               </span>
               <span className="text-right text-[11px] tabular-nums text-t3">{base[k]}</span>
-              <StatBar base={base[k]} ev={ev} />
+              <div className="relative h-2">
+                <StatBar base={base[k]} ev={ev} />
+                <input
+                  type="range" min={0} max={EV_STAT_MAX} step={4} value={ev}
+                  onChange={(e) => setEv(k, Number(e.target.value))}
+                  aria-label={`${STAT_LABELS[k]} EVs`}
+                  className="absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-1.5 [&::-moz-range-thumb]:rounded [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-t1 [&::-moz-range-track]:bg-transparent [&::-webkit-slider-runnable-track]:h-full [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-1.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded [&::-webkit-slider-thumb]:bg-t1"
+                />
+              </div>
               <input
-                type="number" min={0} max={252} step={4} value={ev}
-                onChange={(e) => setEv(k, Number(e.target.value))}
+                type="text" inputMode="numeric" value={ev}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value.replace(/\D/g, ""), 10);
+                  setEv(k, Number.isNaN(n) ? 0 : n);
+                }}
+                aria-label={`${STAT_LABELS[k]} EV value`}
                 className="w-10 rounded border border-line bg-bg px-1 py-0.5 text-right text-[11px] tabular-nums"
               />
               <span className={`text-right text-[11px] font-semibold tabular-nums ${boosted ? "text-pos" : lowered ? "text-neg" : "text-t1"}`}>{total}</span>

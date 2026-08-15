@@ -8,7 +8,7 @@ import { toPokemonRefs, type PokemonRef } from "@/lib/choicedexBuild";
 import { buildVariants, buildMegaForms } from "@/data/battleFormes";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import { listTeams } from "@/server/repositories/teamRepo";
-import { itemCatalog } from "@/data/catalog";
+import { listDbItems } from "@/data/dexDatabase";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +45,9 @@ export default async function ChoiceDexPage() {
     })
     .filter((t) => t.members.length > 0);
 
-  const itemNames = ["None", ...itemCatalog().map((i) => i.name)];
+  // Only Champions-legal items are selectable (matching the Database's legal
+  // set), including the Champions-specific mega stones the full catalog dropped.
+  const itemNames = ["None", ...listDbItems().filter((i) => i.competitive).map((i) => i.name)];
   const megaForms = buildMegaForms(refs);
 
   return (

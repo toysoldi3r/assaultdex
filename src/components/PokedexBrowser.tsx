@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Panel, TypeBadge } from "@/components/ui";
+import { PokeIcon } from "@/components/PokeIcon";
 import { POKEMON_TYPES, type PokemonType } from "@/domain/types/pokemon";
 
 export interface PokedexEntry {
@@ -259,11 +260,14 @@ export function PokedexBrowser({
                 className="rounded-lg border border-slate-800 bg-slate-900/40 p-4 hover:border-amber-500/60"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold">
+                  <span className="flex min-w-0 items-center gap-1.5 font-semibold">
+                    <span className="grid h-[26px] w-[38px] shrink-0 place-items-center overflow-hidden">
+                      <PokeIcon species={p.slug} />
+                    </span>
                     <span className="mr-1 tabular-nums text-xs text-slate-500">
                       #{p.num}
                     </span>
-                    {p.name}
+                    <span className="truncate">{p.name}</span>
                   </span>
                   <div className="flex shrink-0 gap-1">
                     {p.types.map((t) => (
