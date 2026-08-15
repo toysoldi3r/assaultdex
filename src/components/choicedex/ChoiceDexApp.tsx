@@ -1,24 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MonPanel } from "./MonPanel";
-import { Recommendations } from "./Recommendations";
 import { analyzeLeads } from "@/domain/choicedex/leads";
-import { recommend } from "@/domain/choicedex/recommend";
+import { recommend, type Recommendation } from "@/domain/choicedex/recommend";
+import { calculateDamage } from "@/domain/mechanics/damage";
+import { assumptionsFor } from "@/domain/mechanics/assumptions";
+import { natureByName } from "@/data/fixtures/natures";
 import {
   DEFAULT_FIELD,
   NEUTRAL_STAGES,
   type Combatant,
+  type FieldState,
+  type SideConditions,
   type StageStats,
   type StatusCondition,
   type Terrain,
   type Weather,
 } from "@/domain/types/battle";
-import type { PokemonType, StatKey } from "@/domain/types/pokemon";
-import { TypeBadge, TYPE_HEX } from "@/components/ui";
-import { PokeIcon } from "@/components/PokeIcon";
-import { OnceTutorial } from "@/components/OnceTutorial";
-import { Walkthrough, type WalkStep } from "@/components/Walkthrough";
+import { STAT_KEYS, type MoveFixture, type PokemonType, type StatKey } from "@/domain/types/pokemon";
 import {
   buildStateWithEntry,
   bySlugMap,
@@ -31,141 +30,141 @@ import {
   type SlotForm,
   type TurnForm,
 } from "@/lib/choicedexBuild";
+import { Sprite } from "./design/Sprite";
+import {
+  ACC, BG, NEG, POS, RAISE, T2, WARN,
+  STAGES, ROOM_FX, WEATHER_FX, TERRAIN_FX,
+  STATUS_COLOR, STATUS_SHORT, STATUS_GLYPH, STATUS_WASH,
+  TYPE_HEX, hpColor, typesFor,
+} from "./design/tokens";
+
+// ---------------------------------------------------------------------------
+// Shared types + public props
+// ---------------------------------------------------------------------------
 
 export interface KnownSet {
   evs: Partial<Record<StatKey, number>>;
   nature: string;
   item: string;
   ability: string;
-  /** The team's confirmed moves for this species (restricts the readout). */
   moves?: string[];
 }
 export interface SavedTeam {
   id: string;
   name: string;
-  members: string[]; // species slugs
-  /** Known sets by species slug, so our own mons prefill their EVs/nature/item. */
+  members: string[];
   sets?: Record<string, KnownSet>;
 }
 
-/** Species-specific in-battle form change offered on an active card. */
-type SpecialForm =
-  // Ditto Transform: copy one of the opposing active Pokémon.
-  | { kind: "ditto"; options: { slug: string; name: string }[] }
-  // Dondozo Commander boost (an allied Tatsugiri is on the team).
-  | { kind: "commander" }
-  // Zoroark Illusion: appear as a teammate (cosmetic).
-  | { kind: "zoroark"; options: { slug: string; name: string }[] }
-  | null;
-
 type Side = "user" | "opponent";
-// Abilities a move can grant that may not be native to any pool species, plus
-// a "(none)" sentinel for ability suppression (Gastro Acid / Neutralizing Gas).
-// Abilities that can be applied in battle by a move/ability even if no mon in
-// the match natively has it: Mummy-line (spread on contact), Simple Beam, Worry
-// Seed, Entrainment, etc. Plus "(none)" to suppress an ability (Gastro Acid /
-// Neutralizing Gas). Skill Swap / Trace / Role Play copy abilities already in
-// the match, which are added dynamically per battle.
-const ABILITY_CHANGE_RESULTS = [
-  "(none)", "Simple", "Insomnia", "Truant", "Mummy", "Lingering Aroma",
-  "Wandering Spirit",
-];
-/** Status glyph shown on arena sprites. */
-const STATUS_GLYPH: Record<string, string> = {
-  burn: "🔥", paralysis: "ϟ", poison: "❋", toxic: "☠", sleep: "z", freeze: "❄",
-};
-const WEATHERS: Weather[] = ["none", "sun", "rain", "sand", "snow"];
-const TERRAINS: Terrain[] = ["none", "electric", "grassy", "misty", "psychic"];
-const STATUSES: StatusCondition[] = ["none", "burn", "paralysis", "poison", "toxic", "sleep", "freeze"];
 
-function emptyTeam(): (string | null)[] {
-  return [null, null, null, null, null, null];
+interface MonState {
+  hpPct: number;
+  status: StatusCondition;
+  ability: string;
+  item: string;
+  itemUsed: boolean;
+  nature: string;
+  evs: Partial<Record<StatKey, number>>;
+  stages: StageStats;
+  crit: boolean;
+  knownMoves: string[];
+  /** Opponent-side: which candidate moves are confirmed in their set. */
+  moveState?: Record<string, "set">;
+  mega: boolean;
+  transformInto?: string | null;
+  commander?: boolean;
+  illusionAs?: string | null;
+}
+interface SideCond {
+  tailwind: boolean;
+  reflect: boolean;
+  lightScreen: boolean;
+  auroraVeil: boolean;
+  stealthRock: boolean;
+  spikes: number;
+  toxicSpikes: number;
+  stickyWeb: boolean;
+}
+interface LogLine { side: "user" | "opp" | "neutral"; text: string; }
+interface LogRound { round: number; lines: LogLine[]; }
+interface Order { move: string; target: 0 | 1; slug: string; }
+
+const STATUSES: StatusCondition[] = ["burn", "paralysis", "poison", "toxic", "sleep", "freeze"];
+const ABILITY_CHANGE_RESULTS = ["(none)", "Simple", "Insomnia", "Truant", "Mummy", "Lingering Aroma", "Wandering Spirit"];
+const BRING_LIMIT = 4;
+const TEAM_MIN = 2;
+
+const emptyMon = (): MonState => ({
+  hpPct: 100, status: "none", ability: "", item: "None", itemUsed: false,
+  nature: "Serious", evs: {}, stages: { ...NEUTRAL_STAGES }, crit: false,
+  knownMoves: [], mega: false,
+});
+const emptyCond = (): SideCond => ({
+  tailwind: false, reflect: false, lightScreen: false, auroraVeil: false,
+  stealthRock: false, spikes: 0, toxicSpikes: 0, stickyWeb: false,
+});
+const emptyTeam = (): (string | null)[] => [null, null, null, null, null, null];
+
+function monFromSet(set: KnownSet | undefined): MonState {
+  const base = emptyMon();
+  if (!set) return base;
+  return { ...base, evs: set.evs ?? {}, nature: set.nature || base.nature, item: set.item || base.item, ability: set.ability || base.ability };
 }
 
-/** Selectable battle-stage backgrounds - a sky band over a ground band with a
- *  soft horizon glow, evoking in-game stages without any external image. */
-const BACKGROUNDS: { id: string; label: string; background: string }[] = [
-  {
-    id: "meadow",
-    label: "Meadow",
-    background:
-      "radial-gradient(120% 60% at 50% 38%, rgba(255,255,255,.18), transparent 60%), linear-gradient(to bottom, #38bdf8 0%, #7dd3fc 42%, #4ade80 52%, #15803d 100%)",
-  },
-  {
-    id: "ocean",
-    label: "Ocean",
-    background:
-      "radial-gradient(120% 55% at 50% 40%, rgba(255,255,255,.15), transparent 60%), linear-gradient(to bottom, #7dd3fc 0%, #38bdf8 45%, #0e7490 55%, #0c4a6e 100%)",
-  },
-  {
-    id: "volcano",
-    label: "Volcano",
-    background:
-      "radial-gradient(120% 55% at 50% 65%, rgba(249,115,22,.5), transparent 55%), linear-gradient(to bottom, #7f1d1d 0%, #450a0a 50%, #1c1917 100%)",
-  },
-  {
-    id: "cave",
-    label: "Cave",
-    background:
-      "radial-gradient(90% 50% at 50% 30%, rgba(148,163,184,.25), transparent 60%), linear-gradient(to bottom, #334155 0%, #1e293b 55%, #020617 100%)",
-  },
-  {
-    id: "night",
-    label: "Night sky",
-    background:
-      "radial-gradient(1px 1px at 20% 25%, #fff, transparent), radial-gradient(1px 1px at 70% 15%, #fff, transparent), radial-gradient(1px 1px at 45% 35%, #cbd5e1, transparent), linear-gradient(to bottom, #1e1b4b 0%, #0f172a 55%, #020617 100%)",
-  },
-  {
-    id: "stadium",
-    label: "Stadium",
-    background:
-      "radial-gradient(120% 60% at 50% 30%, rgba(217,70,239,.25), transparent 60%), linear-gradient(to bottom, #4a044e 0%, #1e1b4b 48%, #14532d 56%, #052e16 100%)",
-  },
-];
-const bgStyle = (id: string) => ({
-  background: (BACKGROUNDS.find((b) => b.id === id) ?? BACKGROUNDS[0]!).background,
-});
+// ---------------------------------------------------------------------------
+// Tiny style helpers (kept 1:1 with the design's inline literals)
+// ---------------------------------------------------------------------------
 
-/** Step-by-step tour of the ChoiceDex flow (both phases described). */
-const CD_TOUR: WalkStep[] = [
+const pill = (on: boolean) => ({ bg: on ? ACC : RAISE, fg: on ? BG : T2, border: on ? ACC : "oklch(32% 0.01 240)" });
+
+const TOUR = [
   { title: "Welcome to ChoiceDex", body: "ChoiceDex is a live doubles assistant: set up both teams, start the battle, and it ranks your best play each turn. This quick tour explains every part - you can skip it anytime." },
   { title: "Build both teams", body: "Fill each side's slots with Pokémon by clicking an empty tile to search and pick; click a filled tile to change or clear it. Each side needs 2-6 Pokémon with no duplicate species." },
-  { title: "Best opening pairs", body: "Under the teams, ChoiceDex ranks the strongest opening pairs for your side against the opponent, with the best and worst matchups noted." },
+  { title: "Load a saved team", body: "Use the “Load…” dropdown on a team sheet to drop in one of your saved teams. It also prefills that team's EVs, nature, item and moves so the readouts are accurate." },
+  { title: "Pick your lead", body: "Under the teams, ChoiceDex ranks the strongest opening pairs for your side against the opponent, with the best and worst matchups noted." },
+  { title: "The arena", body: "Both sides stand on the field with HP plates showing typing and status. Click a Pokémon or its plate to bring that card into focus below." },
+  { title: "Both cards, side by side", body: "Under the arena your active Pokémon sits on the left and the opponent's on the right, each with its own moves, spread and boosts. Use the small icons top-right of a card to switch to its partner." },
+  { title: "Moves", body: "Each move shows its type, base power, accuracy, damage range and KO odds. Click one of your moves to order it this round; click an opponent move to mark it confirmed." },
+  { title: "Your orders & the log", body: "“Your orders” shows what you have chosen before you commit. Press the round button and it is written into the battle log, which keeps the full history of the match." },
+  { title: "Field & side conditions", body: "On the right, set weather, terrain, Trick Room and Gravity, plus each side's screens and hazards. Weather and terrain also show on the field itself." },
   { title: "Advanced tools", body: "The Advanced tools section adds opponent stat/speed inference, a batch simulator, and battle analysis. That's the whole tool - enjoy!" },
 ];
 
-const CD_TIPS = [
-  "Doubles is about targeting: focus-fire to remove a threat while keeping both of your Pokémon alive.",
-  "Each round, enter what happened - HP, status, field, and switches - and the app re-ranks your best plays.",
-  "Predict Protect and double-target reads; positioning, switches, and speed control decide most turns.",
-  "Use speed control (Tailwind / Trick Room) and redirection, and play around the opponent's.",
-  "Reference: vgcguide.com/battling. Mechanics are provisional - treat recommendations as guidance and sanity-check key calcs.",
-];
-
-const SESSION_KEY = "choicedex.session.v2";
-const BATTLE_KEY = "choicedex.battle.v2";
-// Saved battles older than this are treated as stale (don't reopen yesterday's).
+const SESSION_KEY = "choicedex.session.v3";
+const BATTLE_KEY = "choicedex.battle.v3";
 const BATTLE_TTL_MS = 12 * 60 * 60 * 1000;
+
+// ===========================================================================
+// Root: phase switch + setup screen
+// ===========================================================================
 
 export function ChoiceDexApp({
   pokemon,
   teams,
   items = [],
   megaForms = {},
+  usage = {},
+  advancedTools,
 }: {
   pokemon: PokemonRef[];
   teams: SavedTeam[];
   items?: string[];
   megaForms?: Record<string, MegaForme>;
+  usage?: Record<string, number>;
+  advancedTools?: React.ReactNode;
 }) {
   const bySlug = useMemo(() => bySlugMap(pokemon), [pokemon]);
   const [phase, setPhase] = useState<"preview" | "battle">("preview");
   const [userTeam, setUserTeam] = useState<(string | null)[]>(emptyTeam());
   const [oppTeam, setOppTeam] = useState<(string | null)[]>(emptyTeam());
-  // Known sets for mons loaded from a saved team, keyed `side:slug` - prefill.
   const [loadedSets, setLoadedSets] = useState<Record<string, KnownSet>>({});
+  const [showTips, setShowTips] = useState(true);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+  const [editing, setEditing] = useState<string | null>(null); // `${side}:${idx}`
+  const [pickQuery, setPickQuery] = useState("");
 
-  // Persist the preview/session so switching tabs and returning reopens it.
   const sessionFirst = useRef(true);
   useEffect(() => {
     if (sessionFirst.current) {
@@ -174,12 +173,8 @@ export function ChoiceDexApp({
         const raw = localStorage.getItem(SESSION_KEY);
         if (raw) {
           const s = JSON.parse(raw);
-          // Discard a stale session: too old, or referencing species that are no
-          // longer in the pool (e.g. after data changes / a deleted team).
           const fresh = typeof s.ts === "number" && Date.now() - s.ts < BATTLE_TTL_MS;
-          const speciesOk = [...(s.userTeam ?? []), ...(s.oppTeam ?? [])]
-            .filter(Boolean)
-            .every((slug: string) => bySlug.has(slug));
+          const speciesOk = [...(s.userTeam ?? []), ...(s.oppTeam ?? [])].filter(Boolean).every((slug: string) => bySlug.has(slug));
           if (fresh && speciesOk) {
             if (Array.isArray(s.userTeam)) setUserTeam(s.userTeam);
             if (Array.isArray(s.oppTeam)) setOppTeam(s.oppTeam);
@@ -190,254 +185,223 @@ export function ChoiceDexApp({
             localStorage.removeItem(BATTLE_KEY);
           }
         }
-      } catch {
-        /* ignore corrupt storage */
-      }
+      } catch { /* ignore */ }
       return;
     }
     try {
       localStorage.setItem(SESSION_KEY, JSON.stringify({ ts: Date.now(), phase, userTeam, oppTeam, loadedSets }));
-    } catch {
-      /* ignore quota */
-    }
+    } catch { /* ignore */ }
   }, [phase, userTeam, oppTeam, loadedSets, bySlug]);
 
-  // A side is battle-legal with 2-6 distinct in-pool species (Species Clause);
-  // the battle can only start when both sides are legal.
   const sideIssue = (team: (string | null)[]): string | null => {
     const filled = team.filter((s): s is string => !!s);
-    if (filled.length < 2) return "add at least 2 Pokémon";
+    if (filled.length < TEAM_MIN) return `add at least ${TEAM_MIN} Pokémon`;
     if (filled.length > 6) return "keep to at most 6 Pokémon";
     if (new Set(filled).size !== filled.length) return "no duplicate species (Species Clause)";
     if (!filled.every((s) => bySlug.has(s))) return "contains a Pokémon outside the pool";
     return null;
   };
-  const userIssue = sideIssue(userTeam);
-  const oppIssue = sideIssue(oppTeam);
-  const canStart = !userIssue && !oppIssue;
-  const startMsg = userIssue
-    ? `Your team: ${userIssue}.`
-    : oppIssue
-      ? `Opponent team: ${oppIssue}.`
-      : "";
+  const uIssue = sideIssue(userTeam);
+  const oIssue = sideIssue(oppTeam);
+  const canStart = !uIssue && !oIssue;
+  const startMsg = uIssue ? `Your team — ${uIssue}.` : oIssue ? `Opponent team — ${oIssue}.` : "";
+  const nameOf = (slug: string) => bySlug.get(slug)?.name ?? slug;
 
-  const setSlot = (side: Side, idx: number, slug: string | null) => {
-    const setter = side === "user" ? setUserTeam : setOppTeam;
-    setter((t) => t.map((s, i) => (i === idx ? slug : s)));
-  };
+  const setSlot = (side: Side, idx: number, slug: string | null) =>
+    (side === "user" ? setUserTeam : setOppTeam)((t) => t.map((s, i) => (i === idx ? slug : s)));
   const loadTeam = (side: Side, teamId: string) => {
     const t = teams.find((x) => x.id === teamId);
-    const filled = emptyTeam().map((_, i) => t?.members[i] ?? null);
-    (side === "user" ? setUserTeam : setOppTeam)(filled);
-    if (t?.sets) {
-      setLoadedSets((prev) => {
-        const next = { ...prev };
-        for (const [slug, set] of Object.entries(t.sets!)) next[`${side}:${slug}`] = set;
-        return next;
-      });
-    }
+    if (!t) return;
+    (side === "user" ? setUserTeam : setOppTeam)(emptyTeam().map((_, i) => t.members[i] ?? null));
+    if (t.sets) setLoadedSets((prev) => {
+      const next = { ...prev };
+      for (const [slug, set] of Object.entries(t.sets!)) next[`${side}:${slug}`] = set;
+      return next;
+    });
   };
 
-  // ---- Preview / lead phase (hooks must run every render) -------------------
   const leads = useMemo(() => {
     const toC = (team: (string | null)[]) =>
-      team
-        .filter((s): s is string => !!s)
-        .map((s) => bySlug.get(s))
-        .filter(Boolean)
+      team.filter((s): s is string => !!s).map((s) => bySlug.get(s)).filter(Boolean)
         .map((ref) => combatantFromRef(ref!, emptySlot(ref!.slug)));
-    const u = toC(userTeam);
-    const o = toC(oppTeam);
+    const u = toC(userTeam), o = toC(oppTeam);
     if (u.length < 2 || o.length < 2) return [];
-    return analyzeLeads({ userCandidates: u, opponentCandidates: o, field: DEFAULT_FIELD }).slice(0, 8);
+    return analyzeLeads({ userCandidates: u, opponentCandidates: o, field: DEFAULT_FIELD }).slice(0, 6);
   }, [userTeam, oppTeam, bySlug]);
-
-  const nameOf = (slug: string) => bySlug.get(slug)?.name ?? slug;
 
   if (phase === "battle") {
     return (
       <BattleView
-        bySlug={bySlug}
-        items={items}
-        megaForms={megaForms}
+        pokemon={pokemon} bySlug={bySlug} items={items} megaForms={megaForms}
         userTeam={userTeam.filter((s): s is string => !!s)}
         oppTeam={oppTeam.filter((s): s is string => !!s)}
-        loadedSets={loadedSets}
-        onBack={() => setPhase("preview")}
+        loadedSets={loadedSets} onBack={() => setPhase("preview")}
+        advancedTools={advancedTools}
       />
     );
   }
 
-  const maxLeadScore = Math.max(0.001, ...leads.map((l) => l.score));
+  const teamSheets: {
+    side: Side; title: string; dot: string; border: string; loadLabel: string;
+    badgeText: string; badgeBg: string; team: (string | null)[];
+  }[] = [
+    { side: "user", title: "Your team", dot: POS, border: "oklch(72% 0.13 150 / 0.35)", loadLabel: "Load your team…",
+      badgeText: uIssue || "Battle ready", badgeBg: uIssue ? WARN : POS, team: userTeam },
+    { side: "opponent", title: "Opponent team", dot: NEG, border: "oklch(68% 0.16 25 / 0.35)", loadLabel: "Load prebuilt…",
+      badgeText: oIssue || "Battle ready", badgeBg: oIssue ? WARN : POS, team: oppTeam },
+  ];
 
   return (
-    <div className="space-y-[18px]">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[13px] font-bold uppercase tracking-wide text-t2">Set up your battle</span>
-        <Walkthrough id="choicedex-tour" steps={CD_TOUR} />
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, fontSize: 13, color: "oklch(94% 0.004 240)" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 6px", letterSpacing: "-0.02em" }}>ChoiceDex</h1>
+          <p style={{ maxWidth: 620, fontSize: 13, color: "oklch(72% 0.01 240)", lineHeight: 1.55, margin: 0 }}>
+            Set up both teams, start the battle, and get the best options each round as you enter what happened. All calculations are provisional and unverified for Pokémon Champions.
+          </p>
+        </div>
+        <button onClick={() => { setTourOpen(true); setTourStep(0); }} style={{ borderRadius: 9, border: "1px solid oklch(30% 0.01 240)", background: "oklch(20% 0.008 240)", color: "oklch(72% 0.01 240)", padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Take the tour</button>
       </div>
 
-      <OnceTutorial id="choicedex" title="How to use ChoiceDex" points={CD_TIPS} />
+      {showTips && (
+        <div style={{ borderRadius: 12, border: "1px solid oklch(30% 0.01 240)", background: "oklch(20% 0.008 240)", padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <p style={{ margin: 0, flex: 1, minWidth: 0, fontSize: 12, lineHeight: 1.55, color: "oklch(72% 0.01 240)" }}>
+            <span style={{ fontWeight: 800, color: "oklch(90% 0.004 240)" }}>Three steps.</span> Fill 2–6 slots per side, press Start battle, then each round pick your two actions, enter what happened, and read the top recommendation.
+          </p>
+          <button onClick={() => setShowTips(false)} style={{ flexShrink: 0, borderRadius: 7, border: "1px solid oklch(30% 0.01 240)", background: "none", color: "oklch(66% 0.012 240)", padding: "3px 9px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Got it ✕</button>
+        </div>
+      )}
 
-      {/* Team sheets + start column */}
-      <div className="grid items-start gap-4 lg:grid-cols-[1fr_minmax(132px,0.42fr)_1fr]">
-        <TeamColumn
-          title="Your team" side="user" tone="pos" team={userTeam} teams={teams} pokemon={pokemon}
-          issue={userIssue}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(132px,0.42fr) minmax(0,1fr)", gap: 12, alignItems: "stretch" }}>
+        <TeamSheet
+          sheet={teamSheets[0]!} pokemon={pokemon} teams={teams} usage={usage}
+          editing={editing} setEditing={setEditing} pickQuery={pickQuery} setPickQuery={setPickQuery}
           onLoad={(id) => loadTeam("user", id)} onSet={(i, s) => setSlot("user", i, s)}
         />
-
-        <div className="flex flex-col items-stretch gap-2 self-center text-center">
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center" }}>
           <button
-            disabled={!canStart}
             onClick={() => canStart && setPhase("battle")}
-            className="rounded-xl bg-acc px-4 py-3.5 text-sm font-extrabold text-bg hover:bg-accs disabled:opacity-50"
-            title={startMsg}
-          >
-            Start battle
-          </button>
-          {canStart ? (
-            <p className="text-[11px] text-t3">Both sides legal.</p>
-          ) : (
-            <p className="text-[11px] text-neg">{startMsg}</p>
-          )}
+            style={{ borderRadius: 12, background: canStart ? ACC : "oklch(45% 0.02 240)", color: "oklch(16% 0.008 240)", fontWeight: 800, padding: "14px 18px", border: "none", fontSize: 14, cursor: canStart ? "pointer" : "default", opacity: canStart ? 1 : 0.5, width: "100%" }}
+          >Start battle</button>
+          {!canStart && <p style={{ margin: 0, fontSize: 11, lineHeight: 1.4, color: "oklch(68% 0.16 25)" }}>{startMsg}</p>}
+          {canStart && <p style={{ margin: 0, fontSize: 11, lineHeight: 1.4, color: "oklch(56% 0.012 240)" }}>Both sides legal — {userTeam.filter(Boolean).length} vs {oppTeam.filter(Boolean).length}.</p>}
         </div>
-
-        <TeamColumn
-          title="Opponent team" side="opponent" tone="neg" team={oppTeam} teams={teams} pokemon={pokemon}
-          issue={oppIssue}
+        <TeamSheet
+          sheet={teamSheets[1]!} pokemon={pokemon} teams={teams} usage={usage}
+          editing={editing} setEditing={setEditing} pickQuery={pickQuery} setPickQuery={setPickQuery}
           onLoad={(id) => loadTeam("opponent", id)} onSet={(i, s) => setSlot("opponent", i, s)}
         />
       </div>
 
       {/* Pick your lead */}
-      <section className="rounded-[14px] border border-line bg-panel p-4">
-        <div className="mb-3 flex items-baseline gap-2">
-          <h3 className="text-[13px] font-extrabold text-t1">Pick your lead</h3>
-          <span className="text-[11px] text-t3">ranked against their six</span>
+      <section style={{ borderRadius: 14, border: "1px solid oklch(30% 0.01 240)", background: "oklch(20% 0.008 240)", padding: 16 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, margin: 0, letterSpacing: "-0.01em" }}>Pick your lead</h3>
+          <span style={{ fontSize: 11, color: "oklch(54% 0.012 240)" }}>ranked against their six</span>
         </div>
         {leads.length === 0 ? (
-          <p className="text-sm text-t3">Add at least 2 Pokémon to each team to rank opening pairs.</p>
+          <p style={{ fontSize: 13, color: "oklch(56% 0.012 240)", margin: 0 }}>Add at least 2 Pokémon to each team to rank opening pairs.</p>
         ) : (
-          <div className="grid gap-[9px] sm:grid-cols-2 lg:grid-cols-3">
-            {leads.slice(0, 6).map((l, i) => (
-              <div
-                key={i}
-                className={`flex flex-col gap-2 rounded-xl p-[11px] ${
-                  i === 0 ? "border border-accln bg-accbg" : "border border-line bg-raise"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-extrabold ${i === 0 ? "bg-acc text-bg" : "bg-soft text-t2"}`}>#{i + 1}</span>
-                  <span className="font-mono text-[12px] tabular-nums text-t2">{l.score.toFixed(3)}</span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 9 }}>
+            {leads.map((l, i) => {
+              const first = i === 0;
+              return (
+                <div key={i} style={{ borderRadius: 12, border: `1px solid ${first ? "oklch(72% 0.1 190 / 0.4)" : "oklch(30% 0.01 240)"}`, background: first ? "oklch(72% 0.1 190 / 0.08)" : RAISE, padding: 11, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <span style={{ borderRadius: 6, background: first ? ACC : "oklch(45% 0.03 240)", color: "oklch(16% 0.008 240)", fontWeight: 800, fontSize: 10, padding: "2px 6px" }}>#{i + 1}</span>
+                    <span className="mono" style={{ marginLeft: "auto", fontSize: 11, color: first ? "oklch(82% 0.1 190)" : "oklch(64% 0.012 240)" }}>{l.score.toFixed(3)}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Sprite species={l.lead[0]} w={48} h={36} scale={1.2} />
+                    <Sprite species={l.lead[1]} w={48} h={36} scale={1.2} />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.25 }}>{nameOf(l.lead[0])} + {nameOf(l.lead[1])}</span>
+                  <span style={{ height: 4, borderRadius: 2, background: "oklch(30% 0.01 240)", overflow: "hidden", display: "block" }}>
+                    <span style={{ display: "block", height: "100%", width: `${Math.round(l.score * 100)}%`, background: first ? ACC : "oklch(50% 0.04 240)" }} />
+                  </span>
+                  <span style={{ fontSize: 10, color: "oklch(56% 0.012 240)", lineHeight: 1.4 }}>best vs {nameOf(l.bestAgainst)}<br />worst vs {nameOf(l.worstAgainst)}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  {l.lead.map((s) => (
-                    <span key={s} className="inline-flex h-9 w-9 items-center justify-center overflow-hidden">
-                      <PokeIcon species={s} className="scale-[1.2]" />
-                    </span>
-                  ))}
-                </div>
-                <span className="text-[12px] font-bold text-t1">{nameOf(l.lead[0])} + {nameOf(l.lead[1])}</span>
-                <span className="h-1 overflow-hidden rounded bg-soft">
-                  <span className="block h-full rounded bg-acc" style={{ width: `${(l.score / maxLeadScore) * 100}%` }} />
-                </span>
-                <span className="text-[10px] leading-tight text-t3">
-                  best vs {nameOf(l.bestAgainst)}<br />worst vs {nameOf(l.worstAgainst)}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
+
+      {advancedTools}
+
+      {tourOpen && (
+        <TourModal step={tourStep} onStep={setTourStep} onClose={() => setTourOpen(false)} />
+      )}
     </div>
   );
 }
 
-function TeamColumn({
-  title,
-  side,
-  tone,
-  team,
-  teams,
-  pokemon,
-  issue,
-  onLoad,
-  onSet,
+// ===========================================================================
+// Setup: team sheet + slot picker
+// ===========================================================================
+
+function TeamSheet({
+  sheet, pokemon, teams, usage, editing, setEditing, pickQuery, setPickQuery, onLoad, onSet,
 }: {
-  title: string;
-  side: Side;
-  tone: "pos" | "neg";
-  team: (string | null)[];
-  teams: SavedTeam[];
+  sheet: { side: Side; title: string; dot: string; border: string; loadLabel: string; badgeText: string; badgeBg: string; team: (string | null)[] };
   pokemon: PokemonRef[];
-  issue: string | null;
+  teams: SavedTeam[];
+  usage: Record<string, number>;
+  editing: string | null;
+  setEditing: (v: string | null) => void;
+  pickQuery: string;
+  setPickQuery: (v: string) => void;
   onLoad: (id: string) => void;
   onSet: (idx: number, slug: string | null) => void;
 }) {
-  const [editing, setEditing] = useState<number | null>(null);
   const bySlug = useMemo(() => bySlugMap(pokemon), [pokemon]);
-  const toneVar = tone === "pos" ? "var(--pos)" : "var(--neg)";
-  const filled = team.filter(Boolean).length;
-
   return (
-    <section
-      className="rounded-[14px] bg-panel p-[14px]"
-      style={{ border: `1px solid color-mix(in srgb, ${toneVar} 35%, transparent)` }}
-    >
-      <div className="mb-3 flex items-center gap-2">
-        <span className="h-[9px] w-[9px] shrink-0 rounded-[3px]" style={{ background: toneVar }} />
-        <h3 className="text-[13px] font-extrabold text-t1">{title}</h3>
-        <span
-          className="whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-extrabold text-bg"
-          style={{ background: issue ? "var(--warn)" : "var(--pos)" }}
-        >
-          {issue ? "not legal" : `legal · ${filled}/6`}
-        </span>
+    <section style={{ borderRadius: 14, border: `1px solid ${sheet.border}`, background: "oklch(20% 0.008 240)", padding: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 11, flexWrap: "wrap" }}>
+        <span style={{ width: 9, height: 9, borderRadius: 3, background: sheet.dot }} />
+        <h3 style={{ fontSize: 13, fontWeight: 800, letterSpacing: "-0.01em", margin: 0 }}>{sheet.title}</h3>
+        <span style={{ borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap", background: sheet.badgeBg, color: "oklch(16% 0.008 240)" }}>{sheet.badgeText}</span>
         <select
           defaultValue=""
-          onChange={(e) => { if (e.target.value) onLoad(e.target.value); e.target.value = ""; }}
-          className="ml-auto rounded-[9px] border border-line bg-raise px-2 py-1 text-xs text-t1"
+          onChange={(e) => { if (e.target.value) onLoad(e.target.value); e.currentTarget.value = ""; }}
+          style={{ marginLeft: "auto", borderRadius: 9, height: 32, border: "1px solid oklch(30% 0.01 240)", background: "oklch(24% 0.008 240)", color: "oklch(88% 0.01 240)", padding: "0 10px", fontSize: 12 }}
         >
-          <option value="">{side === "opponent" ? "Load prebuilt…" : "Load your team…"}</option>
+          <option value="">{sheet.loadLabel}</option>
           {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
       </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        {team.map((slug, i) => {
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 8 }}>
+        {sheet.team.map((slug, i) => {
           const p = slug ? bySlug.get(slug) : undefined;
+          const key = `${sheet.side}:${i}`;
+          const isEditing = editing === key;
           return (
-            <div key={i} className="relative">
-              {p ? (
-                <button
-                  onClick={() => setEditing(editing === i ? null : i)}
-                  className="flex w-full flex-col items-center gap-1 rounded-xl border border-line bg-raise p-2"
-                >
-                  <span className="grid h-11 w-14 place-items-center overflow-hidden">
-                    <PokeIcon species={slug!} className="scale-[1.3]" />
-                  </span>
-                  <span className="truncate text-[11px] font-bold">{p.name}</span>
-                  <span className="flex gap-1">
-                    {p.types.map((t) => (
-                      <span key={t} className="h-[4px] w-[22px] rounded-full" style={{ background: TYPE_HEX[t as PokemonType] }} />
-                    ))}
-                  </span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => setEditing(editing === i ? null : i)}
-                  className="flex h-[84px] w-full flex-col items-center justify-center rounded-xl border border-dashed bg-bg text-t3 hover:border-accln"
-                  style={{ borderColor: "var(--line)" }}
-                >
-                  <span className="text-xl text-t3">+</span>
-                  <span className="text-[10px]">empty</span>
-                </button>
-              )}
-              {editing === i && (
+            <div key={i} style={{ position: "relative" }}>
+              <button
+                onClick={() => { setEditing(isEditing ? null : key); setPickQuery(""); }}
+                style={{ width: "100%", borderRadius: 12, border: isEditing ? `1px solid ${ACC}` : p ? "1px solid oklch(30% 0.01 240)" : "1px dashed oklch(34% 0.01 240)", background: p ? RAISE : "oklch(18% 0.008 240)", cursor: "pointer", padding: "9px 6px 8px", display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}
+              >
+                {p ? (
+                  <>
+                    <Sprite species={p.slug} w={56} h={44} scale={1.3} />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "oklch(94% 0.004 240)", lineHeight: 1.2, textAlign: "center" }}>{p.name}</span>
+                    <span style={{ display: "flex", gap: 3, flexWrap: "wrap", justifyContent: "center" }}>
+                      {typesFor(p.types).map((t) => (
+                        <span key={t.name} style={{ borderRadius: 5, padding: "1px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", color: "#fff", background: t.hex }}>{t.short}</span>
+                      ))}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ width: 56, height: 44, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "oklch(42% 0.01 240)" }}>+</span>
+                    <span style={{ fontSize: 10, color: "oklch(48% 0.01 240)" }}>empty</span>
+                  </>
+                )}
+              </button>
+              {isEditing && (
                 <SlotPicker
-                  pokemon={pokemon}
-                  onPick={(s) => { onSet(i, s); setEditing(null); }}
+                  pokemon={pokemon} usage={usage} query={pickQuery} setQuery={setPickQuery}
+                  onPick={(s) => { onSet(i, s); setEditing(null); setPickQuery(""); }}
                   onClear={() => { onSet(i, null); setEditing(null); }}
                   onClose={() => setEditing(null)}
                 />
@@ -451,172 +415,100 @@ function TeamColumn({
 }
 
 function SlotPicker({
-  pokemon,
-  onPick,
-  onClear,
-  onClose,
+  pokemon, usage, query, setQuery, onPick, onClear, onClose,
 }: {
   pokemon: PokemonRef[];
+  usage: Record<string, number>;
+  query: string;
+  setQuery: (v: string) => void;
   onPick: (slug: string) => void;
   onClear: () => void;
   onClose: () => void;
 }) {
-  const [q, setQ] = useState("");
   const results = useMemo(() => {
-    const n = q.trim().toLowerCase();
+    const n = query.trim().toLowerCase();
     const list = n
-      ? pokemon.filter(
-          (p) =>
-            p.name.toLowerCase().includes(n) ||
-            p.types.some((t) => t.toLowerCase().includes(n)) ||
-            p.abilities.some((a) => a.toLowerCase().includes(n)),
-        )
+      ? pokemon.filter((p) => p.name.toLowerCase().includes(n) || p.types.some((t) => t.toLowerCase().includes(n)) || p.abilities.some((a) => a.toLowerCase().includes(n)))
       : pokemon;
-    return list.slice(0, 40);
-  }, [q, pokemon]);
-
+    return list.slice(0, 60);
+  }, [query, pokemon]);
   return (
-    <div
-      className="absolute left-0 top-full z-30 mt-1 w-[246px] max-w-[44vw] rounded-xl border border-line bg-panel p-2"
-      style={{ boxShadow: "0 20px 44px rgba(0,0,0,0.5)" }}
-    >
-      <div className="mb-1 flex gap-1">
+    <div style={{ position: "absolute", left: 0, top: "100%", zIndex: 30, marginTop: 6, width: 246, maxWidth: "min(246px, 44vw)", borderRadius: 12, border: "1px solid oklch(32% 0.01 240)", background: "oklch(20% 0.008 240)", padding: 9, boxShadow: "0 20px 44px rgba(0,0,0,.5)" }}>
+      <div style={{ display: "flex", gap: 5, marginBottom: 6 }}>
         <input
-          autoFocus
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search name, type, ability…"
-          className="w-full rounded-lg border border-accln bg-bg px-2 py-1 text-xs"
+          autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, type, ability…"
+          style={{ flex: 1, minWidth: 0, borderRadius: 8, height: 30, border: "1px solid oklch(30% 0.01 240)", background: "oklch(16% 0.008 240)", color: "oklch(94% 0.004 240)", padding: "0 9px", fontSize: 12 }}
         />
-        <button onClick={onClose} className="rounded-lg border border-line px-2 text-xs text-t2">✕</button>
+        <button onClick={onClose} style={{ borderRadius: 8, border: "1px solid oklch(30% 0.01 240)", background: "none", color: "oklch(72% 0.01 240)", padding: "0 9px", fontSize: 12, cursor: "pointer" }}>✕</button>
       </div>
-      <div className="max-h-[220px] overflow-y-auto">
+      <div style={{ maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
         {results.map((p) => (
-          <button
-            key={p.slug}
-            onClick={() => onPick(p.slug)}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs hover:bg-soft"
-          >
-            <span className="inline-flex h-6 w-8 items-center justify-center overflow-hidden">
-              <PokeIcon species={p.slug} />
-            </span>
-            <span className="min-w-0 flex-1 truncate">{p.name}</span>
-            <span className="flex shrink-0 gap-0.5">
-              {p.types.map((t) => <TypeBadge key={t} type={t as PokemonType} />)}
-            </span>
+          <button key={p.slug} onClick={() => onPick(p.slug)} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", border: "none", background: "none", borderRadius: 8, padding: "3px 6px", cursor: "pointer", textAlign: "left" }}>
+            <Sprite species={p.slug} w={40} h={30} />
+            <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: "oklch(94% 0.004 240)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
+            <span className="mono" style={{ fontSize: 10, color: "oklch(56% 0.012 240)", flexShrink: 0 }}>{usage[p.slug] != null ? `${usage[p.slug]}%` : ""}</span>
           </button>
         ))}
       </div>
-      <button onClick={onClear} className="mt-1 w-full rounded-lg border border-line py-0.5 text-xs text-t3 hover:border-neg">
-        Clear slot
-      </button>
+      <button onClick={onClear} style={{ width: "100%", marginTop: 6, borderRadius: 8, border: "1px solid oklch(30% 0.01 240)", background: "none", color: "oklch(72% 0.01 240)", padding: "5px 0", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Clear slot</button>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Battle view: game-like layout + live recommendations.
-// ---------------------------------------------------------------------------
-
-/** Per-Pokémon battle state, tracked by species slug and persisted across
- *  switches (HP, status, item, ability, spread, and stages stay with the mon). */
-interface MonState {
-  hpPct: number;
-  status: StatusCondition;
-  ability: string;
-  item: string;
-  /** Whether the held item has been consumed (Berry eaten, Sash/Orb spent, …). */
-  itemUsed: boolean;
-  nature: string;
-  evs: Partial<Record<StatKey, number>>;
-  stages: StageStats;
-  /** Treat this Pokémon's moves as critical hits in the damage readout. */
-  crit: boolean;
-  /** Moves confirmed used (opponent side): now known 100%, highlighted. */
-  knownMoves: string[];
-  /** Whether this Pokémon has Mega Evolved (uses its Mega forme stats/typing). */
-  mega: boolean;
-  /** Ditto only: slug of the opposing active Pokémon it has Transformed into. */
-  transformInto?: string | null;
-  /** Dondozo only: boosted +2 to every stat by an allied Tatsugiri (Commander). */
-  commander?: boolean;
-  /** Zoroark only: slug of the teammate it is disguised as (Illusion, cosmetic). */
-  illusionAs?: string | null;
-}
-const emptyMon = (): MonState => ({
-  hpPct: 100,
-  status: "none",
-  ability: "",
-  item: "None",
-  itemUsed: false,
-  nature: "Serious",
-  evs: {},
-  stages: { ...NEUTRAL_STAGES },
-  crit: false,
-  knownMoves: [],
-  mega: false,
-});
-
-/** One side's field conditions: screens, Tailwind, and entry hazards. */
-interface SideCond {
-  tailwind: boolean;
-  reflect: boolean;
-  lightScreen: boolean;
-  auroraVeil: boolean;
-  stealthRock: boolean;
-  spikes: number;
-  toxicSpikes: number;
-  stickyWeb: boolean;
-}
-const emptyCond = (): SideCond => ({
-  tailwind: false,
-  reflect: false,
-  lightScreen: false,
-  auroraVeil: false,
-  stealthRock: false,
-  spikes: 0,
-  toxicSpikes: 0,
-  stickyWeb: false,
-});
-const hasHazards = (c: SideCond): boolean =>
-  c.stealthRock || c.spikes > 0 || c.toxicSpikes > 0 || c.stickyWeb;
-
-/** A committed action for one of your active spots this round. */
-interface Order {
-  actor: string; // your acting mon's display name
-  move: string;
-  target: string; // target mon's display name
-}
-interface LogLine {
-  actor: "user" | "opp" | "neutral";
-  text: string;
-}
-interface LogRound {
-  round: number;
-  lines: LogLine[];
+function TourModal({ step, onStep, onClose }: { step: number; onStep: (n: number) => void; onClose: () => void }) {
+  const t = TOUR[step] ?? TOUR[0]!;
+  const last = step === TOUR.length - 1;
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.62)", padding: 16 }}>
+      <div style={{ width: "100%", maxWidth: 440, borderRadius: 14, border: "1px solid oklch(30% 0.01 240)", background: "oklch(20% 0.008 240)", padding: 20, boxShadow: "0 18px 40px rgba(0,0,0,.45)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "oklch(54% 0.012 240)" }}>Step {step + 1} of {TOUR.length}</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 11, color: "oklch(54% 0.012 240)", cursor: "pointer" }}>Skip tour ✕</button>
+        </div>
+        <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0 }}>{t.title}</h3>
+        <p style={{ margin: "9px 0 0", fontSize: 13, lineHeight: 1.6, color: "oklch(76% 0.01 240)" }}>{t.body}</p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>
+          <span style={{ display: "flex", gap: 5 }}>
+            {TOUR.map((_, i) => <span key={i} style={{ width: 6, height: 6, borderRadius: 999, background: i === step ? ACC : "oklch(30% 0.01 240)" }} />)}
+          </span>
+          <span style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => onStep(Math.max(0, step - 1))} style={{ borderRadius: 8, border: "1px solid oklch(30% 0.01 240)", background: "none", color: "oklch(76% 0.01 240)", padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Back</button>
+            <button onClick={() => (last ? onClose() : onStep(step + 1))} style={{ borderRadius: 8, background: ACC, color: "oklch(16% 0.008 240)", border: "none", padding: "5px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>{last ? "Finish" : "Next"}</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-function monFromSet(set: KnownSet | undefined): MonState {
-  const base = emptyMon();
-  if (!set) return base;
-  return {
-    ...base,
-    evs: set.evs ?? {},
-    nature: set.nature || base.nature,
-    item: set.item || base.item,
-    ability: set.ability || base.ability,
-  };
+// ===========================================================================
+// Battle view
+// ===========================================================================
+
+const SPOTS: Record<string, { scale: number; padW: string; padH: string; padGap: string; flip: number; lift: string }> = {
+  "opponent:0": { scale: 3.2, padW: "92%", padH: "19px", padGap: "-8px", flip: 1, lift: "18px" },
+  "opponent:1": { scale: 3.2, padW: "92%", padH: "19px", padGap: "-8px", flip: 1, lift: "0px" },
+  "user:0": { scale: 3.2, padW: "92%", padH: "19px", padGap: "-8px", flip: -1, lift: "0px" },
+  "user:1": { scale: 3.2, padW: "92%", padH: "19px", padGap: "-8px", flip: -1, lift: "18px" },
+};
+
+function koText(d: ReturnType<typeof calculateDamage> | null): { text: string; color: string } {
+  const tert = "oklch(48% 0.01 240)";
+  if (!d || d.maxDamage <= 0) return { text: "-", color: tert };
+  let text: string;
+  if (d.ohkoProbability >= 1) text = "1HKO";
+  else if (d.ohkoProbability > 0) text = `${Math.round(d.ohkoProbability * 100)}% 1HKO`;
+  else if ((d.twoHitKoProbability ?? 0) >= 1) text = "2HKO";
+  else if ((d.twoHitKoProbability ?? 0) > 0) text = `${Math.round((d.twoHitKoProbability ?? 0) * 100)}% 2HKO`;
+  else text = `${Math.max(2, Math.ceil(100 / (d.maxPercent || 1)))}HKO`;
+  const color = text.includes("1HKO") ? POS : WARN;
+  return { text, color };
 }
 
 function BattleView({
-  bySlug,
-  items,
-  megaForms,
-  userTeam,
-  oppTeam,
-  loadedSets,
-  onBack,
+  pokemon, bySlug, items, megaForms, userTeam, oppTeam, loadedSets, onBack, advancedTools,
 }: {
+  pokemon: PokemonRef[];
   bySlug: Map<string, PokemonRef>;
   items: string[];
   megaForms: Record<string, MegaForme>;
@@ -624,35 +516,28 @@ function BattleView({
   oppTeam: string[];
   loadedSets: Record<string, KnownSet>;
   onBack: () => void;
+  advancedTools?: React.ReactNode;
 }) {
-  const refBySlug = bySlug;
-  /** Display name for a slug, falling back to the slug when not in the pool. */
-  const nameOf = (s: string): string => refBySlug.get(s)?.name ?? s;
-  // Abilities selectable in-match: every ability held by a Pokémon in this game
-  // (covers Skill Swap / Trace / Role Play copying) plus move/ability results.
+  void pokemon;
+  const nameOf = (s: string): string => bySlug.get(s)?.name ?? s;
   const matchAbilities = useMemo(() => {
     const set = new Set<string>(ABILITY_CHANGE_RESULTS);
-    for (const s of [...userTeam, ...oppTeam]) {
-      for (const a of bySlug.get(s)?.abilities ?? []) set.add(a);
-    }
+    for (const s of [...userTeam, ...oppTeam]) for (const a of bySlug.get(s)?.abilities ?? []) set.add(a);
     return [...set].sort();
   }, [userTeam, oppTeam, bySlug]);
+
   const [round, setRound] = useState(1);
-  // Teams are held in state so "swap sides" can flip perspective mid-battle.
   const [uTeam, setUTeam] = useState<string[]>(userTeam);
   const [oTeam, setOTeam] = useState<string[]>(oppTeam);
-  // Which team member occupies each of the two active spots per side.
-  const [activeUser, setActiveUser] = useState<[string | null, string | null]>([
-    userTeam[0] ?? null,
-    userTeam[1] ?? null,
-  ]);
-  const [activeOpp, setActiveOpp] = useState<[string | null, string | null]>([
-    oppTeam[0] ?? null,
-    oppTeam[1] ?? null,
-  ]);
-  // Per-Pokémon battle state, keyed by SIDE + species slug so the user's and the
-  // opponent's copy of the same species are independent (a mirror match keeps two
-  // separate HP bars), while HP/status/item persist across that side's switches.
+  const [activeUser, setActiveUser] = useState<[string, string]>([userTeam[0]!, userTeam[1] ?? userTeam[0]!]);
+  const [activeOpp, setActiveOpp] = useState<[string, string]>([oppTeam[0]!, oppTeam[1] ?? oppTeam[0]!]);
+  const [sentUser, setSentUser] = useState<string[]>([userTeam[0]!, userTeam[1]].filter(Boolean) as string[]);
+  const [sentOpp, setSentOpp] = useState<string[]>([oppTeam[0]!, oppTeam[1]].filter(Boolean) as string[]);
+  const [selUser, setSelUser] = useState<0 | 1>(0);
+  const [selOpp, setSelOpp] = useState<0 | 1>(0);
+  const [target, setTarget] = useState<Record<string, 0 | 1>>({});
+  const [spreadOpen, setSpreadOpen] = useState(false);
+
   const monKey = (side: Side, slug: string) => `${side}:${slug}`;
   const [mon, setMon] = useState<Record<string, MonState>>(() => {
     const init: Record<string, MonState> = {};
@@ -664,23 +549,18 @@ function BattleView({
   const [terrain, setTerrain] = useState<Terrain>("none");
   const [trickRoom, setTrickRoom] = useState(false);
   const [gravity, setGravity] = useState(false);
+  const [magicRoom, setMagicRoom] = useState(false);
+  const [wonderRoom, setWonderRoom] = useState(false);
   const [uCond, setUCond] = useState<SideCond>(emptyCond());
   const [oCond, setOCond] = useState<SideCond>(emptyCond());
   const [background, setBackground] = useState<string>("meadow");
-  // This round's orders, one per your active spot. null = no order yet.
-  const [orders, setOrders] = useState<[Order | null, Order | null]>([null, null]);
-  // Committed rounds; each is a list of log lines. logIdx pages the view.
+  const [orders, setOrders] = useState<{ 0?: Order; 1?: Order }>({});
   const [log, setLog] = useState<LogRound[]>([]);
   const [logIdx, setLogIdx] = useState(0);
+  const [itemPicker, setItemPicker] = useState<Side | null>(null);
+  const [itemQuery, setItemQuery] = useState("");
 
-  // Stable side-aware signature, so a saved battle only resumes for the same
-  // side assignments and slot order - not just the same twelve Pokémon.
-  const teamSig = useMemo(
-    () => `user:${userTeam.join("|")}::opponent:${oppTeam.join("|")}`,
-    [userTeam, oppTeam],
-  );
-
-  // Persist the whole battle so leaving and returning to the tab reopens it.
+  const teamSig = useMemo(() => `user:${userTeam.join("|")}::opponent:${oppTeam.join("|")}`, [userTeam, oppTeam]);
   const battleFirst = useRef(true);
   useEffect(() => {
     if (battleFirst.current) {
@@ -689,874 +569,749 @@ function BattleView({
         const raw = localStorage.getItem(BATTLE_KEY);
         if (raw) {
           const s = JSON.parse(raw);
-          if (s.sig !== teamSig) return; // stale battle for different teams
-          if (typeof s.ts === "number" && Date.now() - s.ts > BATTLE_TTL_MS) {
-            localStorage.removeItem(BATTLE_KEY); // don't reopen an old battle
+          if (s.sig !== teamSig || (typeof s.ts === "number" && Date.now() - s.ts > BATTLE_TTL_MS)) {
+            localStorage.removeItem(BATTLE_KEY);
             return;
           }
           if (Array.isArray(s.uTeam)) setUTeam(s.uTeam);
           if (Array.isArray(s.oTeam)) setOTeam(s.oTeam);
           if (s.activeUser) setActiveUser(s.activeUser);
           if (s.activeOpp) setActiveOpp(s.activeOpp);
+          if (s.sentUser) setSentUser(s.sentUser);
+          if (s.sentOpp) setSentOpp(s.sentOpp);
           if (s.mon) setMon(s.mon);
           if (s.weather) setWeather(s.weather);
           if (s.terrain) setTerrain(s.terrain);
           if (typeof s.trickRoom === "boolean") setTrickRoom(s.trickRoom);
           if (typeof s.gravity === "boolean") setGravity(s.gravity);
+          if (typeof s.magicRoom === "boolean") setMagicRoom(s.magicRoom);
+          if (typeof s.wonderRoom === "boolean") setWonderRoom(s.wonderRoom);
           if (s.uCond) setUCond(s.uCond);
           if (s.oCond) setOCond(s.oCond);
           if (typeof s.round === "number") setRound(s.round);
           if (s.background) setBackground(s.background);
+          if (Array.isArray(s.log)) { setLog(s.log); setLogIdx(Math.max(0, s.log.length - 1)); }
         }
-      } catch {
-        /* ignore corrupt storage */
-      }
+      } catch { /* ignore */ }
       return;
     }
     try {
-      localStorage.setItem(
-        BATTLE_KEY,
-        JSON.stringify({ ts: Date.now(), sig: teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background }),
-      );
-    } catch {
-      /* ignore quota */
-    }
-  }, [teamSig, uTeam, oTeam, activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, round, background]);
+      localStorage.setItem(BATTLE_KEY, JSON.stringify({ ts: Date.now(), sig: teamSig, uTeam, oTeam, activeUser, activeOpp, sentUser, sentOpp, mon, weather, terrain, trickRoom, gravity, magicRoom, wonderRoom, uCond, oCond, round, background, log }));
+    } catch { /* ignore */ }
+  }, [teamSig, uTeam, oTeam, activeUser, activeOpp, sentUser, sentOpp, mon, weather, terrain, trickRoom, gravity, magicRoom, wonderRoom, uCond, oCond, round, background, log]);
 
-  const monOf = (side: Side, slug: string | null): MonState =>
-    (slug && mon[monKey(side, slug)]) || emptyMon();
-  const patchMon = (side: Side, slug: string | null, p: Partial<MonState>) => {
-    if (!slug) return;
+  const monOf = (side: Side, slug: string): MonState => mon[monKey(side, slug)] || emptyMon();
+  const patchMon = (side: Side, slug: string, p: Partial<MonState>) => {
     const k = monKey(side, slug);
     setMon((m) => ({ ...m, [k]: { ...(m[k] ?? emptyMon()), ...p } }));
   };
-  const setActive = (side: Side, idx: 0 | 1, slug: string | null) =>
-    (side === "user" ? setActiveUser : setActiveOpp)((a) => {
-      const next = [...a] as [string | null, string | null];
-      next[idx] = slug;
-      return next;
-    });
 
-  const asTuple = (t: readonly PokemonType[]) =>
-    t.slice(0, 2) as [PokemonType] | [PokemonType, PokemonType];
-
-  // Active battle forme for a mon: its Mega (if toggled), or - for Ditto - the
-  // opposing active Pokémon it has Transformed into (copying stats except HP,
-  // typing, ability, movepool, and sprite). Undefined = fights as its base self.
+  const asTuple = (t: readonly PokemonType[]) => t.slice(0, 2) as [PokemonType] | [PokemonType, PokemonType];
   const formeOf = (side: Side, slug: string): SlotForm["forme"] | undefined => {
-    const s = monOf(side, slug);
-    if (s.mega && megaForms[slug]) {
+    const st = monOf(side, slug);
+    if (st.mega && megaForms[slug]) {
       const m = megaForms[slug];
       return { name: m.name, baseStats: m.baseStats, types: asTuple(m.types), ability: m.ability };
     }
-    if (slug === "ditto" && s.transformInto) {
-      const t = refBySlug.get(s.transformInto);
-      const ditto = refBySlug.get("ditto");
-      if (t) {
-        return {
-          name: t.name,
-          // Transform copies every stat except HP, which stays Ditto's own.
-          baseStats: { ...t.baseStats, hp: ditto?.baseStats.hp ?? t.baseStats.hp },
-          types: asTuple(t.types),
-          ability: t.abilities[0] ?? "",
-          moves: t.moves,
-          species: t.slug,
-        };
-      }
+    if (slug === "ditto" && st.transformInto) {
+      const t = bySlug.get(st.transformInto);
+      const ditto = bySlug.get("ditto");
+      if (t) return { name: t.name, baseStats: { ...t.baseStats, hp: ditto?.baseStats.hp ?? t.baseStats.hp }, types: asTuple(t.types), ability: t.abilities[0] ?? "", moves: t.moves, species: t.slug };
     }
     return undefined;
   };
-
   const toSlot = (side: Side, slug: string): SlotForm => {
-    const s = monOf(side, slug);
-    const mega = s.mega ? megaForms[slug] : undefined;
-    // A consumed item no longer applies to damage/speed. A Mega holds its Stone,
-    // which is not removable/consumable, so it overrides the item slot.
-    // Commander: an allied Tatsugiri gives Dondozo +2 to every combat stage,
-    // stacked on top of (not replacing) any manually-entered boosts.
-    const stages = s.commander
-      ? (Object.fromEntries(
-          (Object.keys(s.stages) as (keyof StageStats)[]).map((k) => [
-            k,
-            Math.max(-6, Math.min(6, s.stages[k] + 2)),
-          ]),
-        ) as StageStats)
-      : s.stages;
-    return {
-      ...emptySlot(slug),
-      hpPct: s.hpPct,
-      status: s.status,
-      ability: s.ability,
-      item: mega ? mega.item : s.itemUsed ? "None" : s.item,
-      nature: s.nature,
-      evs: s.evs,
-      stages,
-      forme: formeOf(side, slug),
-    };
-  };
-
-  const allySwitch = (side: Side) =>
-    (side === "user" ? setActiveUser : setActiveOpp)((a) => [a[1], a[0]]);
-
-  // Swap which team is "yours": flip teams, active spots, side conditions, and
-  // re-key each mon's battle state so HP/status follow its Pokémon.
-  const swapSides = () => {
-    setUTeam(oTeam);
-    setOTeam(uTeam);
-    setActiveUser(activeOpp);
-    setActiveOpp(activeUser);
-    setUCond(oCond);
-    setOCond(uCond);
-    setMon((m) => {
-      const next: Record<string, MonState> = {};
-      for (const [k, v] of Object.entries(m)) {
-        next[k.startsWith("user:") ? "opponent:" + k.slice(5) : "user:" + k.slice(10)] = v;
-      }
-      return next;
-    });
+    const st = monOf(side, slug);
+    const mega = st.mega ? megaForms[slug] : undefined;
+    const stages = st.commander
+      ? (Object.fromEntries((Object.keys(st.stages) as (keyof StageStats)[]).map((k) => [k, Math.max(-6, Math.min(6, st.stages[k] + 2))])) as StageStats)
+      : st.stages;
+    return { ...emptySlot(slug), hpPct: st.hpPct, status: st.status, ability: st.ability, item: mega ? mega.item : st.itemUsed ? "None" : st.item, nature: st.nature, evs: st.evs, stages, forme: formeOf(side, slug) };
   };
 
   const built = useMemo(() => {
-    const [u0, u1] = activeUser;
-    const [o0, o1] = activeOpp;
-    if (!u0 || !u1 || !o0 || !o1) return null;
-    const side = (sd: Side, slugs: [string, string], c: SideCond): SideForm => ({
-      slots: [toSlot(sd, slugs[0]), toSlot(sd, slugs[1])],
-      ...c,
-    });
-    const form: TurnForm = {
-      user: side("user", [u0, u1], uCond),
-      opponent: side("opponent", [o0, o1], oCond),
-      weather,
-      terrain,
-      trickRoom,
-      gravity,
-      note: "",
-    };
-    return buildStateWithEntry(form, refBySlug);
+    const side = (sd: Side, slugs: [string, string], c: SideCond): SideForm => ({ slots: [toSlot(sd, slugs[0]), toSlot(sd, slugs[1])], ...c });
+    const form: TurnForm = { user: side("user", activeUser, uCond), opponent: side("opponent", activeOpp, oCond), weather, terrain, trickRoom, gravity, note: "" };
+    return buildStateWithEntry(form, bySlug);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, refBySlug]);
+  }, [activeUser, activeOpp, mon, weather, terrain, trickRoom, gravity, uCond, oCond, bySlug]);
 
-  const recommendations = useMemo(
-    () => (built?.state ? recommend(built.state, { limit: 6 }) : []),
-    [built],
-  );
+  const recommendations = useMemo(() => (built?.state ? recommend(built.state, { limit: 6 }) : []), [built]);
 
-  const abilitiesFor = (slug: string | null) => (slug ? refBySlug.get(slug)?.abilities ?? [] : []);
-  // Legal options for a spot: the side's team minus whoever is in the OTHER spot
-  // (a Pokémon can't be in both active spots at once).
-  const optionsFor = (
-    side: Side,
-    team: string[],
-    active: [string | null, string | null],
-    idx: 0 | 1,
-  ) => {
-    const sibling = active[idx === 0 ? 1 : 0];
-    const current = active[idx];
-    return team
-      // Exclude the sibling (can't be in both spots) and fainted Pokémon - but
-      // always keep whoever currently occupies this spot so it stays visible.
-      .filter((s) => s !== sibling && (s === current || monOf(side, s).hpPct > 0))
-      .map((s) => ({ slug: s, name: nameOf(s) }));
-  };
-
-  // In-battle form changes available on a given active card, by species.
-  const specialFor = (side: Side, slug: string | null): SpecialForm => {
-    if (!slug) return null;
-    const team = side === "user" ? uTeam : oTeam;
-    if (slug === "ditto") {
-      const foes = (side === "user" ? activeOpp : activeUser).filter((x): x is string => !!x);
-      return { kind: "ditto", options: foes.map((s) => ({ slug: s, name: nameOf(s) })) };
-    }
-    if (slug === "dondozo" && team.some((s) => s.startsWith("tatsugiri"))) return { kind: "commander" };
-    if (slug === "zoroark" || slug === "zoroarkhisui") {
-      return {
-        kind: "zoroark",
-        options: team.filter((s) => s !== slug).map((s) => ({ slug: s, name: nameOf(s) })),
-      };
-    }
-    return null;
-  };
-  // Sprite/name shown on the card: Ditto's Transform target, or Zoroark's
-  // Illusion disguise. (Mega display is handled inside ActiveCard.)
-  const disguiseFor = (side: Side, slug: string | null): { species: string; name: string } | undefined => {
-    if (!slug) return undefined;
-    const s = monOf(side, slug);
-    const target = slug === "ditto" && s.transformInto ? s.transformInto : s.illusionAs;
-    if (!target) return undefined;
-    const r = refBySlug.get(target);
-    return r ? { species: r.slug, name: r.name } : undefined;
+  const swapSides = () => {
+    setUTeam(oTeam); setOTeam(uTeam);
+    setActiveUser(activeOpp); setActiveOpp(activeUser);
+    setSentUser(sentOpp); setSentOpp(sentUser);
+    setUCond(oCond); setOCond(uCond);
+    setOrders({});
+    setMon((m) => {
+      const next: Record<string, MonState> = {};
+      for (const [k, v] of Object.entries(m)) next[k.startsWith("user:") ? "opponent:" + k.slice(5) : "user:" + k.slice(9)] = v;
+      return next;
+    });
   };
 
   const userAlive = uTeam.filter((s) => monOf("user", s).hpPct > 0).length;
   const oppAlive = oTeam.filter((s) => monOf("opponent", s).hpPct > 0).length;
   const battleOver = userAlive === 0 || oppAlive === 0;
 
-  const ordersSet = orders.filter(Boolean).length;
-  const fieldBits = (): string[] => {
+  const fieldSummaryBits = (): string[] => {
     const b: string[] = [];
     if (weather !== "none") b.push(weather);
     if (terrain !== "none") b.push(`${terrain} terrain`);
     if (trickRoom) b.push("Trick Room");
     if (gravity) b.push("Gravity");
+    if (magicRoom) b.push("Magic Room");
+    if (wonderRoom) b.push("Wonder Room");
     if (uCond.tailwind) b.push("your Tailwind");
+    if (oCond.tailwind) b.push("their Tailwind");
     return b;
   };
-  const commitRound = () => {
+
+  const advanceRound = () => {
     const lines: LogLine[] = [];
-    for (const o of orders) if (o) lines.push({ actor: "user", text: `${o.actor} used ${o.move} → ${o.target}` });
-    const fb = fieldBits();
-    if (fb.length) lines.push({ actor: "neutral", text: `Field: ${fb.join(", ")}` });
-    if (lines.length === 0) lines.push({ actor: "neutral", text: "No orders recorded." });
-    setLog((l) => {
-      const next = [...l, { round, lines }];
-      setLogIdx(next.length - 1);
-      return next;
+    ([0, 1] as const).forEach((i) => {
+      const o = orders[i];
+      const slug = activeUser[i];
+      if (o) {
+        const tgt = nameOf(activeOpp[o.target]);
+        const mv = built?.state?.user.active[i]?.moves.find((m) => m.name === o.move);
+        const isStatus = !mv || mv.category === "status" || mv.power == null;
+        lines.push({ side: "user", text: `${nameOf(slug)} used ${o.move}${isStatus ? "" : " on " + tgt}.` });
+      } else {
+        lines.push({ side: "neutral", text: `${nameOf(slug)} had no order entered.` });
+      }
     });
+    const fb = fieldSummaryBits();
+    if (fb.length) lines.push({ side: "neutral", text: `Field: ${fb.join(", ")}.` });
+    setLog((l) => { const next = [...l, { round, lines }]; setLogIdx(next.length - 1); return next; });
     setRound((r) => r + 1);
-    setOrders([null, null]);
+    setOrders({});
   };
-  const backRound = () => {
+  const prevRound = () => {
     if (round <= 1) return;
-    setRound((r) => r - 1);
-    setLog((l) => {
-      const next = l.slice(0, -1);
-      setLogIdx(Math.max(0, next.length - 1));
-      return next;
-    });
-    setOrders([null, null]);
+    setRound((r) => Math.max(1, r - 1));
+    setLog((l) => { const next = l.slice(0, -1); setLogIdx(Math.max(0, next.length - 1)); return next; });
+    setOrders({});
   };
-  const setOrder = (i: 0 | 1, o: Order | null) =>
-    setOrders((prev) => { const n = [...prev] as [Order | null, Order | null]; n[i] = o; return n; });
 
-  // Move options for one of your active spots, from the built attacker.
-  const movesForSpot = (i: 0 | 1): string[] =>
-    built?.state?.user.active[i]?.moves.map((m) => m.name) ?? [];
-  const oppNames = ([activeOpp[0], activeOpp[1]].filter(Boolean) as string[]).map(nameOf);
+  const chosenCount = ([0, 1] as const).filter((i) => orders[i]).length;
 
-  const hpColor = (pct: number) => (pct <= 0 ? "var(--t3)" : pct <= 20 ? "var(--neg)" : pct <= 50 ? "var(--warn)" : "var(--pos)");
+  // ---- shared field / side-panel controls -------------------------------
+  const weatherOpts = (["sun", "rain", "sand", "snow"] as const).map((w) => ({ name: w, ...pill(weather === w), onClick: () => setWeather(weather === w ? "none" : (w as Weather)) }));
+  const terrainOpts = (["electric", "grassy", "misty", "psychic"] as const).map((t) => ({ name: t, ...pill(terrain === t), onClick: () => setTerrain(terrain === t ? "none" : (t as Terrain)) }));
+  const roomOpts: { label: string; bg: string; fg: string; border: string; onClick: () => void }[] = [
+    { label: "Trick Room", ...pill(trickRoom), onClick: () => setTrickRoom(!trickRoom) },
+    { label: "Gravity", ...pill(gravity), onClick: () => setGravity(!gravity) },
+    { label: "Magic Room", ...pill(magicRoom), onClick: () => setMagicRoom(!magicRoom) },
+    { label: "Wonder Room", ...pill(wonderRoom), onClick: () => setWonderRoom(!wonderRoom) },
+  ];
 
-  // HP plate for one active spot: name, always-rendered status chip (toggled by
-  // visibility so it never resizes), type badges, HP bar + percentage.
-  const Plate = ({ side, idx }: { side: Side; idx: 0 | 1 }) => {
-    const slug = (side === "user" ? activeUser : activeOpp)[idx];
-    const ref = slug ? refBySlug.get(slug) : undefined;
+  // ---- arena -------------------------------------------------------------
+  const stage = STAGES.find((b) => b.id === background) ?? STAGES[0]!;
+  const fxLayers: string[] = [];
+  const pushFx = (v: string | undefined) => { if (v && v !== "none") fxLayers.push(v); };
+  if (trickRoom) pushFx(ROOM_FX.trickRoom);
+  if (gravity) pushFx(ROOM_FX.gravity);
+  if (magicRoom) pushFx(ROOM_FX.magicRoom);
+  if (wonderRoom) pushFx(ROOM_FX.wonderRoom);
+  if (weather !== "none") pushFx(WEATHER_FX[weather]);
+  if (terrain !== "none") pushFx(TERRAIN_FX[terrain]);
+  const weatherFx = fxLayers.length ? fxLayers.join(", ") : "none";
+
+  const focus = (side: Side, i: 0 | 1) => (side === "user" ? setSelUser(i) : setSelOpp(i));
+  const isFocused = (side: Side, i: 0 | 1) => (side === "user" ? selUser : selOpp) === i;
+
+  const plate = (side: Side, i: 0 | 1) => {
+    const slug = (side === "user" ? activeUser : activeOpp)[i];
+    const p = bySlug.get(slug)!;
     const st = monOf(side, slug);
-    const forme = slug ? formeOf(side, slug) : undefined;
-    const types = (forme ? forme.types : ref?.types) ?? [];
-    const nm = forme ? forme.name : slug ? nameOf(slug) : "-";
-    const toneVar = side === "user" ? "var(--pos)" : "var(--neg)";
+    const forme = formeOf(side, slug);
+    const nm = forme ? forme.name : p.name;
+    const types = forme ? forme.types : p.types;
     return (
-      <div className="min-w-0 max-w-[210px] flex-1 rounded-lg border px-2 py-1.5 backdrop-blur"
-        style={{ borderColor: `color-mix(in srgb, ${toneVar} 45%, transparent)`, background: "rgba(17,20,26,0.9)" }}>
-        <div className="flex h-[17px] items-center gap-1">
-          <span className="min-w-0 flex-1 truncate text-[13px] font-extrabold text-slate-100">{nm}</span>
-          <span className={`shrink-0 rounded px-1 text-[8px] font-bold uppercase text-black ${STATUS_COLOR[st.status] ?? ""}`}
-            style={{ visibility: st.status !== "none" ? "visible" : "hidden" }}>{st.status.slice(0, 3) || "brn"}</span>
-        </div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-1">
-          {types.map((t) => <TypeBadge key={t} type={t as PokemonType} />)}
-          <span className="flex min-w-[24px] flex-1 items-center gap-1">
-            <span className="h-1.5 flex-1 overflow-hidden rounded" style={{ background: "rgba(255,255,255,0.15)" }}>
-              <span className="block h-full rounded" style={{ width: `${st.hpPct}%`, background: hpColor(st.hpPct) }} />
-            </span>
-            <span className="font-mono text-[10px] tabular-nums text-slate-300">{st.hpPct}%</span>
+      <button key={`${side}:${i}`} onClick={() => focus(side, i)} style={{ display: "flex", flexDirection: "column", gap: 4, position: "relative", width: "100%", minWidth: 0, maxWidth: 210, textAlign: "left", cursor: "pointer", borderRadius: 10, padding: "6px 9px", border: `1px solid ${isFocused(side, i) ? ACC : side === "user" ? "oklch(72% 0.13 150 / 0.5)" : "oklch(68% 0.16 25 / 0.5)"}`, background: "oklch(17% 0.008 240 / 0.9)", backdropFilter: "blur(4px)" }}>
+        <span style={{ display: "flex", alignItems: "center", flexWrap: "nowrap", gap: 4, minWidth: 0, height: 17 }}>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 800, lineHeight: 1.2, color: "oklch(94% 0.004 240)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nm}</span>
+          <span style={{ flexShrink: 0, borderRadius: 4, padding: "1px 5px", fontSize: 9, fontWeight: 800, textTransform: "uppercase", visibility: st.status === "none" ? "hidden" : "visible", background: STATUS_COLOR[st.status] ?? "transparent", color: "#fff" }}>{STATUS_SHORT[st.status] ?? ""}</span>
+        </span>
+        <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "3px 5px" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+            {typesFor(types).map((t) => <span key={t.name} style={{ flexShrink: 0, borderRadius: 4, padding: "1px 4px", fontSize: 8, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", color: "#fff", background: t.hex }}>{t.short}</span>)}
+          </span>
+          <span style={{ flex: "1 1 70px", minWidth: 56, display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ flex: 1, minWidth: 24, height: 6, borderRadius: 3, background: "oklch(30% 0.01 240)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${st.hpPct}%`, background: hpColor(st.hpPct) }} /></span>
+            <span className="mono" style={{ flexShrink: 0, fontSize: 11, color: "oklch(78% 0.01 240)" }}>{st.hpPct}%</span>
+          </span>
+        </span>
+      </button>
+    );
+  };
+
+  const arenaMon = (side: Side, i: 0 | 1) => {
+    const key = `${side}:${i}`;
+    const slug = (side === "user" ? activeUser : activeOpp)[i];
+    const st = monOf(side, slug);
+    const spot = SPOTS[key]!;
+    const sel = isFocused(side, i);
+    const fainted = st.hpPct <= 0;
+    const filter = fainted
+      ? "grayscale(1) opacity(0.4) drop-shadow(0 2px 3px rgba(0,0,0,.55))"
+      : sel
+        ? "drop-shadow(0 0 7px oklch(82% 0.1 190)) drop-shadow(0 2px 4px rgba(0,0,0,.6))"
+        : "drop-shadow(0 2px 4px rgba(0,0,0,.6)) drop-shadow(0 0 2px rgba(0,0,0,.5))";
+    const padBg = sel
+      ? "radial-gradient(50% 60% at 50% 40%, rgba(255,255,255,.85), oklch(84% 0.11 190 / .6) 55%, oklch(72% 0.1 190 / .25) 78%, transparent)"
+      : "radial-gradient(50% 60% at 50% 40%, rgba(255,255,255,.55), rgba(255,255,255,.18) 65%, rgba(255,255,255,.04) 85%, transparent)";
+    const padShadow = sel
+      ? "0 0 0 2px oklch(84% 0.11 190 / .85), 0 0 18px oklch(76% 0.1 190 / .65), 0 4px 10px rgba(0,0,0,.5)"
+      : "0 3px 9px rgba(0,0,0,.5)";
+    const hasStatus = !fainted && st.status !== "none";
+    return (
+      <button key={key} onClick={() => focus(side, i)} style={{ flex: "1 1 0", minWidth: 0, maxWidth: `${40 * spot.scale}px`, background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", marginBottom: spot.lift }}>
+        <span style={{ position: "relative", display: "block", width: "100%" }}>
+          <Sprite species={slug} w="100%" h={96} scale={spot.scale} flip={spot.flip < 0} filter={filter} />
+          {hasStatus && <>
+            <span style={{ position: "absolute", inset: "6%", borderRadius: "50%", background: STATUS_WASH[st.status] ?? "transparent", pointerEvents: "none" }} />
+            <span title={st.status} style={{ position: "absolute", top: -2, right: 0, display: "flex", alignItems: "center", justifyContent: "center", minWidth: 18, height: 18, padding: "0 3px", borderRadius: 999, fontSize: 10, fontWeight: 800, lineHeight: 1, background: STATUS_COLOR[st.status] ?? "transparent", color: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{STATUS_GLYPH[st.status] ?? ""}</span>
+          </>}
+        </span>
+        <span style={{ width: spot.padW, height: spot.padH, borderRadius: "50%", background: padBg, boxShadow: padShadow, marginTop: spot.padGap }} />
+      </button>
+    );
+  };
+
+  const fieldCard = (
+    <div style={{ alignSelf: "center", width: 262, position: "relative", zIndex: 3, borderRadius: 12, border: "1px solid rgba(255,255,255,0.18)", background: "oklch(17% 0.008 240 / 0.9)", backdropFilter: "blur(7px)", boxShadow: "0 6px 18px rgba(0,0,0,0.4)", padding: "7px 9px", display: "flex", flexDirection: "column", gap: 5, height: 113 }}>
+      {([["Weather", weatherOpts, false], ["Terrain", terrainOpts, false], ["Rooms", roomOpts, true]] as const).map(([label, opts, isRoom]) => (
+        <div key={label} style={{ display: "grid", gridTemplateColumns: "40px minmax(0,1fr)", alignItems: "baseline", columnGap: 6, rowGap: 4 }}>
+          <span style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", lineHeight: "18px", color: "oklch(58% 0.012 240)" }}>{label}</span>
+          <span style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {opts.map((o) => {
+              const text = "name" in o ? o.name : o.label;
+              return (
+                <button key={text} onClick={o.onClick} style={{ borderRadius: 6, height: 18, padding: "0 6px", fontSize: 10, fontWeight: 700, lineHeight: "16px", whiteSpace: "nowrap", border: "none", cursor: "pointer", textTransform: isRoom ? "none" : "capitalize", background: o.bg, color: o.fg }}>{text}</button>
+              );
+            })}
           </span>
         </div>
-      </div>
-    );
-  };
-
-  // Arena sprite for one active spot: mirrored for your side, greyed if fainted,
-  // with a status glyph badge and a soft light pad beneath it.
-  const Sprite = ({ side, idx }: { side: Side; idx: 0 | 1 }) => {
-    const slug = (side === "user" ? activeUser : activeOpp)[idx];
-    if (!slug) return <span className="h-12 w-12" />;
-    const st = monOf(side, slug);
-    const dis = disguiseFor(side, slug);
-    const isMega = !!megaForms[slug] && st.mega;
-    const icon = isMega ? megaForms[slug]!.name : dis?.species ?? slug;
-    const fainted = st.hpPct <= 0;
-    const glyph = STATUS_GLYPH[st.status];
-    return (
-      <span className="relative flex flex-col items-center">
-        <span className="relative inline-flex h-12 w-12 items-center justify-center overflow-visible"
-          style={{ filter: fainted ? "grayscale(1) opacity(0.4)" : "drop-shadow(0 2px 3px rgba(0,0,0,0.6))" }}>
-          <PokeIcon species={icon} className={side === "user" ? "scale-x-[-1.5] scale-y-[1.5]" : "scale-[1.5]"} />
-          {glyph && !fainted && (
-            <span className="absolute -right-1 -top-1 text-[12px]" title={st.status}>{glyph}</span>
-          )}
-        </span>
-        <span className="mt-[-6px] h-2 w-10 rounded-[50%]" style={{ background: "radial-gradient(closest-side, rgba(255,255,255,0.35), transparent)" }} />
-      </span>
-    );
-  };
-
-  const Chip = ({ on, onClick, children, title }: { on: boolean; onClick: () => void; children: React.ReactNode; title?: string }) => (
-    <button type="button" title={title} onClick={onClick}
-      className={`whitespace-nowrap rounded-md px-1.5 py-0.5 text-[10px] font-bold leading-4 ${on ? "bg-acc text-bg" : "bg-raise text-t2 hover:text-t1"}`}>
-      {children}
-    </button>
+      ))}
+    </div>
   );
 
-  const SideCard = ({ tone, cond, setCond, side }: { tone: "pos" | "neg"; cond: SideCond; setCond: (c: SideCond) => void; side: Side }) => {
-    const toneVar = tone === "pos" ? "var(--pos)" : "var(--neg)";
-    const screens: [keyof SideCond, string][] = [["tailwind", "Tailwind"], ["reflect", "Reflect"], ["lightScreen", "Light Screen"], ["auroraVeil", "Aurora Veil"]];
+  // ---- side panels -------------------------------------------------------
+  const sidePanel = (which: "user" | "opponent") => {
+    const cond = which === "user" ? uCond : oCond;
+    const setCond = which === "user" ? setUCond : setOCond;
+    const setC = (patch: Partial<SideCond>) => setCond({ ...cond, ...patch });
+    const title = which === "user" ? "Your side" : "Opponent side";
+    const color = which === "user" ? POS : NEG;
+    const border = which === "user" ? "oklch(72% 0.13 150 / 0.45)" : "oklch(68% 0.16 25 / 0.45)";
+    const bg = which === "user" ? "oklch(72% 0.13 150 / 0.07)" : "oklch(68% 0.16 25 / 0.07)";
+    const hazardsUp = cond.stealthRock || cond.spikes > 0 || cond.toxicSpikes > 0 || cond.stickyWeb;
+    const screens: [keyof SideCond, string][] = [["tailwind", "Tailwind"], ["reflect", "Reflect"], ["lightScreen", "L. Screen"], ["auroraVeil", "Aurora Veil"]];
+    const hazardToggles: [keyof SideCond, string][] = [["stealthRock", "Stealth Rock"], ["stickyWeb", "Sticky Web"]];
+    const hazardLevels: [keyof SideCond, string, number][] = [["spikes", "Spikes", 3], ["toxicSpikes", "Toxic Spikes", 2]];
     return (
-      <div className="space-y-2 rounded-xl p-[11px] text-xs" style={{ border: `1px solid color-mix(in srgb, ${toneVar} 40%, transparent)`, background: `color-mix(in srgb, ${toneVar} 7%, var(--panel))` }}>
-        <div className="flex items-center gap-2">
-          <span className="text-[12px] font-extrabold" style={{ color: toneVar }}>{side === "user" ? "Your side" : "Opponent side"}</span>
-          {hasHazards(cond) && <span className="text-[9px] font-bold text-warn">⚠ hazards up</span>}
+      <div style={{ minWidth: 0, borderRadius: 12, border: `1px solid ${border}`, background: bg, padding: 11, display: "flex", flexDirection: "column", gap: 7, fontSize: 12 }}>
+        <h3 style={{ fontSize: 12, fontWeight: 800, margin: 0, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, color }}>{title}
+          {hazardsUp && <span style={{ fontSize: 9, fontWeight: 700, color: "oklch(80% 0.13 85)" }}>⚠ hazards up</span>}
+        </h3>
+        <div>
+          <span style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "oklch(54% 0.012 240)", marginBottom: 5 }}>Screens</span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 5 }}>
+            {screens.map(([k, label]) => { const on = cond[k] as boolean; const q = pill(on); return (
+              <button key={k} onClick={() => setC({ [k]: !on } as Partial<SideCond>)} style={{ borderRadius: 7, padding: "5px 7px", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", border: `1px solid ${q.border}`, cursor: "pointer", background: q.bg, color: q.fg }}>{label}</button>
+            ); })}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {screens.map(([k, lbl]) => (
-            <Chip key={k} on={cond[k] as boolean} onClick={() => setCond({ ...cond, [k]: !(cond[k] as boolean) })}>{lbl}</Chip>
-          ))}
+        <div>
+          <span style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "oklch(54% 0.012 240)", marginBottom: 5 }}>Hazards</span>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
+            {hazardToggles.map(([k, label]) => { const on = cond[k] as boolean; const q = pill(on); return (
+              <button key={k} onClick={() => setC({ [k]: !on } as Partial<SideCond>)} style={{ borderRadius: 7, padding: "5px 8px", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", border: `1px solid ${q.border}`, cursor: "pointer", background: q.bg, color: q.fg }}>{label}</button>
+            ); })}
+            {hazardLevels.map(([k, label, max]) => (
+              <span key={k} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 78px", alignItems: "center", gap: 6, width: "100%" }}>
+                <span style={{ minWidth: 0, fontSize: 11, fontWeight: 700, lineHeight: 1.2, color: "oklch(66% 0.012 240)" }}>{label}</span>
+                <span style={{ display: "grid", gridTemplateColumns: "repeat(3, 24px)", gap: 3 }}>
+                  {Array.from({ length: max }, (_, i2) => { const n = i2 + 1; const on = (cond[k] as number) === n; const q = pill(on); return (
+                    <button key={n} onClick={() => setC({ [k]: on ? 0 : n } as Partial<SideCond>)} style={{ borderRadius: 6, border: `1px solid ${q.border}`, background: q.bg, color: q.fg, width: 24, height: 22, fontSize: 11, fontWeight: 800, cursor: "pointer" }}>{n}</button>
+                  ); })}
+                </span>
+              </span>
+            ))}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          <Chip on={cond.stealthRock} onClick={() => setCond({ ...cond, stealthRock: !cond.stealthRock })}>Stealth Rock</Chip>
-          <Chip on={cond.stickyWeb} onClick={() => setCond({ ...cond, stickyWeb: !cond.stickyWeb })}>Sticky Web</Chip>
-        </div>
-        <div className="grid items-center gap-1" style={{ gridTemplateColumns: "minmax(0,1fr) 78px" }}>
-          <span className="text-[10px] text-t3">Spikes</span>
-          <span className="grid" style={{ gridTemplateColumns: "repeat(3, 24px)" }}>
-            {[1, 2, 3].map((n) => <Chip key={n} on={cond.spikes === n} onClick={() => setCond({ ...cond, spikes: cond.spikes === n ? 0 : n })}>{n}</Chip>)}
-          </span>
-          <span className="text-[10px] text-t3">Toxic Spikes</span>
-          <span className="grid" style={{ gridTemplateColumns: "repeat(3, 24px)" }}>
-            {[1, 2].map((n) => <Chip key={n} on={cond.toxicSpikes === n} onClick={() => setCond({ ...cond, toxicSpikes: cond.toxicSpikes === n ? 0 : n })}>{n}</Chip>)}
-          </span>
-        </div>
-        <button onClick={() => allySwitch(side)} className="rounded border border-line px-2 py-0.5 text-[11px] text-t2 hover:border-accln">Ally Switch</button>
       </div>
     );
   };
 
+  // ---- orders + log ------------------------------------------------------
+  const orderSlot = (i: 0 | 1) => {
+    const slug = activeUser[i];
+    const o = orders[i];
+    const p = bySlug.get(slug)!;
+    const mst = monOf("user", slug);
+    const focused = selUser === i;
+    const hasStatus = mst.status !== "none";
+    return (
+      <div key={i} style={{ minWidth: 0, display: "flex", alignItems: "flex-start", gap: 7, borderRadius: 10, border: `1px solid ${o ? "oklch(72% 0.1 190 / 0.4)" : "oklch(30% 0.01 240)"}`, background: o ? "oklch(72% 0.1 190 / 0.08)" : RAISE, padding: "7px 8px" }}>
+        <button onClick={() => setSelUser(i)} title={focused ? `${p.name} is shown in Your active` : `Show ${p.name} in Your active`} style={{ position: "relative", flexShrink: 0, display: "flex", alignItems: "center", borderRadius: 8, border: `1px solid ${focused ? ACC : "oklch(30% 0.01 240)"}`, background: focused ? "oklch(72% 0.1 190 / 0.18)" : "transparent", padding: "1px 3px", cursor: "pointer" }}>
+          <Sprite species={slug} w={36} h={27} />
+          {hasStatus && <span title={mst.status} style={{ position: "absolute", top: -4, right: -4, display: "flex", alignItems: "center", justifyContent: "center", minWidth: 15, height: 15, padding: "0 2px", borderRadius: 999, fontSize: 9, fontWeight: 800, lineHeight: 1, background: STATUS_COLOR[mst.status] ?? "transparent", color: "#fff" }}>{STATUS_GLYPH[mst.status] ?? ""}</span>}
+        </button>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: o ? "oklch(92% 0.01 240)" : "oklch(58% 0.012 240)" }}>{o ? `${o.move} → ${nameOf(activeOpp[o.target])}` : "No order yet"}</span>
+          <span style={{ fontSize: 10, color: "oklch(56% 0.012 240)" }}>{o ? `${p.name} · click another move to change` : `${p.name} · click a move on its card`}</span>
+        </span>
+        {o && <button onClick={() => setOrders((prev) => { const n = { ...prev }; delete n[i]; return n; })} style={{ flexShrink: 0, border: "none", background: "none", color: "oklch(58% 0.012 240)", fontSize: 12, cursor: "pointer" }}>✕</button>}
+      </div>
+    );
+  };
+
+  const fieldSummary = fieldSummaryBits();
+  const logEntry = log[Math.min(logIdx, Math.max(0, log.length - 1))];
+
+  // ---- recommendations presentation -------------------------------------
+  const heroRec = recommendations[0];
+  const recBorder = (i: number) => (i === 0 ? "oklch(72% 0.1 190 / 0.35)" : "oklch(30% 0.01 240)");
+  const recRankBg = (i: number) => (i === 0 ? ACC : "oklch(45% 0.03 240)");
+  const recBar = (i: number) => (i === 0 ? ACC : "oklch(50% 0.04 240)");
+  const recScoreColor = (i: number) => (i === 0 ? "oklch(82% 0.1 190)" : "oklch(66% 0.012 240)");
+
   return (
-    <div className="space-y-[14px]">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: 13, color: "oklch(94% 0.004 240)" }}>
       {/* Round toolbar */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2.5 text-xs">
-        <button onClick={onBack} className="font-bold text-acc hover:text-accs">← Team preview</button>
-        <span className="rounded-full bg-raise px-2 py-0.5 font-mono uppercase tabular-nums text-t2">Round {round}</span>
-        <span className="text-t3">{userAlive} vs {oppAlive} alive</span>
-        <div className="ml-auto flex items-center gap-2">
-          <button onClick={swapSides} title="Swap which side is yours" className="rounded border border-line px-2 py-1 text-t2 hover:border-accln">⇄ Swap sides</button>
-          <label className="flex items-center gap-1 text-t3">Stage
-            <select value={background} onChange={(e) => setBackground(e.target.value)} className="rounded border border-line bg-raise px-1 py-0.5 text-t1">
-              {BACKGROUNDS.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
-            </select>
-          </label>
-          <button onClick={backRound} disabled={round <= 1} className="rounded border border-line px-2 py-1 text-t2 hover:border-accln disabled:opacity-40">← Back a round</button>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, borderRadius: 12, border: "1px solid oklch(30% 0.01 240)", background: "oklch(20% 0.008 240)", padding: "9px 12px" }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", color: "oklch(78% 0.1 190)", fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 0 }}>← Team preview</button>
+        <span className="mono" style={{ borderRadius: 999, background: "oklch(26% 0.008 240)", padding: "3px 11px", fontSize: 11, fontWeight: 700, letterSpacing: "0.04em" }}>ROUND {round}</span>
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={swapSides} title="Swap which side is yours" style={{ borderRadius: 9, border: "1px solid oklch(30% 0.01 240)", background: "oklch(24% 0.008 240)", color: "oklch(88% 0.01 240)", height: 34, padding: "0 11px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>⇄ Swap sides</button>
+          <select value={background} onChange={(e) => setBackground(e.target.value)} aria-label="Stage" style={{ borderRadius: 8, height: 34, border: "1px solid oklch(30% 0.01 240)", background: "oklch(24% 0.008 240)", color: "oklch(88% 0.01 240)", padding: "0 9px", fontSize: 11 }}>
+            {STAGES.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
+          </select>
+          <button onClick={prevRound} style={{ borderRadius: 9, border: "1px solid oklch(30% 0.01 240)", background: "none", color: "oklch(88% 0.01 240)", padding: "0 12px", height: 34, fontWeight: 700, cursor: "pointer", fontSize: 11 }}>← Back a round</button>
           {battleOver ? (
-            <button onClick={() => { try { localStorage.removeItem(BATTLE_KEY); } catch { /* ignore */ } onBack(); }}
-              className="rounded-lg bg-acc px-3 py-1.5 font-extrabold text-bg hover:bg-accs">New battle</button>
+            <button onClick={() => { try { localStorage.removeItem(BATTLE_KEY); } catch { /* ignore */ } onBack(); }} style={{ borderRadius: 10, background: ACC, color: "oklch(16% 0.008 240)", padding: "0 20px", height: 34, fontWeight: 800, border: "none", cursor: "pointer", fontSize: 13 }}>New battle</button>
           ) : (
-            <button onClick={commitRound} className="rounded-lg bg-acc px-3 py-1.5 font-extrabold text-bg hover:bg-accs" style={{ boxShadow: "0 0 0 3px var(--accbg)" }}>Next round →</button>
+            <button onClick={advanceRound} style={{ borderRadius: 10, background: ACC, color: "oklch(16% 0.008 240)", padding: "0 20px", height: 34, fontWeight: 800, border: "none", cursor: "pointer", fontSize: 13, boxShadow: "0 0 0 3px oklch(72% 0.1 190 / 0.18)" }}>Next round →</button>
           )}
-        </div>
+        </span>
       </div>
 
-      {/* Best play this round */}
-      <div className="rounded-[14px] border border-accln bg-accbg p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="rounded bg-acc px-1.5 py-0.5 text-[10px] font-extrabold uppercase text-bg">Best play this round</span>
-          <span className="text-[11px] text-t3">Balanced profile</span>
-        </div>
-        {!built?.state ? (
-          <p className="text-sm text-neg">Assign a Pokémon to all four battle spots.</p>
-        ) : (
-          <Recommendations recommendations={recommendations} profileLabel="Balanced" />
-        )}
-      </div>
-
-      {/* Arena + side conditions */}
-      <div className="grid gap-3 lg:grid-cols-[minmax(166px,0.55fr)_minmax(0,2fr)_minmax(166px,0.55fr)]">
-        <SideCard tone="pos" cond={uCond} setCond={setUCond} side="user" />
-
-        <div className="relative overflow-hidden rounded-2xl border border-line p-2.5" style={bgStyle(background)}>
-          {/* Field card */}
-          <div className="mx-auto mb-2 w-[min(340px,100%)] space-y-1.5 rounded-xl border p-2 backdrop-blur"
-            style={{ borderColor: "rgba(255,255,255,0.18)", background: "rgba(20,24,30,0.82)" }}>
-            <div className="grid items-baseline gap-1" style={{ gridTemplateColumns: "48px minmax(0,1fr)" }}>
-              <span className="text-[9px] font-extrabold uppercase text-slate-300">Weather</span>
-              <span className="flex flex-wrap gap-1">
-                {WEATHERS.filter((w) => w !== "none").map((w) => <Chip key={w} on={weather === w} onClick={() => setWeather(weather === w ? "none" : w)}>{w}</Chip>)}
-              </span>
-            </div>
-            <div className="grid items-baseline gap-1" style={{ gridTemplateColumns: "48px minmax(0,1fr)" }}>
-              <span className="text-[9px] font-extrabold uppercase text-slate-300">Terrain</span>
-              <span className="flex flex-wrap gap-1">
-                {TERRAINS.filter((t) => t !== "none").map((t) => <Chip key={t} on={terrain === t} onClick={() => setTerrain(terrain === t ? "none" : t)}>{t}</Chip>)}
-              </span>
-            </div>
-            <div className="grid items-baseline gap-1" style={{ gridTemplateColumns: "48px minmax(0,1fr)" }}>
-              <span className="text-[9px] font-extrabold uppercase text-slate-300">Rooms</span>
-              <span className="flex flex-wrap gap-1">
-                <Chip on={trickRoom} onClick={() => setTrickRoom(!trickRoom)}>Trick Room</Chip>
-                <Chip on={gravity} onClick={() => setGravity(!gravity)}>Gravity</Chip>
-              </span>
-            </div>
+      {/* Best play + ranked options */}
+      {heroRec && (
+        <div style={{ borderRadius: 14, background: "oklch(72% 0.1 190 / 0.13)", border: "1px solid oklch(72% 0.1 190 / 0.34)", padding: "15px 17px", display: "flex", flexDirection: "column", gap: 9 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ borderRadius: 999, background: ACC, color: "oklch(16% 0.008 240)", fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", padding: "3px 10px" }}>Best play this round</span>
+            <span style={{ fontSize: 11, color: "oklch(72% 0.01 240)" }}>score <span className="mono" style={{ color: "oklch(82% 0.1 190)" }}>{heroRec.breakdown.total.toFixed(3)}</span> · confidence {(heroRec.confidence * 100).toFixed(0)}% · Balanced profile</span>
           </div>
-
-          {/* HP plates: your two left, theirs right */}
-          <div className="mb-2 flex items-start justify-between gap-2">
-            <div className="flex min-w-0 flex-1 gap-1.5">{[0, 1].map((i) => <Plate key={i} side="user" idx={i as 0 | 1} />)}</div>
-            <div className="flex min-w-0 flex-1 justify-end gap-1.5">{[0, 1].map((i) => <Plate key={i} side="opponent" idx={i as 0 | 1} />)}</div>
-          </div>
-
-          {/* Sprite row: yours left (mirrored), theirs right */}
-          <div className="flex items-end justify-between gap-2 pt-1">
-            <div className="flex items-end gap-3">{[0, 1].map((i) => <Sprite key={i} side="user" idx={i as 0 | 1} />)}</div>
-            <div className="flex items-end gap-3">{[0, 1].map((i) => <Sprite key={i} side="opponent" idx={i as 0 | 1} />)}</div>
-          </div>
-        </div>
-
-        <SideCard tone="neg" cond={oCond} setCond={setOCond} side="opponent" />
-      </div>
-
-      {/* Active editor cards: your side | opponent side */}
-      <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-xl border p-2" style={{ borderColor: "color-mix(in srgb, var(--pos) 35%, transparent)" }}>
-          <p className="mb-1.5 text-[10px] font-extrabold uppercase text-pos">Your active</p>
-          <div className="flex gap-2">
-            {[0, 1].map((i) => {
-              const slug = activeUser[i as 0 | 1];
-              return (
-                <ActiveCard key={i} label="You" slug={slug} state={monOf("user", slug)}
-                  options={optionsFor("user", uTeam, activeUser, i as 0 | 1)} abilities={matchAbilities}
-                  defaultAbility={abilitiesFor(slug)[0] ?? ""} items={items} mega={slug ? megaForms[slug] : undefined}
-                  special={specialFor("user", slug)} disguise={disguiseFor("user", slug)}
-                  formeAbility={slug ? formeOf("user", slug)?.ability : undefined}
-                  onSelect={(s) => { setActive("user", i as 0 | 1, s); if (s && s !== slug) patchMon("user", s, { stages: NEUTRAL_STAGES }); }}
-                  onPatch={(p) => patchMon("user", slug, p)} />
-              );
-            })}
-          </div>
-        </div>
-        <div className="rounded-xl border p-2" style={{ borderColor: "color-mix(in srgb, var(--neg) 35%, transparent)" }}>
-          <p className="mb-1.5 text-[10px] font-extrabold uppercase text-neg">Opponent active</p>
-          <div className="flex gap-2">
-            {[0, 1].map((i) => {
-              const slug = activeOpp[i as 0 | 1];
-              return (
-                <ActiveCard key={i} label="Opp" foe slug={slug} state={monOf("opponent", slug)}
-                  options={optionsFor("opponent", oTeam, activeOpp, i as 0 | 1)} abilities={matchAbilities}
-                  defaultAbility={abilitiesFor(slug)[0] ?? ""} items={items} mega={slug ? megaForms[slug] : undefined}
-                  special={specialFor("opponent", slug)} disguise={disguiseFor("opponent", slug)}
-                  formeAbility={slug ? formeOf("opponent", slug)?.ability : undefined}
-                  onSelect={(s) => { setActive("opponent", i as 0 | 1, s); if (s && s !== slug) patchMon("opponent", s, { stages: NEUTRAL_STAGES }); }}
-                  onPatch={(p) => patchMon("opponent", slug, p)} />
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Orders + battle log */}
-      <div className="grid gap-3 md:grid-cols-2">
-        {/* Your orders */}
-        <div className="rounded-xl border border-accln bg-panel p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase text-t2">Your orders · round {round}</span>
-            <span className={`text-[11px] font-bold ${ordersSet === 2 ? "text-pos" : "text-warn"}`}>{ordersSet === 2 ? "both orders set" : `${ordersSet} of 2 set`}</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {[0, 1].map((i) => {
-              const slug = activeUser[i as 0 | 1];
-              const moves = movesForSpot(i as 0 | 1);
-              const o = orders[i as 0 | 1];
-              return (
-                <div key={i} className="rounded-lg border p-2 text-xs" style={{ borderColor: o ? "var(--accln)" : "var(--line)" }}>
-                  <div className="mb-1 flex items-center gap-1">
-                    {slug && <span className="inline-flex h-7 w-7 items-center justify-center overflow-hidden"><PokeIcon species={slug} /></span>}
-                    <span className="truncate text-[11px] font-bold text-t1">{slug ? nameOf(slug) : "-"}</span>
-                    {o && <button onClick={() => setOrder(i as 0 | 1, null)} className="ml-auto text-t3 hover:text-neg">✕</button>}
-                  </div>
-                  <select value={o?.move ?? ""} disabled={!slug || moves.length === 0}
-                    onChange={(e) => { const mv = e.target.value; setOrder(i as 0 | 1, mv ? { actor: nameOf(slug!), move: mv, target: oppNames[0] ?? "target" } : null); }}
-                    className="w-full rounded border border-line bg-raise px-1 py-0.5 text-[11px]">
-                    <option value="">No order yet</option>
-                    {moves.map((m) => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                  {o && oppNames.length > 1 && (
-                    <select value={o.target} onChange={(e) => setOrder(i as 0 | 1, { ...o, target: e.target.value })}
-                      className="mt-1 w-full rounded border border-line bg-raise px-1 py-0.5 text-[10px] text-t3">
-                      {oppNames.map((n) => <option key={n} value={n}>→ {n}</option>)}
-                    </select>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <p className="mt-2 text-[10px] text-t3">{fieldBits().length ? `Recorded field: ${fieldBits().join(", ")}.` : "No field effects recorded."}</p>
-          <div className="mt-2 flex items-center gap-2">
-            <button onClick={backRound} disabled={round <= 1} className="rounded-lg border border-line px-2 py-1 text-[11px] text-t2 hover:border-accln disabled:opacity-40">← Back a round</button>
-            <button onClick={commitRound} className={`ml-auto rounded-lg px-3 py-1.5 text-[13px] font-extrabold text-bg ${ordersSet === 2 ? "bg-acc hover:bg-accs" : "bg-acc/60"}`}>
-              {ordersSet === 2 ? `Commit round ${round} & continue →` : `Commit round ${round} anyway →`}
-            </button>
-          </div>
-        </div>
-
-        {/* Battle log */}
-        <div className="rounded-xl border border-line bg-panel p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase text-t2">Battle log</span>
-            <span className="flex items-center gap-2 text-[11px]">
-              <button onClick={() => setLogIdx((i) => Math.max(0, i - 1))} disabled={logIdx <= 0} className="text-t2 disabled:text-t3/50">←</button>
-              <span className="font-mono tabular-nums text-t3">{log.length ? logIdx + 1 : 0} / {log.length}</span>
-              <button onClick={() => setLogIdx((i) => Math.min(log.length - 1, i + 1))} disabled={logIdx >= log.length - 1} className="text-t2 disabled:text-t3/50">→</button>
-            </span>
-          </div>
-          {log.length === 0 ? (
-            <p className="text-xs text-t3">No rounds committed yet.</p>
-          ) : (
-            <div className="max-h-[264px] overflow-y-auto border-l-2 border-accln pl-2">
-              <p className="font-mono text-[9px] font-bold uppercase text-t3">Round {log[logIdx]?.round}</p>
-              {log[logIdx]?.lines.map((ln, j) => (
-                <p key={j} className="text-[12px]" style={{ color: ln.actor === "user" ? "var(--pos)" : ln.actor === "opp" ? "var(--neg)" : "var(--t2)" }}>{ln.text}</p>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Remaining Pokémon per side */}
-      <div className="grid grid-cols-[1fr_1fr] items-start gap-3 rounded-xl border border-line bg-panel p-3">
-        <div>
-          <p className="mb-1 text-[10px] font-extrabold uppercase text-pos">Your team</p>
-          <div className="flex flex-wrap gap-1.5">
-            {uTeam.map((s) => (
-              <MonChip key={s} name={nameOf(s)} slug={s} state={monOf("user", s)} refData={refBySlug.get(s)} mega={megaForms[s]} />
+          <p style={{ margin: 0, fontSize: 17, fontWeight: 800, lineHeight: 1.35, letterSpacing: "-0.01em" }}>{heroRec.actionLines.join(" · ")}</p>
+          <p style={{ margin: 0, fontSize: 12, color: "oklch(76% 0.01 240)", lineHeight: 1.5 }}>{heroRec.expectedPosition}</p>
+          <p style={{ margin: 0, fontSize: 11, color: "oklch(68% 0.16 25)" }}>Risk: {heroRec.mainRisk}</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 3, borderTop: "1px solid oklch(72% 0.1 190 / 0.22)", paddingTop: 9 }}>
+            {recommendations.slice(1, 3).map((r, k) => (
+              <div key={k} style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 11, color: "oklch(66% 0.012 240)" }}>
+                <span style={{ borderRadius: 5, background: "oklch(30% 0.01 240)", color: "oklch(76% 0.01 240)", fontWeight: 800, fontSize: 10, padding: "1px 6px", flexShrink: 0 }}>#{k + 2}</span>
+                <span style={{ flex: 1, minWidth: 0 }}>{r.actionLines.join(" · ")}</span>
+                <span className="mono" style={{ flexShrink: 0, color: "oklch(60% 0.012 240)" }}>{r.breakdown.total.toFixed(3)}</span>
+              </div>
             ))}
           </div>
-        </div>
-        <div className="text-right">
-          <p className="mb-1 text-[10px] font-extrabold uppercase text-neg">Opponent&apos;s team</p>
-          <div className="flex flex-wrap justify-end gap-1.5">
-            {oTeam.map((s) => (
-              <MonChip key={s} name={nameOf(s)} slug={s} state={monOf("opponent", s)} refData={refBySlug.get(s)} mega={megaForms[s]} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Detail panels: your active (top) + opponent active (bottom) */}
-      {built?.state && (
-        <div className="flex items-center gap-3 text-[10px] font-extrabold uppercase">
-          <span className="text-pos">Your active</span>
-          <span className="text-neg">Opponent active</span>
+          <details style={{ borderTop: "1px solid oklch(72% 0.1 190 / 0.22)", paddingTop: 10 }}>
+            <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "oklch(66% 0.012 240)", marginBottom: 8 }}>All ranked options<span style={{ fontSize: 9, color: "oklch(58% 0.012 240)" }}>▾ {recommendations.length} lines</span></summary>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+              {recommendations.map((r, i) => <RankedOption key={i} r={r} i={i} border={recBorder(i)} rankBg={recRankBg(i)} bar={recBar(i)} scoreColor={recScoreColor(i)} />)}
+            </div>
+          </details>
         </div>
       )}
-      {built?.state && (
-        <div className="grid gap-3 md:grid-cols-2">
-          {([
-            { key: "u0", slug: activeUser[0], attacker: built.state.user.active[0], enemies: built.state.opponent, own: built.state.user, foe: false },
-            { key: "u1", slug: activeUser[1], attacker: built.state.user.active[1], enemies: built.state.opponent, own: built.state.user, foe: false },
-            { key: "o0", slug: activeOpp[0], attacker: built.state.opponent.active[0], enemies: built.state.user, own: built.state.opponent, foe: true },
-            { key: "o1", slug: activeOpp[1], attacker: built.state.opponent.active[1], enemies: built.state.user, own: built.state.opponent, foe: true },
-          ] as const).map((spec) => {
-            const ref = spec.slug ? refBySlug.get(spec.slug) : undefined;
-            if (!ref || !spec.attacker || !spec.slug) return null;
-            const forme = formeOf(spec.foe ? "opponent" : "user", spec.slug);
-            const targets = spec.enemies.active
-              .filter((c): c is Combatant => c !== null)
-              .map((c) => ({ name: c.name, combatant: c }));
-            // For OUR mons, restrict the move readout to the team's confirmed set.
-            const known = !spec.foe
-              ? loadedSets[`user:${spec.slug}`]?.moves ?? loadedSets[`opponent:${spec.slug}`]?.moves
-              : undefined;
-            const attacker =
-              known && known.length
-                ? { ...spec.attacker, moves: spec.attacker.moves.filter((mv) => known.includes(mv.name)) }
-                : spec.attacker;
-            return (
-              <MonPanel
-                key={spec.key}
-                name={forme ? forme.name : ref.name}
-                types={forme ? forme.types : ref.types}
-                baseStats={forme ? forme.baseStats : ref.baseStats}
-                attacker={attacker}
-                targets={targets}
-                abilities={matchAbilities}
-                defaultAbility={abilitiesFor(spec.slug)[0] ?? ""}
-                lockedAbility={forme?.ability}
-                items={items}
-                field={built.state.field}
-                defenderConditions={spec.enemies.conditions}
-                ownConditions={spec.own.conditions}
-                state={monOf(spec.foe ? "opponent" : "user", spec.slug)}
-                onPatch={(p) => patchMon(spec.foe ? "opponent" : "user", spec.slug, p)}
-                foe={spec.foe}
-              />
-            );
-          })}
+      {!heroRec && (
+        <div style={{ borderRadius: 14, background: "oklch(72% 0.1 190 / 0.13)", border: "1px solid oklch(72% 0.1 190 / 0.34)", padding: "15px 17px" }}>
+          <p style={{ margin: 0, fontSize: 12, color: "oklch(76% 0.01 240)" }}>Assign a Pokémon to all four battle spots to rank plays.</p>
         </div>
       )}
 
       {battleOver && (
-        <p className="rounded-lg border border-warn/40 bg-panel p-3 text-sm font-bold text-warn">
-          🏆 {userAlive === 0 && oppAlive === 0
-            ? "Both sides fainted - draw."
-            : userAlive === 0
-              ? "Opponent wins - your team fainted."
-              : "You win - opponent team fainted."}{" "}
-          Use “New battle” above to restart.
+        <p style={{ margin: 0, borderRadius: 12, border: "1px solid oklch(80% 0.13 85 / 0.4)", background: "oklch(80% 0.13 85 / 0.1)", padding: "12px 14px", fontSize: 13, fontWeight: 700, color: "oklch(84% 0.13 85)" }}>
+          🏆 {userAlive === 0 && oppAlive === 0 ? "Both sides fainted - draw." : userAlive === 0 ? "Opponent wins - your team fainted." : "You win - opponent team fainted."} Use “New battle” above to restart.
         </p>
       )}
-    </div>
-  );
-}
 
-/** Coloured status badge classes, echoing the in-game status colours. */
-const STATUS_COLOR: Record<string, string> = {
-  burn: "bg-orange-600 text-white",
-  paralysis: "bg-yellow-500 text-black",
-  poison: "bg-fuchsia-700 text-white",
-  toxic: "bg-fuchsia-900 text-white",
-  sleep: "bg-slate-500 text-white",
-  freeze: "bg-cyan-500 text-black",
-};
-
-/** Team-overview chip: bigger icon + HP/status warning badges + coloured status.
- *  Hovering shows a small overview (types, stats, ability, item). */
-function MonChip({
-  name,
-  slug,
-  state,
-  refData,
-  mega,
-}: {
-  name: string;
-  slug: string;
-  state: MonState;
-  refData?: PokemonRef;
-  mega?: MegaForme;
-}) {
-  const isMega = !!mega && state.mega;
-  const fainted = state.hpPct <= 0;
-  const warn = !fainted && state.hpPct < 20 ? "red" : !fainted && state.hpPct <= 50 ? "yellow" : null;
-  const b = isMega ? mega!.baseStats : refData?.baseStats;
-  const statLine = b
-    ? `\nBase: HP ${b.hp} / Atk ${b.atk} / Def ${b.def} / SpA ${b.spa} / SpD ${b.spd} / Spe ${b.spe}`
-    : "";
-  const typeArr = isMega ? mega!.types : refData?.types;
-  const typeLine = typeArr?.length ? `\n${typeArr.join(" / ")}` : "";
-  const title =
-    `${isMega ? mega!.name : name} - ${state.hpPct}% HP` +
-    (state.status !== "none" ? ` · ${state.status}` : "") +
-    (isMega ? ` · ${mega!.ability}` : state.ability ? ` · ${state.ability}` : "") +
-    (isMega ? ` · ${mega!.item}` : state.item && state.item !== "None" ? ` · ${state.item}` : "") +
-    typeLine +
-    statLine;
-  return (
-    <span
-      className={`relative inline-flex h-12 w-12 items-center justify-center overflow-hidden ${fainted ? "opacity-30 grayscale" : ""}`}
-      title={title}
-    >
-      <PokeIcon species={isMega ? mega!.name : slug} className="scale-[1.35]" />
-      {isMega && (
-        <span className="absolute left-0 top-0 rounded bg-fuchsia-500 px-0.5 text-[7px] font-bold text-black">M</span>
-      )}
-      {warn && (
-        <span
-          className={`absolute right-0 top-0 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-black ${
-            warn === "red" ? "bg-red-500" : "bg-amber-400"
-          }`}
-        >
-          !
-        </span>
-      )}
-      {!fainted && state.status !== "none" && (
-        <span
-          className={`absolute bottom-0 left-0 rounded px-0.5 text-[8px] font-semibold uppercase ${
-            STATUS_COLOR[state.status] ?? "bg-slate-700 text-slate-200"
-          }`}
-        >
-          {state.status.slice(0, 3)}
-        </span>
-      )}
-    </span>
-  );
-}
-
-function ActiveCard({
-  label,
-  foe,
-  slug,
-  state,
-  options,
-  abilities,
-  defaultAbility,
-  items,
-  mega,
-  special,
-  disguise,
-  formeAbility,
-  onSelect,
-  onPatch,
-}: {
-  label: string;
-  foe?: boolean;
-  slug: string | null;
-  state: MonState;
-  options: { slug: string; name: string }[];
-  abilities: string[];
-  defaultAbility: string;
-  items: string[];
-  /** This species' Mega/Primal forme, if any - enables the Mega button. */
-  mega?: MegaForme;
-  /** Species-specific in-battle form change (Ditto / Dondozo / Zoroark). */
-  special?: SpecialForm;
-  /** Sprite/name override from Transform or Illusion. */
-  disguise?: { species: string; name: string };
-  /** Ability fixed by the active forme (Mega / Transform); locks the selector. */
-  formeAbility?: string;
-  onSelect: (slug: string | null) => void;
-  onPatch: (p: Partial<MonState>) => void;
-}) {
-  const isMega = !!mega && state.mega;
-  // A Mega shows its forme icon/name, holds its (non-removable) Stone, and uses
-  // the forme's fixed ability. Transform/Illusion swap the sprite (and, for
-  // Transform, everything else via the built combatant).
-  const iconSpecies = isMega ? mega!.name : disguise?.species ?? slug;
-  const displayName = isMega ? mega!.name : disguise?.name ?? slug;
-  // A forme (Mega or Ditto's Transform) fixes the ability the built combatant
-  // uses, so the selector must show that ability read-only rather than a stale,
-  // ignored value.
-  const abilityLocked = !!formeAbility;
-  const abilityValue = formeAbility ?? (state.ability || defaultAbility);
-  const itemValue = isMega ? mega!.item : state.item;
-  const abilityOpts =
-    formeAbility && !abilities.includes(formeAbility) ? [formeAbility, ...abilities] : abilities;
-  const hoverInfo = slug
-    ? `${displayName} - ${state.hpPct}% HP` +
-      (state.status !== "none" ? ` · ${state.status}` : "") +
-      (abilityValue ? ` · ${abilityValue}` : "") +
-      (itemValue && itemValue !== "None" ? ` · ${itemValue}` : "")
-    : undefined;
-  const toggleMega = () =>
-    onPatch(
-      state.mega
-        ? { mega: false }
-        : { mega: true, item: mega!.item, itemUsed: false },
-    );
-  return (
-    <div
-      title={hoverInfo}
-      className={`w-40 rounded-lg border p-2 text-xs backdrop-blur ${foe ? "border-rose-800/60 bg-slate-900/70" : "border-emerald-800/60 bg-slate-900/70"}`}
-    >
-      <div className="mb-1 flex items-center gap-1">
-        {slug && (
-          <span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden">
-            <PokeIcon species={iconSpecies!} className="scale-[1.3]" />
-          </span>
-        )}
-        <span className="text-[10px] uppercase text-slate-500">{label}</span>
-        {slug && mega && (
-          <button
-            type="button"
-            onClick={toggleMega}
-            title={isMega ? `Revert ${mega.name}` : `Mega Evolve (${mega.name}, ${mega.item})`}
-            className={`ml-auto rounded px-1 py-0.5 text-[9px] font-bold ${
-              isMega ? "bg-fuchsia-500 text-black" : "border border-fuchsia-500/60 text-fuchsia-300 hover:bg-fuchsia-500/20"
-            }`}
-          >
-            M
-          </button>
-        )}
+      {/* Arena row */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(166px,0.55fr) minmax(0,2fr) minmax(166px,0.55fr)", gap: 10, alignItems: "stretch" }}>
+        {sidePanel("user")}
+        <div style={{ minWidth: 0, position: "relative", minHeight: 238, display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 6, padding: 10, borderRadius: 16, border: "1px solid oklch(30% 0.01 240)", overflow: "hidden", background: stage.sky }}>
+          <div style={{ position: "absolute", left: "-20%", right: "-20%", top: stage.horizon, height: 130, background: stage.glow, filter: "blur(16px)" }} />
+          <div style={{ position: "absolute", left: "-60%", right: "-60%", bottom: "-30%", top: stage.horizon, background: stage.ground, transform: "perspective(260px) rotateX(44deg)", transformOrigin: "50% 0%" }} />
+          <div style={{ position: "absolute", left: "-60%", right: "-60%", bottom: "-30%", top: stage.horizon, backgroundImage: stage.grid, backgroundSize: "46px 46px", opacity: 0.32, transform: "perspective(260px) rotateX(44deg)", transformOrigin: "50% 0%" }} />
+          <div style={{ position: "absolute", inset: 0, background: weatherFx, pointerEvents: "none" }} />
+          <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 70px rgba(0,0,0,0.5), inset 0 -30px 50px rgba(0,0,0,0.35)", pointerEvents: "none" }} />
+          <div style={{ position: "relative", zIndex: 2, display: "flex", flexWrap: "nowrap", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 5 }}>{([0, 1] as const).map((i) => plate("user", i))}</div>
+            {fieldCard}
+            <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 }}>{([0, 1] as const).map((i) => plate("opponent", i))}</div>
+          </div>
+          <div style={{ position: "relative", zIndex: 2, paddingTop: 2, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", alignItems: "flex-end", justifyContent: "flex-start", gap: 4 }}>{([0, 1] as const).map((i) => arenaMon("user", i))}</div>
+            <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", alignItems: "flex-end", justifyContent: "flex-end", gap: 4 }}>{([0, 1] as const).map((i) => arenaMon("opponent", i))}</div>
+          </div>
+        </div>
+        {sidePanel("opponent")}
       </div>
-      <select
-        value={slug ?? ""}
-        onChange={(e) => onSelect(e.target.value || null)}
-        className="mb-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs"
-      >
-        <option value="">-</option>
-        {options.map((o) => <option key={o.slug} value={o.slug}>{o.name}</option>)}
-      </select>
-      <label className="flex items-center gap-1">
-        HP
-        <input
-          type="range" min={0} max={100} value={state.hpPct}
-          disabled={!slug}
-          onChange={(e) => onPatch({ hpPct: Number(e.target.value) })}
-          className="w-full"
-        />
-        <span className="w-8 text-right tabular-nums">{state.hpPct}%</span>
-      </label>
-      <select
-        value={state.status}
-        onChange={(e) => onPatch({ status: e.target.value as StatusCondition })}
-        className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs"
-      >
-        {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-      </select>
-      {abilities.length > 0 && (
-        <select
-          value={abilityValue}
-          disabled={!slug || abilityLocked}
-          onChange={(e) => onPatch({ ability: e.target.value })}
-          title={abilityLocked ? "Forme ability (fixed)" : "Set the current ability (Skill Swap, Simple Beam, …)"}
-          className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs disabled:opacity-70"
-        >
-          {abilityOpts.map((a) => <option key={a} value={a}>{a}</option>)}
-        </select>
-      )}
-      <select
-        value={itemValue}
-        disabled={!slug || isMega}
-        onChange={(e) => onPatch({ item: e.target.value })}
-        title={isMega ? "Mega Stone (cannot be removed)" : undefined}
-        className={`mt-1 w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-xs disabled:opacity-70 ${state.itemUsed && !isMega ? "text-slate-500 line-through" : ""}`}
-      >
-        {itemOptions(itemValue, items).map((it) => <option key={it} value={it}>{it}</option>)}
-      </select>
-      {slug && !isMega && state.item !== "None" && (
-        <label className="mt-1 flex items-center gap-1 text-[10px] text-slate-400">
-          <input
-            type="checkbox"
-            checked={state.itemUsed}
-            onChange={(e) => onPatch({ itemUsed: e.target.checked })}
-          />
-          item used (consumed)
-        </label>
-      )}
-      {slug && special?.kind === "ditto" && (
-        <select
-          value={state.transformInto ?? ""}
-          onChange={(e) => onPatch({ transformInto: e.target.value || null })}
-          title="Transform: copy an opposing active Pokémon's stats, typing, moves & ability"
-          className="mt-1 w-full rounded border border-sky-700 bg-slate-900 px-1 py-0.5 text-[10px] text-sky-200"
-        >
-          <option value="">Transform into…</option>
-          {/* Keep the current copy selectable even after it has switched out -
-              Transform persists once used. */}
-          {(state.transformInto && !special.options.some((o) => o.slug === state.transformInto)
-            ? [{ slug: state.transformInto, name: disguise?.name ?? state.transformInto }, ...special.options]
-            : special.options
-          ).map((o) => <option key={o.slug} value={o.slug}>{o.name}</option>)}
-        </select>
-      )}
-      {slug && special?.kind === "commander" && (
-        <label className="mt-1 flex items-center gap-1 text-[10px] text-sky-200" title="Allied Tatsugiri boosts Dondozo +2 to every stat">
-          <input
-            type="checkbox"
-            checked={!!state.commander}
-            onChange={(e) => onPatch({ commander: e.target.checked })}
-          />
-          Commander (+2 all)
-        </label>
-      )}
-      {slug && special?.kind === "zoroark" && (
-        <select
-          value={state.illusionAs ?? ""}
-          onChange={(e) => onPatch({ illusionAs: e.target.value || null })}
-          title="Illusion: appear as a teammate (cosmetic - stats stay Zoroark's)"
-          className="mt-1 w-full rounded border border-fuchsia-700 bg-slate-900 px-1 py-0.5 text-[10px] text-fuchsia-200"
-        >
-          <option value="">Illusion (disguise)…</option>
-          {special.options.map((o) => <option key={o.slug} value={o.slug}>{o.name}</option>)}
-        </select>
-      )}
+
+      {/* Orders + log */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 12, fontSize: 12, alignItems: "start" }}>
+        <div style={{ borderRadius: 12, border: "1px solid oklch(72% 0.1 190 / 0.3)", background: "oklch(20% 0.008 240)", padding: 12, display: "flex", flexDirection: "column", gap: 9, height: "100%" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <h3 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "oklch(72% 0.01 240)", margin: 0, whiteSpace: "nowrap" }}>Your orders · round {round}</h3>
+            <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, color: chosenCount === 2 ? POS : WARN }}>{chosenCount === 2 ? "both orders set" : `${chosenCount} of 2 set`}</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 8 }}>{([0, 1] as const).map((i) => orderSlot(i))}</div>
+          <p style={{ margin: 0, fontSize: 10, color: "oklch(54% 0.012 240)", lineHeight: 1.45 }}>{fieldSummary.length ? `Recorded field: ${fieldSummary.join(", ")}.` : "No field effects recorded."}</p>
+          {!battleOver && (
+            <span style={{ display: "flex", gap: 7 }}>
+              <button onClick={prevRound} title="Undo the last committed round" style={{ flex: "0 0 auto", borderRadius: 11, border: "1px solid oklch(32% 0.01 240)", background: "none", color: "oklch(84% 0.01 240)", padding: "11px 13px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>← Back a round</button>
+              <button onClick={advanceRound} style={{ flex: 1, minWidth: 0, borderRadius: 11, background: chosenCount === 2 ? ACC : "oklch(58% 0.05 190)", color: "oklch(16% 0.008 240)", border: "none", padding: "11px 0", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>{chosenCount === 2 ? `Commit round ${round} & continue →` : `Commit round ${round} anyway →`}</button>
+            </span>
+          )}
+        </div>
+
+        <div style={{ borderRadius: 12, border: "1px solid oklch(30% 0.01 240)", background: "oklch(20% 0.008 240)", padding: 12, display: "flex", flexDirection: "column", gap: 9, minWidth: 0, height: "100%" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <h3 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "oklch(72% 0.01 240)", margin: 0, whiteSpace: "nowrap" }}>Battle log</h3>
+            <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+              <button onClick={() => setLogIdx((i) => Math.max(0, i - 1))} title="Earlier round" style={{ borderRadius: 7, border: "1px solid oklch(32% 0.01 240)", background: "none", color: logIdx > 0 ? "oklch(86% 0.01 240)" : "oklch(40% 0.01 240)", width: 24, height: 22, fontSize: 12, lineHeight: 1, cursor: "pointer" }}>←</button>
+              <span className="mono" style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", color: "oklch(70% 0.01 240)" }}>{log.length ? `${Math.min(logIdx, log.length - 1) + 1} / ${log.length}` : "0 / 0"}</span>
+              <button onClick={() => setLogIdx((i) => Math.min(log.length - 1, i + 1))} title="Later round" style={{ borderRadius: 7, border: "1px solid oklch(32% 0.01 240)", background: "none", color: logIdx < log.length - 1 ? "oklch(86% 0.01 240)" : "oklch(40% 0.01 240)", width: 24, height: 22, fontSize: 12, lineHeight: 1, cursor: "pointer" }}>→</button>
+            </span>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, maxHeight: 264, overflowY: "auto", paddingRight: 4 }}>
+            {log.length && logEntry ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, borderLeft: "2px solid oklch(58% 0.06 190)", paddingLeft: 9 }}>
+                <span className="mono" style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "oklch(58% 0.012 240)" }}>ROUND {logEntry.round}</span>
+                {logEntry.lines.map((ln, j) => <span key={j} style={{ fontSize: 11, lineHeight: 1.45, color: ln.side === "user" ? "oklch(84% 0.06 150)" : ln.side === "opp" ? "oklch(80% 0.07 25)" : "oklch(70% 0.01 240)" }}>{ln.text}</span>)}
+              </div>
+            ) : (
+              <p style={{ margin: 0, fontSize: 11, color: "oklch(56% 0.012 240)" }}>No rounds committed yet.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Active cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 12 }}>
+        {renderEditor("user")}
+        {renderEditor("opponent")}
+      </div>
+
+      {advancedTools}
     </div>
   );
+
+  // -------------------------------------------------------------------------
+  // Active card renderer (kept inline for access to engine helpers)
+  // -------------------------------------------------------------------------
+  function renderEditor(side: Side) {
+    const foe = side === "opponent";
+    const idx = foe ? selOpp : selUser;
+    const active = foe ? activeOpp : activeUser;
+    const team = foe ? oTeam : uTeam;
+    const sent = foe ? sentOpp : sentUser;
+    const slug = active[idx];
+    const p = bySlug.get(slug)!;
+    const st = monOf(side, slug);
+    const mega = megaForms[slug];
+    const isMega = !!mega && st.mega;
+    const otherMega = team.find((x) => x !== slug && monOf(side, x).mega);
+    const megaBlocked = !!mega && !isMega && !!otherMega;
+    const forme = formeOf(side, slug);
+    const nature = natureByName(st.nature);
+    const foesActive = foe ? activeUser : activeOpp;
+    const tgtIdx = (target[slug] ?? 0) as 0 | 1;
+    const targetName = nameOf(foesActive[tgtIdx]);
+
+    const attacker = built?.state ? (foe ? built.state.opponent.active[idx] : built.state.user.active[idx]) : null;
+    const targetC: Combatant | null = built?.state ? ((foe ? built.state.user.active : built.state.opponent.active)[tgtIdx] ?? null) : null;
+    const defenderConditions: SideConditions = (foe ? built?.state?.user.conditions : built?.state?.opponent.conditions) ?? (foe ? uCond : oCond);
+    const field = built?.state?.field ?? DEFAULT_FIELD;
+
+    const order = orders[idx as 0 | 1];
+    const known = st.knownMoves || [];
+    const moveState = st.moveState || {};
+
+    const border = foe ? "oklch(68% 0.16 25 / 0.45)" : "oklch(72% 0.13 150 / 0.45)";
+    const sideColor = foe ? NEG : POS;
+
+    const abilityValue = forme?.ability ?? (st.ability || (p.abilities[0] ?? ""));
+    const abilityLocked = !!forme?.ability;
+    const abilityOpts = forme?.ability && !matchAbilities.includes(forme.ability) ? [forme.ability, ...matchAbilities] : [st.ability || p.abilities[0] || "", ...matchAbilities].filter((v, i2, a) => v && a.indexOf(v) === i2);
+    const itemValue = isMega ? mega!.item : st.item;
+    const itemsOpen = itemPicker === side;
+    const itemList = itemOptions(itemValue, items).filter((it) => !itemQuery.trim() || it.toLowerCase().includes(itemQuery.trim().toLowerCase()));
+
+    const statHeads = STAT_KEYS.map((k) => ({
+      label: (k === nature.boosted && nature.boosted !== nature.lowered ? "+" : k === nature.lowered && nature.boosted !== nature.lowered ? "−" : "") + STAT_LABEL[k],
+      color: k === nature.boosted && nature.boosted !== nature.lowered ? NEG : k === nature.lowered && nature.boosted !== nature.lowered ? "oklch(72% 0.1 240)" : "oklch(60% 0.012 240)",
+    }));
+    const baseStats = forme ? forme.baseStats : p.baseStats;
+
+    return (
+      <div key={side} style={{ borderRadius: 14, border: `1px solid ${border}`, background: "oklch(20% 0.008 240)", padding: 13, display: "flex", flexDirection: "column", gap: 11, minWidth: 0 }}>
+        {/* team header row */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+          <span style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", color: sideColor }}>{foe ? "Opponent active" : "Your active"}</span>
+          <span style={{ display: "flex", flexWrap: "nowrap", gap: 4 }}>
+            {team.map((tslug) => {
+              const tst = monOf(side, tslug);
+              const activeAt = active.indexOf(tslug);
+              const on = activeAt === idx;
+              const fainted = tst.hpPct <= 0;
+              const benched = sent.length >= BRING_LIMIT && !sent.includes(tslug);
+              const tborder = on ? ACC : activeAt >= 0 ? "oklch(56% 0.06 190)" : "oklch(30% 0.01 240)";
+              const tbg = on ? "oklch(72% 0.1 190 / 0.2)" : benched ? "oklch(19% 0.006 240)" : activeAt >= 0 ? "oklch(72% 0.1 190 / 0.09)" : RAISE;
+              const sf = fainted ? "grayscale(1) opacity(0.45)" : benched ? "grayscale(1) opacity(0.3)" : activeAt >= 0 ? "none" : "saturate(0.75) opacity(0.85)";
+              return (
+                <button key={tslug} title={benched ? `${nameOf(tslug)} — not brought (four already sent out)` : activeAt >= 0 ? `${nameOf(tslug)} — on the field${on ? " (shown below)" : ", click to show"}` : `Switch in ${nameOf(tslug)}`}
+                  onClick={() => {
+                    if (activeAt >= 0) { focus(side, activeAt as 0 | 1); }
+                    else if (!benched) {
+                      const next = [...active] as [string, string]; next[idx] = tslug;
+                      (foe ? setActiveOpp : setActiveUser)(next);
+                      (foe ? setSentOpp : setSentUser)([...new Set([...sent, tslug])]);
+                    }
+                  }}
+                  style={{ position: "relative", flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, borderRadius: 9, border: `1px solid ${tborder}`, background: tbg, padding: "3px 1px 4px", cursor: "pointer" }}>
+                  <Sprite species={tslug} w={40} h={30} filter={sf} />
+                  <span style={{ width: 34, height: 4, borderRadius: 2, background: "oklch(30% 0.01 240)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${tst.hpPct}%`, background: hpColor(tst.hpPct) }} /></span>
+                  {activeAt >= 0 && !fainted && <span title="on the field" style={{ position: "absolute", top: 3, right: 3, width: 8, height: 8, borderRadius: 999, background: on ? ACC : "oklch(62% 0.07 190)", boxShadow: "0 0 0 2px oklch(20% 0.008 240)" }} />}
+                  {fainted && <span title="fainted" style={{ position: "absolute", top: 1, right: 4, fontSize: 11, fontWeight: 800, lineHeight: 1, color: "oklch(68% 0.16 25)" }}>✕</span>}
+                  {!fainted && tst.status !== "none" && <span title={tst.status} style={{ position: "absolute", bottom: 1, left: 2, display: "flex", alignItems: "center", justifyContent: "center", minWidth: 14, height: 14, padding: "0 2px", borderRadius: 999, fontSize: 8, fontWeight: 800, lineHeight: 1, background: STATUS_COLOR[tst.status] ?? "transparent", color: "#fff" }}>{STATUS_GLYPH[tst.status] ?? ""}</span>}
+                </button>
+              );
+            })}
+          </span>
+        </div>
+
+        {/* identity row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
+          <Sprite species={slug} w={50} h={38} scale={1.25} />
+          <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-0.01em" }}>{forme ? forme.name : p.name}</span>
+          <span style={{ display: "flex", gap: 4 }}>
+            {typesFor(forme ? forme.types : p.types).map((t) => <span key={t.name} style={{ borderRadius: 999, fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", padding: "2px 7px", color: "#fff", background: t.hex }}>{t.name}</span>)}
+          </span>
+          <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 3 }}>
+            {STATUSES.map((x) => {
+              const on = st.status === x;
+              return <button key={x} onClick={() => patchMon(side, slug, { status: on ? "none" : x })} title={on ? `Clear ${x}` : `Set ${x}`} style={{ borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", border: `1px solid ${on ? STATUS_COLOR[x] : "oklch(32% 0.01 240)"}`, cursor: "pointer", background: on ? STATUS_COLOR[x] : "transparent", color: on ? "#fff" : "oklch(62% 0.012 240)" }}>{STATUS_SHORT[x]}</button>;
+            })}
+          </span>
+          {mega && (
+            <button onClick={() => { if (mega && !megaBlocked) patchMon(side, slug, isMega ? { mega: false } : { mega: true, item: mega.item, itemUsed: false }); }} title={isMega ? `Revert ${mega.name}` : megaBlocked ? "Only one Mega Evolution per team" : `Mega Evolve (${mega.name}, ${mega.item})`} style={{ marginLeft: "auto", borderRadius: 9, padding: "3px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", opacity: megaBlocked ? 0.4 : 1, border: `1px solid ${isMega ? "#c026d3" : "rgba(232,121,249,0.55)"}`, background: isMega ? "#c026d3" : "transparent", color: isMega ? "#0e1013" : "#e879f9" }}>Mega</button>
+          )}
+        </div>
+
+        {/* HP row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <span className="mono" style={{ fontSize: 11, color: "oklch(78% 0.01 240)", width: 38 }}>{st.hpPct}%</span>
+          <input type="range" min={0} max={100} value={st.hpPct} onChange={(e) => patchMon(side, slug, { hpPct: Number(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
+        </div>
+
+        {/* ability + item */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 6 }}>
+          <select value={abilityValue} disabled={abilityLocked} onChange={(e) => patchMon(side, slug, { ability: e.target.value })} aria-label="Ability" style={{ borderRadius: 9, height: 30, border: "1px solid oklch(32% 0.01 240)", background: "oklch(24% 0.008 240)", color: "oklch(90% 0.01 240)", padding: "0 8px", fontSize: 11, opacity: abilityLocked ? 0.7 : 1 }}>
+            {abilityOpts.map((a) => <option key={a} value={a}>{a}</option>)}
+          </select>
+          <span style={{ position: "relative", display: "block", minWidth: 0 }}>
+            <button onClick={() => { setItemPicker(itemsOpen ? null : side); setItemQuery(""); }} title="Item" disabled={isMega} style={{ width: "100%", borderRadius: 9, height: 30, border: "1px solid oklch(32% 0.01 240)", background: "oklch(24% 0.008 240)", color: "oklch(90% 0.01 240)", padding: "0 20px 0 8px", fontSize: 11, cursor: isMega ? "default" : "pointer", textAlign: "left", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{itemValue}</button>
+            <span style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", fontSize: 9, pointerEvents: "none", color: "oklch(66% 0.012 240)" }}>▾</span>
+            {itemsOpen && !isMega && (
+              <span style={{ position: "absolute", left: 0, right: 0, top: "calc(100% + 4px)", zIndex: 20, display: "flex", flexDirection: "column", gap: 4, borderRadius: 10, border: "1px solid oklch(32% 0.01 240)", background: "oklch(20% 0.008 240)", boxShadow: "0 16px 34px rgba(0,0,0,0.5)", padding: 7 }}>
+                <input value={itemQuery} onChange={(e) => setItemQuery(e.target.value)} placeholder="Search items…" style={{ borderRadius: 7, height: 26, border: "1px solid oklch(30% 0.01 240)", background: "oklch(16% 0.008 240)", color: "oklch(92% 0.01 240)", padding: "0 8px", fontSize: 11 }} />
+                <span style={{ display: "flex", flexDirection: "column", gap: 1, maxHeight: 168, overflowY: "auto" }}>
+                  {itemList.map((it) => { const on = it === st.item; return (
+                    <button key={it} onClick={() => { patchMon(side, slug, { item: it }); setItemPicker(null); setItemQuery(""); }} style={{ textAlign: "left", border: "none", borderRadius: 6, background: on ? "oklch(72% 0.1 190 / 0.16)" : "transparent", color: on ? "oklch(86% 0.1 190)" : "oklch(88% 0.01 240)", padding: "4px 7px", fontSize: 11, cursor: "pointer" }}>{it}</button>
+                  ); })}
+                </span>
+              </span>
+            )}
+          </span>
+        </div>
+
+        {/* species specials */}
+        {(slug === "ditto" || slug === "zoroark" || (slug === "dondozo" && team.some((x) => x === "tatsugiri"))) && (
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+            {slug === "dondozo" && team.some((x) => x === "tatsugiri") && (
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "oklch(80% 0.09 235)" }}><input type="checkbox" checked={!!st.commander} onChange={(e) => patchMon(side, slug, { commander: e.target.checked })} /> Commander (+2 all)</label>
+            )}
+            {slug === "ditto" && (
+              <select value={st.transformInto ?? ""} onChange={(e) => patchMon(side, slug, { transformInto: e.target.value || null })} style={{ borderRadius: 8, height: 28, border: "1px solid oklch(60% 0.12 235)", background: "oklch(24% 0.008 240)", color: "oklch(82% 0.09 235)", padding: "0 8px", fontSize: 10 }}>
+                <option value="">Transform into…</option>
+                {foesActive.map((x) => <option key={x} value={x}>{nameOf(x)}</option>)}
+              </select>
+            )}
+            {slug === "zoroark" && (
+              <select value={st.illusionAs ?? ""} onChange={(e) => patchMon(side, slug, { illusionAs: e.target.value || null })} style={{ borderRadius: 8, height: 28, border: "1px solid #a21caf", background: "oklch(24% 0.008 240)", color: "#f0abfc", padding: "0 8px", fontSize: 10 }}>
+                <option value="">Illusion (disguise)…</option>
+                {team.filter((x) => x !== slug).map((x) => <option key={x} value={x}>{nameOf(x)}</option>)}
+              </select>
+            )}
+          </div>
+        )}
+
+        {/* moves */}
+        <div style={{ borderTop: "1px solid oklch(28% 0.01 240)", paddingTop: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 7 }}>
+            <span style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "oklch(54% 0.012 240)" }}>{foe ? `Their moves vs ${targetName}` : `Moves vs ${targetName}`}</span>
+            <span style={{ display: "flex", gap: 4 }}>
+              {foesActive.map((tslug, i) => { const on = tgtIdx === i; return (
+                <button key={tslug} onClick={() => setTarget({ ...target, [slug]: i as 0 | 1 })} title={`Damage vs ${nameOf(tslug)}`} style={{ display: "flex", alignItems: "center", borderRadius: 8, border: `1px solid ${on ? ACC : "oklch(30% 0.01 240)"}`, background: on ? "oklch(72% 0.1 190 / 0.14)" : RAISE, padding: "1px 3px", cursor: "pointer" }}>
+                  <Sprite species={tslug} w={36} h={27} filter={on ? undefined : "opacity(0.5)"} />
+                </button>
+              ); })}
+            </span>
+          </div>
+          {foe && <p style={{ margin: "0 0 6px", fontSize: 10, lineHeight: 1.45, color: "oklch(56% 0.012 240)" }}>Likely moves from ladder usage. Click a move once to add it to their known set, again to clear.</p>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {(attacker?.moves ?? []).map((m) => renderMoveRow(side, slug, m, attacker!, targetC, defenderConditions, field, order, moveState, known, tgtIdx))}
+          </div>
+        </div>
+
+        {/* spread & boosts */}
+        <div style={{ borderTop: "1px solid oklch(28% 0.01 240)", paddingTop: 9 }}>
+          <button onClick={() => setSpreadOpen(!spreadOpen)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "oklch(54% 0.012 240)" }}>{spreadOpen ? "Spread & boosts ▴" : "Spread & boosts ▾"}</button>
+          {spreadOpen && (
+            <table style={{ width: "100%", tableLayout: "fixed", textAlign: "center", fontSize: 11, borderCollapse: "collapse", marginTop: 8 }}>
+              <thead>
+                <tr style={{ fontSize: 9, textTransform: "uppercase", color: "oklch(54% 0.012 240)" }}>
+                  <th style={{ textAlign: "left", fontWeight: 500, width: 34 }}> </th>
+                  {statHeads.map((h) => <th key={h.label} style={{ fontWeight: 700, color: h.color }}>{h.label}</th>)}
+                </tr>
+              </thead>
+              <tbody className="mono">
+                <tr>
+                  <td style={{ textAlign: "left", color: "oklch(54% 0.012 240)", fontSize: 9 }}>BASE</td>
+                  {STAT_KEYS.map((k) => <td key={k} style={{ color: "oklch(70% 0.01 240)" }}>{baseStats[k]}</td>)}
+                </tr>
+                <tr>
+                  <td style={{ textAlign: "left", color: "oklch(54% 0.012 240)", fontSize: 9 }}>EV</td>
+                  {STAT_KEYS.map((k) => (
+                    <td key={k}><input type="number" min={0} max={252} step={4} value={st.evs[k] ?? 0} onChange={(e) => patchMon(side, slug, { evs: { ...st.evs, [k]: Math.max(0, Math.min(252, Number(e.target.value))) } })} style={{ width: "100%", maxWidth: 42, borderRadius: 6, border: "1px solid oklch(30% 0.01 240)", background: "oklch(16% 0.008 240)", color: "oklch(88% 0.01 240)", textAlign: "center", fontSize: 10, padding: "2px 0" }} /></td>
+                  ))}
+                </tr>
+                <tr>
+                  <td style={{ textAlign: "left", color: "oklch(54% 0.012 240)", fontSize: 9 }}>=</td>
+                  {STAT_KEYS.map((k) => <td key={k} style={{ fontWeight: 700, color: "oklch(92% 0.004 240)" }}>{attacker ? attacker.stats[k] : "-"}</td>)}
+                </tr>
+                <tr>
+                  <td style={{ textAlign: "left", color: "oklch(54% 0.012 240)", fontSize: 9 }}>STAGE</td>
+                  <td style={{ color: "oklch(40% 0.01 240)" }}>-</td>
+                  {(["atk", "def", "spa", "spd", "spe"] as const).map((k) => (
+                    <td key={k}>
+                      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1 }}>
+                        <button onClick={() => patchMon(side, slug, { stages: { ...st.stages, [k]: Math.max(-6, st.stages[k] - 1) } })} style={{ border: "none", background: "oklch(30% 0.01 240)", color: "oklch(88% 0.01 240)", borderRadius: 4, width: 14, height: 14, fontSize: 9, lineHeight: 1, cursor: "pointer" }}>−</button>
+                        <span style={{ width: 15, textAlign: "center", fontSize: 10, color: st.stages[k] > 0 ? POS : st.stages[k] < 0 ? NEG : T2 }}>{st.stages[k] > 0 ? `+${st.stages[k]}` : `${st.stages[k]}`}</span>
+                        <button onClick={() => patchMon(side, slug, { stages: { ...st.stages, [k]: Math.min(6, st.stages[k] + 1) } })} style={{ border: "none", background: "oklch(30% 0.01 240)", color: "oklch(88% 0.01 240)", borderRadius: 4, width: 14, height: 14, fontSize: 9, lineHeight: 1, cursor: "pointer" }}>+</button>
+                      </span>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderMoveRow(
+    side: Side, slug: string, m: MoveFixture, attacker: Combatant, targetC: Combatant | null,
+    defenderConditions: SideConditions, field: FieldState,
+    order: Order | undefined, moveState: Record<string, "set">, known: string[], tgtIdx: 0 | 1,
+  ) {
+    const foe = side === "opponent";
+    const isDmg = m.category !== "status" && m.power !== null && !!targetC;
+    const d = isDmg ? calculateDamage(attacker, targetC!, m, field, { defenderConditions, spread: m.target !== "normal", crit: false }) : null;
+    const ko = koText(d);
+    const barPct = d ? Math.min(100, d.expectedPercent) : 0;
+    const barColor = barPct >= 60 ? POS : barPct >= 35 ? WARN : "oklch(50% 0.03 240)";
+    const chosen = !foe && !!order && order.move === m.name && order.target === tgtIdx;
+    const inSet = foe && (moveState[m.name] === "set" || known.includes(m.name));
+    const rowBg = chosen ? "oklch(72% 0.1 190 / 0.14)" : inSet ? "oklch(68% 0.16 25 / 0.1)" : RAISE;
+    const border = chosen ? ACC : inSet ? "oklch(68% 0.16 25 / 0.5)" : "oklch(28% 0.01 240)";
+    const nameColor = inSet ? "oklch(86% 0.09 25)" : "oklch(92% 0.01 240)";
+    const nameWeight = chosen || inSet ? 800 : 600;
+    const label = foe ? `${inSet ? "✓" : "○"} ${m.name}` : m.name;
+    const hasFlag = chosen || inSet;
+    const statLine = `${m.power ? m.power : "—"} bp · ${m.accuracy != null ? m.accuracy + "%" : "—"}`;
+    const onClick = () => {
+      if (foe) {
+        const nextSet = moveState[m.name] === "set" || known.includes(m.name) ? undefined : "set";
+        const ms = { ...moveState };
+        if (nextSet) ms[m.name] = nextSet; else delete ms[m.name];
+        patchMon(side, slug, { moveState: ms, knownMoves: nextSet ? [...new Set([...known, m.name])] : known.filter((x) => x !== m.name) });
+      } else {
+        setOrders((prev) => ({ ...prev, [selUser]: { move: m.name, target: tgtIdx, slug } }));
+      }
+    };
+    return (
+      <button key={m.name} onClick={onClick} title={foe ? (inSet ? "In their set — click to remove" : "Click to add to their known set") : `Order ${m.name} this round`} style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%", textAlign: "left", cursor: "pointer", borderRadius: 10, border: `1px solid ${border}`, background: rowBg, padding: "7px 9px" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ borderRadius: 5, padding: "1px 6px", fontSize: 8, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", background: TYPE_HEX[m.type] ?? "#777" }}>{m.type.slice(0, 3)}</span>
+          <span style={{ fontSize: 12, fontWeight: nameWeight, color: nameColor, flex: 1, minWidth: 0 }}>{label}</span>
+          {hasFlag && <span style={{ flexShrink: 0, borderRadius: 5, background: chosen ? ACC : NEG, color: chosen ? BG : "#fff", fontSize: 8, fontWeight: 800, textTransform: "uppercase", padding: "1px 5px" }}>{chosen ? "chosen" : "in set"}</span>}
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="mono" style={{ fontSize: 10, color: "oklch(58% 0.012 240)", flex: "0 0 92px" }}>{statLine}</span>
+          <span style={{ flex: 1, minWidth: 24, height: 5, borderRadius: 3, background: "oklch(30% 0.01 240)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${barPct}%`, background: barColor }} /></span>
+          <span className="mono" style={{ fontSize: 10, color: "oklch(76% 0.01 240)", flex: "0 0 62px", textAlign: "right" }}>{d ? `${d.minPercent}–${d.maxPercent}%` : "-"}</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: ko.color, flex: "0 0 66px", textAlign: "right" }}>{ko.text}</span>
+        </span>
+      </button>
+    );
+  }
 }
+
+const STAT_LABEL: Record<StatKey, string> = { hp: "HP", atk: "ATK", def: "DEF", spa: "SPA", spd: "SPD", spe: "SPE" };
+
+// ---- ranked option (nested details inside the best-play card) -------------
+
+function RankedOption({ r, i, border, rankBg, bar, scoreColor }: { r: Recommendation; i: number; border: string; rankBg: string; bar: string; scoreColor: string }) {
+  const scorePct = Math.round(r.breakdown.total * 100);
+  const factors = [...r.breakdown.factors].sort((a, b) => b.contribution - a.contribution);
+  return (
+    <details style={{ borderRadius: 12, border: `1px solid ${border}`, background: "oklch(20% 0.008 240)" }}>
+      <summary style={{ listStyle: "none", cursor: "pointer", padding: "11px 13px", display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ borderRadius: 6, background: rankBg, color: "oklch(16% 0.008 240)", fontWeight: 800, fontSize: 10, padding: "2px 7px", flexShrink: 0 }}>#{i + 1}</span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700 }}>{r.actionLines.join(" · ")}</span>
+        <span style={{ flex: "0 0 78px", height: 5, borderRadius: 3, background: "oklch(30% 0.01 240)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${scorePct}%`, background: bar }} /></span>
+        <span className="mono" style={{ flex: "0 0 46px", textAlign: "right", fontSize: 11, color: scoreColor }}>{r.breakdown.total.toFixed(3)}</span>
+        <span style={{ flex: "0 0 74px", textAlign: "right", fontSize: 10, color: "oklch(54% 0.012 240)" }}>conf {(r.confidence * 100).toFixed(0)}%</span>
+      </summary>
+      <div style={{ padding: "0 13px 13px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <p style={{ margin: 0, fontSize: 12, color: "oklch(80% 0.01 240)", lineHeight: 1.5 }}>{r.expectedPosition}</p>
+        {r.damage.length > 0 && (
+          <ul style={{ margin: 0, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 3, fontSize: 11, color: "oklch(64% 0.012 240)" }}>
+            {r.damage.map((d, k) => (
+              <li key={k}>{d.attacker} → {d.target} ({d.moveName}): {d.damage.minPercent}–{d.damage.maxPercent}% (exp {d.damage.expectedPercent}%), OHKO {(d.damage.ohkoProbability * 100).toFixed(0)}%, 2HKO {d.damage.twoHitKoProbability === null ? "-" : (d.damage.twoHitKoProbability * 100).toFixed(0)}%, {d.movesFirst ? "moves first" : "moves second"}</li>
+            ))}
+          </ul>
+        )}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          {factors.map((f) => <span key={f.name} title={`raw ${f.raw}, weight ${f.weight}`} style={{ borderRadius: 6, background: "oklch(26% 0.008 240)", color: "oklch(78% 0.01 240)", padding: "2px 8px", fontSize: 10 }}>{f.name}: {f.contribution.toFixed(3)}</span>)}
+        </div>
+        <p style={{ margin: 0, fontSize: 11, color: "oklch(68% 0.16 25)" }}>Risk: {r.mainRisk}</p>
+        <p style={{ margin: 0, fontSize: 11, color: "oklch(56% 0.012 240)", lineHeight: 1.5 }}>{r.explanation}</p>
+        <details>
+          <summary style={{ cursor: "pointer", fontSize: 11, color: "oklch(56% 0.012 240)" }}>Assumptions</summary>
+          <ul style={{ margin: "5px 0 0", paddingLeft: 16, fontSize: 11, color: "oklch(56% 0.012 240)", display: "flex", flexDirection: "column", gap: 3 }}>
+            {assumptionsFor(r.assumptions).map((a) => <li key={a.id}>{a.description}</li>)}
+          </ul>
+        </details>
+      </div>
+    </details>
+  );
+}
+
+export { BattleView };
