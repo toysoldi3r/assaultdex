@@ -3,20 +3,27 @@
 // pure helpers both surfaces use. Keeping this in one place means the drawer
 // and the dock stay in sync (same sections, same storage keys, same behaviour).
 
+/** Icon key for a primary section (drawn by SectionIcon). */
+export type IconName =
+  | "home" | "guide" | "pokedex" | "teams"
+  | "choicedex" | "battles" | "database" | "sources";
+
 export interface NavItem {
   href: string;
   label: string;
+  /** Section rows carry an icon; recent/pinned rows do not. */
+  icon?: IconName;
 }
 
 export const SECTIONS: NavItem[] = [
-  { href: "/", label: "Home" },
-  { href: "/guide", label: "Guide" },
-  { href: "/pokemon", label: "Pokédex" },
-  { href: "/teams", label: "Teams" },
-  { href: "/choicedex", label: "ChoiceDex" },
-  { href: "/battles", label: "Battles" },
-  { href: "/database", label: "Database" },
-  { href: "/sources", label: "Sources" },
+  { href: "/", label: "Home", icon: "home" },
+  { href: "/guide", label: "Guide", icon: "guide" },
+  { href: "/pokemon", label: "Pokédex", icon: "pokedex" },
+  { href: "/teams", label: "Teams", icon: "teams" },
+  { href: "/choicedex", label: "ChoiceDex", icon: "choicedex" },
+  { href: "/battles", label: "Battles", icon: "battles" },
+  { href: "/database", label: "Database", icon: "database" },
+  { href: "/sources", label: "Sources", icon: "sources" },
 ];
 
 export const RECENT_KEY = "assaultdex.recentNav";
