@@ -67,9 +67,9 @@ export function MetaCards({
   const cores = coreSize === 2 ? cores2 : coreSize === 3 ? cores3 : cores4;
 
   return (
-    <div className="grid min-w-0 items-start gap-[18px] lg:grid-cols-[1.35fr_1fr]">
+    <div className="grid min-w-0 items-stretch gap-[18px] lg:grid-cols-[1.35fr_1fr]">
       {/* Ladder */}
-      <section className="overflow-hidden rounded-lg border border-line bg-panel">
+      <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-panel">
         <div className="flex items-center gap-3 border-b border-line px-3.5 py-[9px]">
           <h2 className="text-[13px] font-semibold text-t1">Ladder</h2>
           <div className="ml-auto flex gap-1">
@@ -89,7 +89,7 @@ export function MetaCards({
         <p className="border-b border-line px-3.5 py-[7px] text-[11px] leading-4 text-t3">
           {CAPTION[tab](grouped(totalBattles))}
         </p>
-        <div className="max-h-[560px] overflow-y-auto overflow-x-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden lg:max-h-none max-h-[560px]">
           <div
             className="sticky top-0 z-[1] hidden items-center border-b border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3 md:grid"
             style={{ gridTemplateColumns: LADDER_COLS }}
