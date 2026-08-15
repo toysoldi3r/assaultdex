@@ -20,6 +20,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Broadcast the nav state so content that reflows on collapse (the Database
+  // detail card widens by 148px) can react without prop-drilling through pages.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent<boolean>("assaultdex:nav", { detail: open }));
+  }, [open]);
+
   const toggle = () =>
     setOpen((o) => {
       const next = !o;
