@@ -67,6 +67,7 @@ const MOVE_COLS = "1fr 58px 20px 84px";
 
 export function TeamBuilder({
   teamId,
+  teamName,
   isBox,
   initialMembers,
   refs,
@@ -78,6 +79,7 @@ export function TeamBuilder({
   tournament = {},
 }: {
   teamId: string;
+  teamName?: string;
   isBox: boolean;
   initialMembers: PokemonSet[];
   refs: Record<string, MemberRef>;
@@ -300,23 +302,23 @@ export function TeamBuilder({
     return (
       <div className="overflow-hidden rounded-lg border border-line bg-panel">
         {/* Identity row */}
-        <div className="flex flex-wrap items-start gap-5 px-[18px] py-[14px]">
-          <span className="grid h-[76px] w-[76px] shrink-0 place-items-center overflow-hidden rounded-lg border border-line bg-bg">
-            <PokeIcon species={m.species} className="scale-[2.3]" />
+        <div className="flex flex-wrap items-start gap-4 px-[14px] py-[10px]">
+          <span className="grid h-[58px] w-[58px] shrink-0 place-items-center overflow-hidden rounded-lg border border-line bg-bg">
+            <PokeIcon species={m.species} className="scale-[1.8]" />
           </span>
           <div className="flex flex-col gap-1">
             <button onClick={() => openPanel(i, "species")} title="Change Pokémon"
-              className="w-[210px] rounded border border-line bg-bg px-2 py-1.5 text-left hover:border-accln">
-              <span className="text-[15px] font-[650] text-t1">{r.name}</span>
+              className="w-[210px] rounded border border-line bg-bg px-2 py-1 text-left hover:border-accln">
+              <span className="text-[14px] font-[650] text-t1">{r.name}</span>
               <span className="ml-1 text-[10px] text-t3">change</span>
             </button>
             <span className="flex gap-1">{r.types.map((t) => <TypeBadge key={t} type={t} />)}</span>
           </div>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3">
             <Field label="Item">
               <button onClick={() => openPanel(i, "item")}
                 title={dupItemIdx.has(i) ? "Duplicate item - another Pokémon holds this too (illegal)." : undefined}
-                className={`flex w-[170px] items-center gap-1.5 rounded px-2 py-1.5 text-[13px] ${
+                className={`flex w-[170px] items-center gap-1.5 rounded px-2 py-1 text-[13px] ${
                   dupItemIdx.has(i) ? "border border-neg bg-bg text-neg" : m.item ? "border border-line bg-bg" : "border border-dashed border-line bg-bg text-t3"}`}>
                 {m.item ? <ItemIcon item={m.item} /> : null}
                 <span className="truncate">{m.item ?? "No item"}</span>
@@ -324,7 +326,7 @@ export function TeamBuilder({
             </Field>
             <Field label="Ability">
               <button onClick={() => openPanel(i, "ability")}
-                className="w-[170px] truncate rounded border border-line bg-bg px-2 py-1.5 text-left text-[13px] hover:border-accln">
+                className="w-[170px] truncate rounded border border-line bg-bg px-2 py-1 text-left text-[13px] hover:border-accln">
                 {m.ability || <span className="text-t3">-</span>}
               </button>
             </Field>
@@ -332,23 +334,23 @@ export function TeamBuilder({
         </div>
 
         {/* Details row */}
-        <div className="flex flex-wrap items-end gap-4 border-b border-line px-[18px] pb-[14px]">
+        <div className="flex flex-wrap items-end gap-3 border-b border-line px-[14px] pb-[10px]">
           <Field label="Nickname">
             <input value={m.nickname ?? ""} onChange={(e) => update(i, { nickname: e.target.value || undefined })}
-              placeholder={r.name} className="w-[170px] rounded border border-line bg-bg px-2 py-1.5 text-[13px]" />
+              placeholder={r.name} className="w-[170px] rounded border border-line bg-bg px-2 py-1 text-[13px]" />
           </Field>
           <Field label="Level">
-            <span title="Every battle is set to level 50" className="inline-block rounded bg-raise px-3 py-1.5 text-[13px] text-t3">50</span>
+            <span title="Every battle is set to level 50" className="inline-block rounded bg-raise px-3 py-1 text-[13px] text-t3">50</span>
           </Field>
           <Field label="Gender">
             <select value={m.gender ?? ""} onChange={(e) => update(i, { gender: (e.target.value || undefined) as "M" | "F" | undefined })}
-              className="w-[96px] rounded border border-line bg-bg px-2 py-1.5 text-[13px]">
+              className="w-[96px] rounded border border-line bg-bg px-2 py-1 text-[13px]">
               <option value="">-</option><option value="M">♂ M</option><option value="F">♀ F</option>
             </select>
           </Field>
           <Field label="Shiny">
             <select value={m.shiny ? "yes" : "no"} onChange={(e) => update(i, { shiny: e.target.value === "yes" })}
-              className="w-[96px] rounded border border-line bg-bg px-2 py-1.5 text-[13px]">
+              className="w-[96px] rounded border border-line bg-bg px-2 py-1 text-[13px]">
               <option value="no">No</option><option value="yes">Yes</option>
             </select>
           </Field>
@@ -356,7 +358,7 @@ export function TeamBuilder({
 
         {/* Body: moves | stats */}
         <div className="grid md:grid-cols-2">
-          <div className="space-y-1.5 border-line px-[18px] py-[14px] md:border-r">
+          <div className="space-y-1.5 border-line px-[14px] py-[10px] md:border-r">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-t3">Moves</span>
             <div className="grid items-center gap-2 pl-3 pr-7 text-[9px] uppercase tracking-wide text-t3" style={{ gridTemplateColumns: MOVE_COLS }}>
               <span>Move</span>
@@ -521,8 +523,14 @@ export function TeamBuilder({
 
   return (
     <div className="space-y-3.5">
-      {/* Status strip */}
-      <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-line sm:grid-cols-4" style={{ gap: 1, background: "var(--line)" }}>
+      {/* Status strip — team name lives here so the page header stays slim */}
+      <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-line sm:grid-cols-[minmax(0,1.4fr)_repeat(4,1fr)]" style={{ gap: 1, background: "var(--line)" }}>
+        {teamName && (
+          <div className="col-span-2 bg-panel px-[14px] py-[10px] sm:col-span-1">
+            <div className="truncate text-[17px] font-bold tracking-[-0.01em] text-t1" title={teamName}>{teamName}</div>
+            <div className="mt-0.5 text-[10px] uppercase tracking-wide text-t3">Team</div>
+          </div>
+        )}
         <StatCell value={`${members.length} / ${limit}`} label="Slots filled" />
         <StatCell value="Reg M-B" suffix="Bo3" label="Champions VGC 2026" />
         <StatCell value={String(flags.length)} valueClass={flags.length ? "text-warn" : "text-pos"}
