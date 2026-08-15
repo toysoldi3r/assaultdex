@@ -81,6 +81,11 @@ a:hover {
   font-variant-numeric: tabular-nums;
 }
 
+/* Crisp upscaling for the pixel-art sprite sheet (ChoiceDex redesign). */
+.px {
+  image-rendering: pixelated;
+}
+
 /* --------------------------------------------------------------------------
    Re-skin bridge. The shell and home board use the token utilities directly
    (bg-panel, text-t2, …). Pages not yet migrated still use the legacy slate /
