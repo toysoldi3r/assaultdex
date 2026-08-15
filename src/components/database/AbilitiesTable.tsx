@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { DbAbility } from "@/data/dexDatabase";
+import { useInfinite } from "./useInfinite";
 
 export function AbilitiesTable({
   abilities,
@@ -31,6 +32,8 @@ export function AbilitiesTable({
     );
   }, [abilities, q, champsOnly, champs]);
 
+  const { visible, sentinel, shown } = useInfinite(filtered, `${q}|${champsOnly}`, 50);
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
@@ -54,10 +57,10 @@ export function AbilitiesTable({
             Full list
           </button>
         </div>
-        <span className="text-xs text-slate-500">{filtered.length} shown</span>
+        <span className="text-xs text-slate-500">{shown} / {filtered.length} shown</span>
       </div>
       <ul className="grid gap-2 sm:grid-cols-2">
-        {filtered.map((a) => (
+        {visible.map((a) => (
           <li key={a.name} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
             <div className="flex items-baseline justify-between gap-2">
               <Link
@@ -72,6 +75,7 @@ export function AbilitiesTable({
           </li>
         ))}
       </ul>
+      <span ref={sentinel as React.RefObject<HTMLSpanElement>} className="block h-px" />
     </div>
   );
 }
