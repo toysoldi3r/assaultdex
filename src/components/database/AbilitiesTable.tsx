@@ -20,6 +20,8 @@ export function AbilitiesTable({
   const [sortField, setSortField] = useState<SortField>("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const champs = useMemo(() => new Set(championsAbilities), [championsAbilities]);
+  // No roster loaded (unseeded DB) → show the full list instead of nothing.
+  const champsAvailable = champs.size > 0;
   const advCount = sortField ? 1 : 0;
 
   const scopeCount = useMemo(
@@ -31,7 +33,7 @@ export function AbilitiesTable({
     const needle = q.trim().toLowerCase();
     const list = abilities.filter(
       (a) =>
-        (!champsOnly || champs.has(a.name)) &&
+        (!champsOnly || !champsAvailable || champs.has(a.name)) &&
         (!needle ||
           a.name.toLowerCase().includes(needle) ||
           a.desc.toLowerCase().includes(needle)),
