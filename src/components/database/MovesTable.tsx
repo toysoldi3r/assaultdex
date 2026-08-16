@@ -21,23 +21,32 @@ const PRIORITY_OPTS: { value: string; label: string }[] = [
   { value: "-3", label: "−3 and below" },
 ];
 
+type SortField = "" | "name" | "power" | "accuracy" | "pp" | "priority";
+
 const classLabel = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
 
 export function MovesTable({
-  moves,
+  moves = [],
   championsMoves = [],
 }: {
-  moves: DbMove[];
+  moves?: DbMove[];
   championsMoves?: string[];
 }) {
   const champs = useMemo(() => new Set(championsMoves), [championsMoves]);
   const [q, setQ] = useState("");
   const [champsOnly, setChampsOnly] = useState(true);
+  const [advOpen, setAdvOpen] = useState(false);
+  // Advanced filters + sort.
   const [fType, setFType] = useState<string>("");
   const [fCat, setFCat] = useState<string>("");
   const [fPrio, setFPrio] = useState<string>("");
   const [minPow, setMinPow] = useState(0);
   const [maxPow, setMaxPow] = useState(0);
+  const [sortField, setSortField] = useState<SortField>("");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const advCount =
+    (fType ? 1 : 0) + (fCat ? 1 : 0) + (fPrio ? 1 : 0) + (minPow > 0 ? 1 : 0) + (maxPow > 0 ? 1 : 0) + (sortField ? 1 : 0);
 
   const parsePow = (v: string) => {
     const n = parseInt(v.replace(/\D/g, ""), 10);
@@ -59,11 +68,10 @@ export function MovesTable({
     };
     const powOk = (pw: number | null) => {
       if (!powBound) return true;
-      // A power bound excludes status/no-power moves rather than treating them as 0.
       if (pw == null) return false;
       return (minPow <= 0 || pw >= minPow) && (maxPow <= 0 || pw <= maxPow);
     };
-    return moves.filter(
+    const list = moves.filter(
       (m) =>
         (!champsOnly || champs.has(m.name)) &&
         (!n || m.name.toLowerCase().includes(n)) &&
@@ -72,9 +80,21 @@ export function MovesTable({
         prioOk(m.priority) &&
         powOk(m.power),
     );
-  }, [moves, q, champsOnly, champs, fType, fCat, fPrio, minPow, maxPow]);
+    if (!sortField) return list;
+    const dir = sortDir === "asc" ? 1 : -1;
+    const num = (v: number | null) => (v == null ? -1 : v);
+    return [...list].sort((a, b) => {
+      let c = 0;
+      if (sortField === "name") c = a.name.localeCompare(b.name);
+      else if (sortField === "power") c = num(a.power) - num(b.power);
+      else if (sortField === "accuracy") c = num(a.accuracy) - num(b.accuracy);
+      else if (sortField === "pp") c = num(a.pp) - num(b.pp);
+      else c = a.priority - b.priority;
+      return c * dir;
+    });
+  }, [moves, q, champsOnly, champs, fType, fCat, fPrio, minPow, maxPow, sortField, sortDir]);
 
-  const sig = `${q}|${champsOnly}|${fType}|${fCat}|${fPrio}|${minPow}|${maxPow}`;
+  const sig = `${q}|${champsOnly}|${fType}|${fCat}|${fPrio}|${minPow}|${maxPow}|${sortField}|${sortDir}`;
   const { visible, sentinel, shown } = useInfinite(filtered, sig, 50);
 
   return (
@@ -90,29 +110,68 @@ export function MovesTable({
           <button onClick={() => setChampsOnly(true)} className={`px-3 py-1.5 ${champsOnly ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>Champions</button>
           <button onClick={() => setChampsOnly(false)} className={`px-3 py-1.5 ${!champsOnly ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>Full list</button>
         </div>
-        <select value={fType} onChange={(e) => setFType(e.target.value)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1 capitalize">
-          <option value="">Any type</option>
-          {POKEMON_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <select value={fCat} onChange={(e) => setFCat(e.target.value)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1">
-          <option value="">Any class</option>
-          <option value="physical">Physical</option>
-          <option value="special">Special</option>
-          <option value="status">Status</option>
-        </select>
-        <select value={fPrio} onChange={(e) => setFPrio(e.target.value)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1">
-          {PRIORITY_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <label className="flex items-center gap-1 text-slate-400">
-          Min power
-          <input type="text" inputMode="numeric" value={minPow || ""} placeholder="0" onChange={(e) => setMinPow(parsePow(e.target.value))} className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-1 tabular-nums" />
-        </label>
-        <label className="flex items-center gap-1 text-slate-400">
-          Max power
-          <input type="text" inputMode="numeric" value={maxPow || ""} placeholder="∞" onChange={(e) => setMaxPow(parsePow(e.target.value))} className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-1 tabular-nums" />
-        </label>
+        <button
+          onClick={() => setAdvOpen((o) => !o)}
+          className={`rounded border px-3 py-1.5 ${advOpen || advCount ? "border-amber-500 text-amber-300" : "border-slate-700 text-slate-300"}`}
+        >
+          Advanced filters{advCount ? ` (${advCount})` : ""} {advOpen ? "▴" : "▾"}
+        </button>
         <span className="text-slate-500">{shown} / {filtered.length} shown</span>
       </div>
+
+      {advOpen && (
+        <div className="flex flex-wrap items-center gap-4 rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs">
+          <select value={fType} onChange={(e) => setFType(e.target.value)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1 capitalize">
+            <option value="">Any type</option>
+            {POKEMON_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <select value={fCat} onChange={(e) => setFCat(e.target.value)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1">
+            <option value="">Any class</option>
+            <option value="physical">Physical</option>
+            <option value="special">Special</option>
+            <option value="status">Status</option>
+          </select>
+          <select value={fPrio} onChange={(e) => setFPrio(e.target.value)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1">
+            {PRIORITY_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <label className="flex items-center gap-1 text-slate-400">
+            Min power
+            <input type="text" inputMode="numeric" value={minPow || ""} placeholder="0" onChange={(e) => setMinPow(parsePow(e.target.value))} className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-1 tabular-nums" />
+          </label>
+          <label className="flex items-center gap-1 text-slate-400">
+            Max power
+            <input type="text" inputMode="numeric" value={maxPow || ""} placeholder="∞" onChange={(e) => setMaxPow(parsePow(e.target.value))} className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-1 tabular-nums" />
+          </label>
+          <label className="flex items-center gap-1 text-slate-400">
+            Sort by
+            <select value={sortField} onChange={(e) => setSortField(e.target.value as SortField)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1">
+              <option value="">Default</option>
+              <option value="name">Name</option>
+              <option value="power">Power</option>
+              <option value="accuracy">Accuracy</option>
+              <option value="pp">PP</option>
+              <option value="priority">Priority</option>
+            </select>
+          </label>
+          <button
+            onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+            disabled={!sortField}
+            title="Toggle sort direction"
+            className="rounded border border-slate-700 px-2 py-1 text-slate-300 disabled:opacity-40"
+          >
+            {sortDir === "asc" ? "Ascending ↑" : "Descending ↓"}
+          </button>
+          {advCount > 0 && (
+            <button
+              onClick={() => { setFType(""); setFCat(""); setFPrio(""); setMinPow(0); setMaxPow(0); setSortField(""); setSortDir("asc"); }}
+              className="rounded border border-slate-700 px-2 py-1 text-slate-400 hover:border-rose-500"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-lg border border-slate-800">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-900/60 text-xs uppercase text-slate-500">
