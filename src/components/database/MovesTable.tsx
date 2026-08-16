@@ -33,6 +33,9 @@ export function MovesTable({
   championsMoves?: string[];
 }) {
   const champs = useMemo(() => new Set(championsMoves), [championsMoves]);
+  // With no Champions roster loaded (e.g. an unseeded DB) the Champions scope
+  // would be empty; fall back to the full list so data still shows.
+  const champsAvailable = champs.size > 0;
   const [q, setQ] = useState("");
   const [champsOnly, setChampsOnly] = useState(true);
   const [advOpen, setAdvOpen] = useState(false);
@@ -73,7 +76,7 @@ export function MovesTable({
     };
     const list = moves.filter(
       (m) =>
-        (!champsOnly || champs.has(m.name)) &&
+        (!champsOnly || !champsAvailable || champs.has(m.name)) &&
         (!n || m.name.toLowerCase().includes(n)) &&
         (!fType || m.type.toLowerCase() === fType) &&
         (!fCat || m.category.toLowerCase() === fCat) &&

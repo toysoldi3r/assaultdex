@@ -22,16 +22,19 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
   const advCount =
     (category ? 1 : 0) + (hideBerries ? 1 : 0) + (hideMega ? 1 : 0) + (sortField ? 1 : 0);
 
+  // No legal-item flags present → show the full list rather than nothing.
+  const champsAvailable = useMemo(() => items.some((i) => i.competitive), [items]);
+
   const scopeCount = useMemo(
-    () => items.filter((i) => !champsOnly || i.competitive).length,
-    [items, champsOnly],
+    () => items.filter((i) => !champsOnly || !champsAvailable || i.competitive).length,
+    [items, champsOnly, champsAvailable],
   );
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = items.filter(
       (i) =>
-        (!champsOnly || i.competitive) &&
+        (!champsOnly || !champsAvailable || i.competitive) &&
         (!category || i.category === category) &&
         (!hideBerries || !i.berry) &&
         (!hideMega || !i.mega) &&
@@ -48,7 +51,7 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
       else c = a.name.localeCompare(b.name);
       return c * dir;
     });
-  }, [items, q, champsOnly, category, hideBerries, hideMega, sortField, sortDir]);
+  }, [items, q, champsOnly, champsAvailable, category, hideBerries, hideMega, sortField, sortDir]);
 
   const sig = `${q}|${champsOnly}|${category}|${hideBerries}|${hideMega}|${sortField}|${sortDir}`;
   const { visible, sentinel, shown } = useInfinite(filtered, sig, 50);
