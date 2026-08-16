@@ -6,7 +6,7 @@ import { ItemIcon } from "@/components/ItemIcon";
 import { ITEM_CATEGORIES, type DbItem } from "@/data/dexDatabase";
 import { useInfinite } from "./useInfinite";
 
-export function ItemsTable({ items }: { items: DbItem[] }) {
+export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
   const [q, setQ] = useState("");
   const [champsOnly, setChampsOnly] = useState(true);
   const [advOpen, setAdvOpen] = useState(false);
