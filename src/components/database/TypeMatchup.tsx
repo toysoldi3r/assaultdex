@@ -52,11 +52,14 @@ function Chart({
   colLabel,
   hideOnes,
   value,
+  tip,
 }: {
   rowLabel: string;
   colLabel: string;
   hideOnes?: boolean;
   value: (row: PokemonType, col: PokemonType) => number;
+  /** Cell tooltip; row/col meaning differs per chart, so the caller supplies it. */
+  tip: (row: PokemonType, col: PokemonType, m: number) => string;
 }) {
   // The highlighted cross is the locked cell if any, else the hovered one.
   const [hover, setHover] = useState<{ r: PokemonType; c: PokemonType } | null>(null);
@@ -96,7 +99,7 @@ function Chart({
                     className={`h-8 w-9 cursor-pointer border border-slate-950/60 tabular-nums ${cellColor(m)} ${
                       cross ? "brightness-125" : active ? "brightness-90" : ""
                     } ${exact ? "outline outline-2 -outline-offset-2 outline-white" : ""}`}
-                    title={`${a} 1/${d} 2 = ${cellText(m)}×`}
+                    title={tip(a, d, m)}
                   >
                     {hideOnes && m === 1 ? "" : cellText(m)}
                   </td>
@@ -121,7 +124,11 @@ export function TypeMatchup() {
         <p className="mb-3 text-xs text-slate-500">
           Row = attacking type, column = defending type. Hover to highlight a row + column; click a cell to lock it.
         </p>
-        <Chart rowLabel="atk" colLabel="def" hideOnes value={(a, d) => singleTypeMultiplier(a, d)} />
+        <Chart
+          rowLabel="atk" colLabel="def" hideOnes
+          value={(a, d) => singleTypeMultiplier(a, d)}
+          tip={(a, d, m) => `${a} → ${d}: ${cellText(m)}×`}
+        />
       </div>
 
       {/* Move-type effectiveness grid */}
@@ -141,7 +148,11 @@ export function TypeMatchup() {
           <TypeBadge type={atk} />
           <span className="text-xs text-slate-500">row = type 1, column = type 2</span>
         </div>
-        <Chart rowLabel="1" colLabel="2" value={(t1, t2) => effVs(atk, t1, t2)} />
+        <Chart
+          rowLabel="1" colLabel="2"
+          value={(t1, t2) => effVs(atk, t1, t2)}
+          tip={(t1, t2, m) => `${atk} → ${t1}${t1 === t2 ? "" : "/" + t2}: ${cellText(m)}×`}
+        />
       </div>
     </div>
   );
