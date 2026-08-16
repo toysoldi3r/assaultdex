@@ -8,6 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PokeIcon } from "@/components/PokeIcon";
+import { SectionIcon } from "./SectionIcon";
 import {
   isActive,
   labelFor,
@@ -79,15 +80,28 @@ export function Dock({ open, onToggle }: { open: boolean; onToggle: () => void }
 
   if (!open) {
     return (
-      <aside className="border-r border-line bg-panel" style={{ padding: "16px 8px" }}>
+      <aside className="flex flex-col items-center gap-1 border-r border-line bg-panel" style={{ padding: "16px 6px" }}>
         <button
           onClick={onToggle}
           aria-label="Expand navigation"
-          className="w-full rounded-md border border-line text-[11px] text-t3 hover:text-t2"
-          style={{ padding: "6px 0" }}
+          className="mb-1 grid h-8 w-8 place-items-center rounded-md border border-line text-[13px] text-t3 hover:text-t2"
         >
           ›
         </button>
+        {SECTIONS.map((s) => {
+          const active = isActive(pathname, s.href);
+          return (
+            <Link
+              key={s.href}
+              href={s.href}
+              title={s.label}
+              aria-label={s.label}
+              className={`grid h-8 w-8 place-items-center rounded-md ${active ? "bg-accbg text-acc" : "text-t3 hover:bg-soft hover:text-t2"}`}
+            >
+              {s.icon && <SectionIcon name={s.icon} />}
+            </Link>
+          );
+        })}
       </aside>
     );
   }
@@ -108,11 +122,12 @@ export function Dock({ open, onToggle }: { open: boolean; onToggle: () => void }
             <Link
               key={s.href}
               href={s.href}
-              className={`mb-px block rounded-[5px] px-2 py-1.5 text-[13px] font-medium ${
+              className={`mb-px flex items-center gap-2.5 rounded-[5px] px-2 py-1.5 text-[13px] font-medium ${
                 active ? "bg-accbg text-acc" : "text-t2 hover:bg-soft"
               }`}
             >
-              {s.label}
+              {s.icon && <SectionIcon name={s.icon} />}
+              <span>{s.label}</span>
             </Link>
           );
         })}

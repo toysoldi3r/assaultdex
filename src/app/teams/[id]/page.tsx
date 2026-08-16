@@ -108,30 +108,30 @@ export default async function TeamDetailPage({
 
   return (
     <div className="space-y-3.5">
-      <div>
+      {/* Slim top bar: back link + legality + version + menu. The team name now
+          lives in the builder's status strip, so no tall title row here. */}
+      <div className="flex flex-wrap items-center gap-2.5">
         <Link href="/teams" className="text-xs text-t2 hover:text-t1">← Teams</Link>
-        <div className="mt-1 flex flex-wrap items-center gap-2.5">
-          {resolved && (
-            <LegalityDot
-              legal={resolved.validation.valid}
-              hasFlags={resolved.validation.warnings.length > 0}
-              errors={[
-                ...resolved.missingSpecies.map((s) => `Missing from Pokédex: ${s}`),
-                ...resolved.validation.errors.map((e) => `${e.species ? `${e.species}: ` : ""}${e.message}`),
-                ...resolved.validation.warnings.map((w) => `${w.species ? `${w.species}: ` : ""}${w.message}`),
-              ]}
-            />
-          )}
-          <h1 className="text-[20px] font-[650] tracking-[-0.01em] text-t1">{team.name}</h1>
-          <span className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-t3">v{latest.versionNumber}</span>
-          <span className="ml-auto">
-            <TeamMenu teamId={team.id} notes={team.notes} versions={menuVersions} latest={latest.versionNumber} />
-          </span>
-        </div>
+        {resolved && (
+          <LegalityDot
+            legal={resolved.validation.valid}
+            hasFlags={resolved.validation.warnings.length > 0}
+            errors={[
+              ...resolved.missingSpecies.map((s) => `Missing from Pokédex: ${s}`),
+              ...resolved.validation.errors.map((e) => `${e.species ? `${e.species}: ` : ""}${e.message}`),
+              ...resolved.validation.warnings.map((w) => `${w.species ? `${w.species}: ` : ""}${w.message}`),
+            ]}
+          />
+        )}
+        <span className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-t3">v{latest.versionNumber}</span>
+        <span className="ml-auto">
+          <TeamMenu teamId={team.id} notes={team.notes} versions={menuVersions} latest={latest.versionNumber} />
+        </span>
       </div>
 
       <TeamBuilder
         teamId={team.id}
+        teamName={team.name}
         isBox={team.isBox}
         initialMembers={latest.snapshot.members}
         refs={memberRefs}

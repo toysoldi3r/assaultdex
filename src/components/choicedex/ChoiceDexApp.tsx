@@ -1040,6 +1040,12 @@ function BattleView({
     const order = orders[idx as 0 | 1];
     const known = st.knownMoves || [];
     const moveState = st.moveState || {};
+    // Your team's confirmed 4 moves (from the Teambuilder set) restrict the
+    // readout to the moves actually brought. No loaded set = full movepool.
+    const setMoves = !foe ? loadedSets[`user:${slug}`]?.moves : undefined;
+    const moveList = setMoves && setMoves.length
+      ? (attacker?.moves ?? []).filter((m) => setMoves.includes(m.name))
+      : (attacker?.moves ?? []);
 
     const border = foe ? "oklch(68% 0.16 25 / 0.45)" : "oklch(72% 0.13 150 / 0.45)";
     const sideColor = foe ? NEG : POS;
@@ -1058,7 +1064,7 @@ function BattleView({
     const baseStats = forme ? forme.baseStats : p.baseStats;
 
     return (
-      <div key={side} style={{ borderRadius: 14, border: `1px solid ${border}`, background: "oklch(20% 0.008 240)", padding: 13, display: "flex", flexDirection: "column", gap: 11, minWidth: 0 }}>
+      <div key={side} style={{ borderRadius: 14, border: `1px solid ${border}`, background: "oklch(20% 0.008 240)", padding: 11, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
         {/* team header row */}
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
           <span style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", color: sideColor }}>{foe ? "Opponent active" : "Your active"}</span>
@@ -1068,7 +1074,9 @@ function BattleView({
               const activeAt = active.indexOf(tslug);
               const on = activeAt === idx;
               const fainted = tst.hpPct <= 0;
-              const benched = sent.length >= BRING_LIMIT && !sent.includes(tslug);
+              // Bring-limit lock only bites from round 3 on: a side can't have
+              // four Pokémon revealed on turn 1, so don't grey them early.
+              const benched = round > 2 && sent.length >= BRING_LIMIT && !sent.includes(tslug);
               const tborder = on ? ACC : activeAt >= 0 ? "oklch(56% 0.06 190)" : "oklch(30% 0.01 240)";
               const tbg = on ? "oklch(72% 0.1 190 / 0.2)" : benched ? "oklch(19% 0.006 240)" : activeAt >= 0 ? "oklch(72% 0.1 190 / 0.09)" : RAISE;
               const sf = fainted ? "grayscale(1) opacity(0.45)" : benched ? "grayscale(1) opacity(0.3)" : activeAt >= 0 ? "none" : "saturate(0.75) opacity(0.85)";
@@ -1172,9 +1180,9 @@ function BattleView({
               ); })}
             </span>
           </div>
-          {foe && <p style={{ margin: "0 0 6px", fontSize: 10, lineHeight: 1.45, color: "oklch(56% 0.012 240)" }}>Likely moves from ladder usage. Click a move once to add it to their known set, again to clear.</p>}
-          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            {(attacker?.moves ?? []).map((m) => renderMoveRow(side, slug, m, attacker!, targetC, defenderConditions, field, order, moveState, known, tgtIdx))}
+          {foe && <p style={{ margin: "0 0 5px", fontSize: 10, lineHeight: 1.4, color: "oklch(56% 0.012 240)" }}>Likely moves from ladder usage. Click a move once to add it to their known set, again to clear.</p>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {moveList.map((m) => renderMoveRow(side, slug, m, attacker!, targetC, defenderConditions, field, order, moveState, known, tgtIdx))}
           </div>
         </div>
 
@@ -1256,10 +1264,10 @@ function BattleView({
       }
     };
     return (
-      <button key={m.name} onClick={onClick} title={foe ? (inSet ? "In their set — click to remove" : "Click to add to their known set") : `Order ${m.name} this round`} style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%", textAlign: "left", cursor: "pointer", borderRadius: 10, border: `1px solid ${border}`, background: rowBg, padding: "7px 9px" }}>
+      <button key={m.name} onClick={onClick} title={foe ? (inSet ? "In their set — click to remove" : "Click to add to their known set") : `Order ${m.name} this round`} style={{ display: "flex", flexDirection: "column", gap: 3, width: "100%", textAlign: "left", cursor: "pointer", borderRadius: 9, border: `1px solid ${border}`, background: rowBg, padding: "5px 8px" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ borderRadius: 5, padding: "1px 6px", fontSize: 8, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", background: TYPE_HEX[m.type] ?? "#777" }}>{m.type.slice(0, 3)}</span>
-          <span style={{ fontSize: 12, fontWeight: nameWeight, color: nameColor, flex: 1, minWidth: 0 }}>{label}</span>
+          <span style={{ fontSize: 11, fontWeight: nameWeight, color: nameColor, flex: 1, minWidth: 0 }}>{label}</span>
           {hasFlag && <span style={{ flexShrink: 0, borderRadius: 5, background: chosen ? ACC : NEG, color: chosen ? BG : "#fff", fontSize: 8, fontWeight: 800, textTransform: "uppercase", padding: "1px 5px" }}>{chosen ? "chosen" : "in set"}</span>}
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>

@@ -1,45 +1,26 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Dex } from "@pkmn/dex";
 import { Panel, TypeBadge } from "@/components/ui";
 import { changeHistory, speciesMeta } from "@/data/pkmnEnrich";
 import { PokeIcon } from "@/components/PokeIcon";
 import { ItemIcon } from "@/components/ItemIcon";
 import { getDexSpecies, getSpeciesForms } from "@/data/pokedexSource";
 import { CHAMPIONS_FORMAT_LABEL, getMonUsage } from "@/data/usageStats";
-import { suggestSets, type MegaInfo } from "@/data/suggestSets";
+import { suggestSets } from "@/data/suggestSets";
 import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
 import { statColor } from "@/domain/mechanics/statColor";
 import { POKEMON_TYPES, STAT_KEYS, STAT_LABELS, type PokemonType } from "@/domain/types/pokemon";
 
 export const dynamic = "force-dynamic";
 
-/** Colour the whole matchup card by effectiveness: white 1×, red 2×+, green
+/** Colour the whole matchup card by effectiveness: neutral 1×, red 2×+, green
  *  resisted (0.5× / 0.25×), black immune (0×). */
 function matchupCard(m: number): { text: string; card: string } {
   if (m === 0) return { text: "0×", card: "bg-black text-white" };
   if (m >= 2) return { text: `${m}×`, card: "bg-rose-600 text-white" };
   if (m < 1) return { text: `${m}×`, card: "bg-emerald-600 text-white" };
-  return { text: "1×", card: "bg-white text-slate-900" };
+  return { text: "1×", card: "bg-raise text-t2" };
 }
-
-/** Mega/Primal forme (stone + forme ability), for a Mega suggested set. */
-function megaInfo(slug: string): MegaInfo | null {
-  const s = Dex.species.get(slug);
-  if (!s.exists) return null;
-  for (const fn of s.otherFormes ?? []) {
-    const f = Dex.species.get(fn);
-    if (f.exists && /Mega|Primal/.test(f.forme) && f.requiredItem) {
-      return {
-        stone: f.requiredItem,
-        ability: (Object.values(f.abilities)[0] as string) ?? "",
-        label: f.forme,
-      };
-    }
-  }
-  return null;
-}
-
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -78,8 +59,7 @@ export default async function PokemonPage({
   const meta = speciesMeta(p.name, p.abilities);
   const history = changeHistory(p.name);
   const usage = await getMonUsage(p.name);
-  const mega = megaInfo(target);
-  const sets = suggestSets(p.types, p.baseStats, p.abilities, p.moves, mega ?? undefined);
+  const sets = suggestSets(p.types, p.baseStats, p.abilities, p.moves);
   const moveType = new Map<string, PokemonType>(
     p.moves.flatMap((m) => (m.type ? [[m.name, m.type] as [string, PokemonType]] : [])),
   );

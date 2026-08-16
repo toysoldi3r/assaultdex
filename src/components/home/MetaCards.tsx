@@ -67,9 +67,9 @@ export function MetaCards({
   const cores = coreSize === 2 ? cores2 : coreSize === 3 ? cores3 : cores4;
 
   return (
-    <div className="grid min-w-0 items-start gap-[18px] lg:grid-cols-[1.35fr_1fr]">
+    <div className="grid min-w-0 items-stretch gap-[18px] lg:h-[760px] lg:grid-cols-[1.35fr_1fr]">
       {/* Ladder */}
-      <section className="overflow-hidden rounded-lg border border-line bg-panel">
+      <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-panel lg:h-full">
         <div className="flex items-center gap-3 border-b border-line px-3.5 py-[9px]">
           <h2 className="text-[13px] font-semibold text-t1">Ladder</h2>
           <div className="ml-auto flex gap-1">
@@ -89,7 +89,7 @@ export function MetaCards({
         <p className="border-b border-line px-3.5 py-[7px] text-[11px] leading-4 text-t3">
           {CAPTION[tab](grouped(totalBattles))}
         </p>
-        <div className="max-h-[560px] overflow-y-auto overflow-x-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden max-h-[560px] lg:max-h-none">
           <div
             className="sticky top-0 z-[1] hidden items-center border-b border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3 md:grid"
             style={{ gridTemplateColumns: LADDER_COLS }}
@@ -147,7 +147,7 @@ export function MetaCards({
       </section>
 
       {/* Right stack */}
-      <div className="flex min-w-0 flex-col gap-[18px]">
+      <div className="flex min-w-0 flex-col gap-[18px] lg:h-full">
         {/* Common cores */}
         <section className="overflow-hidden rounded-lg border border-line bg-panel">
           <div className="flex items-center gap-3 px-3.5 py-2">
@@ -187,12 +187,12 @@ export function MetaCards({
           </div>
         </section>
 
-        {/* Top teams */}
-        <section className="overflow-hidden rounded-lg border border-line bg-panel">
+        {/* Top teams — grows to fill so its bottom aligns with the Ladder card */}
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-panel">
           <div className="px-3.5 py-[11px]">
             <h2 className="text-[13px] font-semibold text-t1">Top teams</h2>
           </div>
-          <div className="max-h-[330px] overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto max-h-[330px] lg:max-h-none">
             <div className="sticky top-0 z-[1] flex items-center gap-2 border-y border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3">
               <span className="flex-1">Exact composition</span>
               <span className="w-9 text-right">Entries</span>
