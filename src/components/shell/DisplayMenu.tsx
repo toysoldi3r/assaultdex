@@ -118,7 +118,7 @@ function SpriteGroup() {
   const options: { value: SpriteStyle; label: string; note?: string }[] = [
     { value: "pixel", label: "Pixel icons", note: "default" },
     { value: "artwork", label: "Official artwork" },
-    { value: "home", label: "3D renders" },
+    { value: "sprites", label: "Sprites" },
   ];
   return (
     <>

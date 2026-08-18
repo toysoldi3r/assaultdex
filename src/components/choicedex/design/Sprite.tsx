@@ -3,7 +3,7 @@
 // Sprite helpers for the ChoiceDex redesign. Honors the display-menu sprite
 // style: in "pixel" mode it addresses the Showdown icon sheet (via @pkmn/img,
 // like PokeIcon) with the design's sizing / scale / mirror / filter; in
-// "artwork" / "home" mode it draws the self-hosted WebP art into the same box,
+// "artwork" / "sprites" mode it draws the self-hosted WebP art into the same box,
 // keeping the mirror and filter, and falls back to the pixel icon if the art
 // file is missing (e.g. a Mega battle forme).
 
@@ -85,6 +85,7 @@ export function Sprite({
             maxHeight: "100%",
             objectFit: "contain",
             transform: flip ? "scaleX(-1)" : undefined,
+            imageRendering: spriteStyle === "sprites" ? "pixelated" : "auto",
           }}
         />
       </span>

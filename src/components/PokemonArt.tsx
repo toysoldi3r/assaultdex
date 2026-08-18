@@ -3,7 +3,7 @@
 // Large Pokémon portrait for the Pokédex species header. Follows the sprite
 // style chosen in the display menu:
 //  - "pixel"            → the scaled-up pixel menu icon (the app's original look)
-//  - "artwork" / "home" → a self-hosted WebP art file (public/pokeart/<style>/)
+//  - "artwork" / "sprites" → a self-hosted WebP art file (public/pokeart/<style>/)
 //
 // No external origin is ever requested, so the CSP stays "no external origins".
 // If a species has no art file for the chosen style (e.g. a Mega forme), the
@@ -54,7 +54,12 @@ export function PokemonArt({
       decoding="async"
       onError={() => setFailed(true)}
       className={className}
-      style={{ width: size, height: size, objectFit: "contain" }}
+      style={{
+        width: size,
+        height: size,
+        objectFit: "contain",
+        imageRendering: spriteStyle === "sprites" ? "pixelated" : "auto",
+      }}
     />
   );
 }

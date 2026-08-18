@@ -17,7 +17,7 @@ export const SPRITE_STYLE_KEY = "assaultdex.spriteStyle";
 export const DEFAULT_SPRITE_STYLE: SpriteStyle = "pixel";
 const EVENT = "assaultdex:spritestyle";
 
-const VALID: readonly SpriteStyle[] = ["pixel", "artwork", "home"];
+const VALID: readonly SpriteStyle[] = ["pixel", "artwork", "sprites"];
 function coerce(v: string | null | undefined): SpriteStyle {
   return VALID.includes(v as SpriteStyle) ? (v as SpriteStyle) : DEFAULT_SPRITE_STYLE;
 }

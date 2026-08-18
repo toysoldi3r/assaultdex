@@ -46,11 +46,12 @@ const FORM_SPRITE_IDS: Record<string, number> = {
 const MAX_PX = 384;
 const WEBP_QUALITY = 82;
 
-// Shipped style -> its sub-path under the PokéAPI sprite set. The folder name on
-// the left is what the app addresses (see src/lib/pokemonArt.ts).
+// Shipped style -> its sub-path (relative to SPRITES_BASE) under the PokéAPI
+// sprite set. The folder name on the left is what the app addresses (see
+// src/lib/pokemonArt.ts); "sprites" is the front battle sprite at the root.
 const STYLE_SOURCES: Record<string, string> = {
-  artwork: "other/official-artwork",
-  home: "other/home",
+  artwork: "other/official-artwork/",
+  sprites: "",
 };
 const SPRITES_BASE =
   process.env.POKEMON_ART_BASE_URL ||
@@ -73,7 +74,7 @@ function spriteId(externalId: string): number | null {
 }
 
 async function fetchArt(styleSource: string, id: number): Promise<Buffer | null> {
-  const res = await fetch(`${SPRITES_BASE}${styleSource}/${id}.png`);
+  const res = await fetch(`${SPRITES_BASE}${styleSource}${id}.png`);
   if (!res.ok) return null;
   const buf = Buffer.from(await res.arrayBuffer());
   if (buf.length < 4 || !buf.subarray(0, 4).equals(PNG_MAGIC)) return null;
@@ -100,7 +101,9 @@ for f in sorted(glob.glob(os.path.join(src, "*.png"))):
 
 async function refreshStyle(style: string) {
   const styleSource = STYLE_SOURCES[style];
-  if (!styleSource) throw new Error(`unknown style "${style}" (known: ${Object.keys(STYLE_SOURCES).join(", ")})`);
+  if (styleSource == null) {
+    throw new Error(`unknown style "${style}" (known: ${Object.keys(STYLE_SOURCES).join(", ")})`);
+  }
 
   const roster = JSON.parse(readFileSync(ROSTER, "utf8")) as {
     pokemon: { external_id: string }[];

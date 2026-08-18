@@ -6,7 +6,7 @@
 //                our self-hosted copy (public/pokemonicons-sheet.png) so no
 //                external image is ever requested - CSP stays "no external
 //                origins".
-//  - "artwork" / "home" → a self-hosted WebP art file (public/pokeart/<style>/),
+//  - "artwork" / "sprites" → a self-hosted WebP art file (public/pokeart/<style>/),
 //                rendered into the *same box* the pixel icon would occupy so
 //                every call site keeps its exact layout and only the picture
 //                changes. If the art file is missing (e.g. a Mega battle forme),
@@ -72,6 +72,7 @@ export function PokeIcon({
           objectFit: "contain",
           display: "inline-block",
           verticalAlign: "middle",
+          imageRendering: spriteStyle === "sprites" ? "pixelated" : "auto",
         }}
       />
     );
