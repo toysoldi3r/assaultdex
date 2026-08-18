@@ -1,10 +1,16 @@
-// Sprite helpers for the ChoiceDex redesign. The design addresses the icon
-// sheet in two modes (a fixed 40x30 cell and a scalable window). We keep the
-// correct Showdown-sheet mapping by going through @pkmn/img (as PokeIcon does)
-// and then apply the design's sizing / scale / mirror / filter on top.
+"use client";
 
-import type { CSSProperties } from "react";
+// Sprite helpers for the ChoiceDex redesign. Honors the display-menu sprite
+// style: in "pixel" mode it addresses the Showdown icon sheet (via @pkmn/img,
+// like PokeIcon) with the design's sizing / scale / mirror / filter; in
+// "artwork" / "home" mode it draws the self-hosted WebP art into the same box,
+// keeping the mirror and filter, and falls back to the pixel icon if the art
+// file is missing (e.g. a Mega battle forme).
+
+import { useState, type CSSProperties } from "react";
 import { Icons } from "@pkmn/img";
+import { pokemonArtSrc } from "@/lib/pokemonArt";
+import { toID, useSpriteStyle } from "@/lib/spriteStyle";
 
 const CDN = "https://play.pokemonshowdown.com/sprites/pokemonicons-sheet.png";
 const LOCAL = "/pokemonicons-sheet.png";
@@ -29,7 +35,7 @@ function iconStyle(species: string): CSSProperties {
 }
 
 /**
- * A species icon sized to a box and centred, with optional pixelated scale,
+ * A species sprite sized to a box and centred, with optional pixelated scale,
  * horizontal mirror and CSS filter. Used everywhere the design draws a sprite.
  */
 export function Sprite({
@@ -51,23 +57,43 @@ export function Sprite({
   filter?: string;
   title?: string;
 }) {
+  const spriteStyle = useSpriteStyle();
+  const [artFailed, setArtFailed] = useState(false);
+  const box: CSSProperties = {
+    width: typeof w === "number" ? `${w}px` : w,
+    height: typeof h === "number" ? `${h}px` : h,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    flexShrink: 0,
+    filter,
+  };
+
+  if (spriteStyle !== "pixel" && !artFailed) {
+    return (
+      <span title={title} aria-label={species} role="img" style={box}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={pokemonArtSrc(spriteStyle, toID(species))}
+          alt={species}
+          loading="lazy"
+          decoding="async"
+          onError={() => setArtFailed(true)}
+          style={{
+            maxWidth: "100%",
+            maxHeight: "100%",
+            objectFit: "contain",
+            transform: flip ? "scaleX(-1)" : undefined,
+          }}
+        />
+      </span>
+    );
+  }
+
   const transform = `scale(${flip ? -scale : scale}, ${scale})`;
   return (
-    <span
-      title={title}
-      aria-label={species}
-      role="img"
-      style={{
-        width: typeof w === "number" ? `${w}px` : w,
-        height: typeof h === "number" ? `${h}px` : h,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        overflow: "hidden",
-        flexShrink: 0,
-        filter,
-      }}
-    >
+    <span title={title} aria-label={species} role="img" style={box}>
       <span className="px" style={{ ...iconStyle(species), transform, transformOrigin: "center", flexShrink: 0 }} />
     </span>
   );

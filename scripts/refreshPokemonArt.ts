@@ -11,16 +11,17 @@
 //
 // Upstream artwork is ~475px PNG (~130KB each). For the web we trim the
 // transparent margin, bound the longest side to 384px, and re-encode as WebP,
-// which cuts the whole set from ~31MB to ~5MB with no visible loss at the sizes
-// the UI renders. That optimization needs Python 3 + Pillow (`pip install
-// Pillow`) - the same "an image tool is required to (re)build the assets" model
-// the upstream smogon/sprites repo uses (it needs ImageMagick). The step runs
+// which cuts each set from ~31MB to ~5MB with no visible loss at the sizes the
+// UI renders. That optimization needs Python 3 + Pillow (`pip install Pillow`) -
+// the same "an image tool is required to (re)build the assets" model the
+// upstream smogon/sprites repo uses (it needs ImageMagick). The step runs
 // automatically here; the whole pipeline is one command:
 //
-//   pnpm refresh:pokemon-art                            # official artwork (default)
-//   POKEMON_ART_STYLE=home pnpm refresh:pokemon-art     # 3D HOME renders instead
+//   pnpm refresh:pokemon-art                   # refresh every shipped style
+//   POKEMON_ART_STYLES=artwork pnpm ...        # just one style
 //
-// Override the source base with POKEMON_ART_BASE_URL if the upstream path moves.
+// Each style is written to public/pokeart/<style>/. The upstream sub-path for a
+// style is mapped in STYLE_SOURCES below.
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -44,12 +45,22 @@ const FORM_SPRITE_IDS: Record<string, number> = {
 
 const MAX_PX = 384;
 const WEBP_QUALITY = 82;
-const STYLE = process.env.POKEMON_ART_STYLE || "official-artwork";
-const BASE_URL =
-  process.env.POKEMON_ART_BASE_URL ||
-  `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/${STYLE}/`;
 
-const OUT_DIR = join(process.cwd(), "public", "pokeart");
+// Shipped style -> its sub-path under the PokéAPI sprite set. The folder name on
+// the left is what the app addresses (see src/lib/pokemonArt.ts).
+const STYLE_SOURCES: Record<string, string> = {
+  artwork: "other/official-artwork",
+  home: "other/home",
+};
+const SPRITES_BASE =
+  process.env.POKEMON_ART_BASE_URL ||
+  "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/";
+const STYLES = (process.env.POKEMON_ART_STYLES || Object.keys(STYLE_SOURCES).join(","))
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const ART_ROOT = join(process.cwd(), "public", "pokeart");
 const ROSTER = join(process.cwd(), "src", "data", "fixtures", "pokemon.json");
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]); // \x89PNG
 
@@ -61,8 +72,8 @@ function spriteId(externalId: string): number | null {
   return sp.exists && sp.num > 0 ? sp.num : null;
 }
 
-async function fetchArt(id: number): Promise<Buffer | null> {
-  const res = await fetch(`${BASE_URL}${id}.png`);
+async function fetchArt(styleSource: string, id: number): Promise<Buffer | null> {
+  const res = await fetch(`${SPRITES_BASE}${styleSource}/${id}.png`);
   if (!res.ok) return null;
   const buf = Buffer.from(await res.arrayBuffer());
   if (buf.length < 4 || !buf.subarray(0, 4).equals(PNG_MAGIC)) return null;
@@ -87,18 +98,21 @@ for f in sorted(glob.glob(os.path.join(src, "*.png"))):
     im.save(os.path.join(dst, slug + ".webp"), "WEBP", quality=q, method=4)
 `;
 
-async function main() {
-  const srcDir = mkdtempSync(join(tmpdir(), "pokeart-src-"));
+async function refreshStyle(style: string) {
+  const styleSource = STYLE_SOURCES[style];
+  if (!styleSource) throw new Error(`unknown style "${style}" (known: ${Object.keys(STYLE_SOURCES).join(", ")})`);
+
   const roster = JSON.parse(readFileSync(ROSTER, "utf8")) as {
     pokemon: { external_id: string }[];
   };
+  const srcDir = mkdtempSync(join(tmpdir(), `pokeart-${style}-`));
 
   let fetched = 0;
   const missing: string[] = [];
   for (const { external_id } of roster.pokemon) {
     const slug = slugify(external_id);
     const id = spriteId(external_id);
-    const buf = id != null ? await fetchArt(id) : null;
+    const buf = id != null ? await fetchArt(styleSource, id) : null;
     if (buf) {
       writeFileSync(join(srcDir, `${slug}.png`), buf);
       fetched += 1;
@@ -107,19 +121,24 @@ async function main() {
     }
   }
 
-  // Regenerate public/pokeart from scratch so removed species don't orphan.
-  rmSync(OUT_DIR, { recursive: true, force: true });
-  mkdirSync(OUT_DIR, { recursive: true });
+  // Regenerate the style folder from scratch so removed species don't orphan.
+  const outDir = join(ART_ROOT, style);
+  rmSync(outDir, { recursive: true, force: true });
+  mkdirSync(outDir, { recursive: true });
   execFileSync(
     "python3",
-    ["-c", OPTIMIZE_PY, srcDir, OUT_DIR, String(MAX_PX), String(WEBP_QUALITY)],
+    ["-c", OPTIMIZE_PY, srcDir, outDir, String(MAX_PX), String(WEBP_QUALITY)],
     { stdio: "inherit" },
   );
   rmSync(srcDir, { recursive: true, force: true });
 
-  const written = readdirSync(OUT_DIR).filter((f) => f.endsWith(".webp")).length;
-  console.log(`pokemon art (${STYLE}): fetched ${fetched}, wrote ${written} webp, no art for ${missing.length}`);
+  const written = readdirSync(outDir).filter((f) => f.endsWith(".webp")).length;
+  console.log(`pokemon art [${style}]: fetched ${fetched}, wrote ${written} webp, no art for ${missing.length}`);
   if (missing.length) console.log(`  no art: ${missing.sort().join(", ")}`);
+}
+
+async function main() {
+  for (const style of STYLES) await refreshStyle(style);
 }
 
 main().catch((err) => {

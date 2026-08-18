@@ -1,15 +1,17 @@
 "use client";
 
-// Large Pokémon artwork (official artwork, self-hosted under public/pokeart/;
-// see src/lib/pokemonArt.ts and scripts/refreshPokemonArt.ts). No external
-// origin is ever requested, so the CSP stays "no external origins".
+// Large Pokémon portrait for the Pokédex species header. Follows the sprite
+// style chosen in the display menu:
+//  - "pixel"            → the scaled-up pixel menu icon (the app's original look)
+//  - "artwork" / "home" → a self-hosted WebP art file (public/pokeart/<style>/)
 //
-// If a species has no art file (a slug added since the last art refresh), the
-// <img> errors and we fall back to the pixel menu icon scaled up - exactly what
-// the app showed before any artwork existed - so nothing ever renders blank.
+// No external origin is ever requested, so the CSP stays "no external origins".
+// If a species has no art file for the chosen style (e.g. a Mega forme), the
+// <img> errors and we fall back to the pixel icon, so nothing renders blank.
 
 import { useState } from "react";
 import { pokemonArtSrc } from "@/lib/pokemonArt";
+import { toID, useSpriteStyle } from "@/lib/spriteStyle";
 import { PokeIcon } from "@/components/PokeIcon";
 
 export function PokemonArt({
@@ -26,10 +28,11 @@ export function PokemonArt({
   size?: number;
   className?: string;
 }) {
+  const spriteStyle = useSpriteStyle();
   const [failed, setFailed] = useState(false);
 
-  if (failed) {
-    // Match the previous look: a scaled-up pixel icon centred in the box.
+  if (spriteStyle === "pixel" || failed) {
+    // A scaled-up pixel icon centred in the box (the original header look).
     return (
       <span
         className={className}
@@ -43,7 +46,7 @@ export function PokemonArt({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={pokemonArtSrc(slug)}
+      src={pokemonArtSrc(spriteStyle, toID(slug))}
       alt={name}
       width={size}
       height={size}

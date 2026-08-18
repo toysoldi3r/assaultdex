@@ -116,8 +116,12 @@ report, is in the pool** per the list and is included.
   (CC0-1.0). Fetched out of band by `pnpm refresh:item-icons` and committed
   under `public/itemicons/`; nothing is fetched at runtime. Champions-only Mega
   Stones have no sprite and render as their name.
-- Pokémon artwork — official artwork from the PokéAPI sprite set (same repo).
-  Fetched out of band by `pnpm refresh:pokemon-art`, trimmed / downscaled to
-  384px and re-encoded as WebP (needs Python 3 + Pillow), then committed under
-  `public/pokeart/`; nothing is fetched at runtime. A slug with no art file
-  falls back to the pixel menu icon.
+- Pokémon artwork — official artwork and 3D HOME renders from the PokéAPI
+  sprite set (same repo). Fetched out of band by `pnpm refresh:pokemon-art`,
+  trimmed / downscaled to 384px and re-encoded as WebP (needs Python 3 +
+  Pillow), then committed under `public/pokeart/<style>/` (`artwork`, `home`);
+  nothing is fetched at runtime. The display menu (top-right) picks the live
+  sprite style — pixel icons, official artwork, or 3D renders — for every
+  Pokémon in the app; a slug with no art file falls back to the pixel menu
+  icon. Held-item icons have only the one PokéAPI set (no artwork/3D equivalent
+  exists), so they are unaffected by the sprite-style choice.

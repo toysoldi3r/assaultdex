@@ -29,8 +29,9 @@ export const metadata: Metadata = {
     "Competitive Pokémon Champions doubles - Pokédex, team builder, ChoiceDex, and battle analysis.",
 };
 
-// Set the saved theme before first paint so there is no dark→light flash.
-const THEME_SCRIPT = `try{document.documentElement.dataset.theme=localStorage.getItem('assaultdex.theme')||'dark'}catch(e){document.documentElement.dataset.theme='dark'}`;
+// Set the saved theme and sprite style before first paint so there is no
+// dark→light flash and sprites hydrate in the chosen style (no pixel→art flash).
+const THEME_SCRIPT = `try{var d=document.documentElement.dataset;d.theme=localStorage.getItem('assaultdex.theme')||'dark';d.sprite=localStorage.getItem('assaultdex.spriteStyle')||'pixel'}catch(e){document.documentElement.dataset.theme='dark';document.documentElement.dataset.sprite='pixel'}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
