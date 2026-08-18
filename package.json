@@ -19,6 +19,7 @@
     "refresh:usage": "tsx scripts/refreshUsage.ts",
     "refresh:tournaments": "tsx scripts/refreshTournaments.ts",
     "refresh:item-icons": "tsx scripts/refreshItemIcons.ts",
+    "refresh:pokemon-art": "tsx scripts/refreshPokemonArt.ts",
     "db:generate:pg": "prisma generate --schema prisma/schema.postgres.prisma",
     "db:push:pg": "prisma db push --schema prisma/schema.postgres.prisma",
     "deploy:setup:pg": "prisma generate --schema prisma/schema.postgres.prisma && prisma db push --schema prisma/schema.postgres.prisma && tsx prisma/seed.ts",
