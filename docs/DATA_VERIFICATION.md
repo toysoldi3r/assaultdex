@@ -112,3 +112,7 @@ report, is in the pool** per the list and is included.
 - Pokémon Champions roster — user-provided authoritative list
 - `@pkmn/dex` — https://github.com/pkmn/ps (Pokémon Showdown data, MIT)
 - PokéAPI — https://pokeapi.co/ (independent cross-check; egress-blocked here)
+- Held-item icons — PokéAPI sprite set, https://github.com/PokeAPI/sprites
+  (CC0-1.0). Fetched out of band by `pnpm refresh:item-icons` and committed
+  under `public/itemicons/`; nothing is fetched at runtime. Champions-only Mega
+  Stones have no sprite and render as their name.
