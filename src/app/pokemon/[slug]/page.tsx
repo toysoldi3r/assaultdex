@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Panel, TypeBadge } from "@/components/ui";
 import { changeHistory, speciesMeta } from "@/data/pkmnEnrich";
-import { PokeIcon } from "@/components/PokeIcon";
+import { PokemonArt } from "@/components/PokemonArt";
 import { ItemIcon } from "@/components/ItemIcon";
 import { getDexSpecies, getSpeciesForms } from "@/data/pokedexSource";
 import { CHAMPIONS_FORMAT_LABEL, getMonUsage } from "@/data/usageStats";
@@ -72,7 +72,7 @@ export default async function PokemonPage({
 
       <div className="flex items-center gap-4">
         <span className="grid h-28 w-28 shrink-0 place-items-center overflow-hidden rounded bg-slate-800/50">
-          <PokeIcon species={p.name} className="scale-[2.6]" />
+          <PokemonArt slug={target} name={p.name} size={112} />
         </span>
         <div>
           <span className="tabular-nums text-sm text-slate-500">

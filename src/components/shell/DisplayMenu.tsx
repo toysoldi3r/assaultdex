@@ -1,16 +1,16 @@
 "use client";
 
 // Settings popover anchored to the top-bar button. Owns theme plus display
-// preferences (sprite / type-badge style). Only the implementable options
-// (pixel sprites, text type badges) are enabled; the rest are shown disabled
-// until their self-hosted assets exist.
+// preferences (sprite / type-badge style). The Pokémon sprite style is live -
+// picking it re-renders every sprite in the app (see src/lib/spriteStyle.ts).
+// Type-badge styles are shown disabled until their self-hosted assets exist.
 
 import { useEffect, useRef } from "react";
+import { setSpriteStyle, useSpriteStyle, type SpriteStyle } from "@/lib/spriteStyle";
 
 type Theme = "dark" | "light";
 
 const THEME_KEY = "assaultdex.theme";
-const SPRITE_KEY = "assaultdex.spriteStyle";
 const TYPE_KEY = "assaultdex.typeStyle";
 
 function set(key: string, value: string) {
@@ -65,11 +65,6 @@ export function DisplayMenu({
     onTheme(t);
   };
 
-  const spriteOpts: Opt[] = [
-    { value: "pixel", label: "Pixel icons", note: "current" },
-    { value: "animated", label: "Animated sprites", note: "needs asset", disabled: true },
-    { value: "render", label: "3D renders", note: "needs asset", disabled: true },
-  ];
   const typeOpts: Opt[] = [
     { value: "text", label: "Text labels", note: "default" },
     { value: "gen9", label: "Gen 9 icons", note: "needs asset", disabled: true },
@@ -107,10 +102,46 @@ export function DisplayMenu({
         ))}
       </div>
 
-      <OptGroup label="Pokémon sprites" storageKey={SPRITE_KEY} defaultValue="pixel" options={spriteOpts} />
+      <SpriteGroup />
       <OptGroup label="Type badges" storageKey={TYPE_KEY} defaultValue="text" options={typeOpts} />
 
       <p className="mt-3 text-[11px] leading-4 text-t3">Choices are remembered on this device.</p>
+      </div>
+    </>
+  );
+}
+
+// Live Pokémon-sprite selector: writes through to the shared store so every
+// sprite in the app re-renders immediately.
+function SpriteGroup() {
+  const current = useSpriteStyle();
+  const options: { value: SpriteStyle; label: string; note?: string }[] = [
+    { value: "pixel", label: "Pixel icons", note: "default" },
+    { value: "artwork", label: "Official artwork" },
+    { value: "sprites", label: "Sprites" },
+  ];
+  return (
+    <>
+      <p className="mt-3.5 text-xs text-t2">Pokémon sprites</p>
+      <div className="mt-1.5 space-y-1.5">
+        {options.map((o) => {
+          const selected = current === o.value;
+          return (
+            <button
+              key={o.value}
+              onClick={() => setSpriteStyle(o.value)}
+              aria-pressed={selected}
+              className={`flex w-full items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-left text-xs ${
+                selected ? "border-accln bg-accbg text-acc" : "border-line text-t2 hover:bg-soft"
+              }`}
+            >
+              <span>{o.label}</span>
+              {o.note && (
+                <span className="text-[10px] uppercase tracking-[0.04em] text-t3">{o.note}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
     </>
   );
