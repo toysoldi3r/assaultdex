@@ -2,6 +2,7 @@
 // need (reference stats/types/legal moves), then runs validation and analysis.
 // Keeps the domain layer free of persistence and data-adapter imports.
 
+import { Dex } from "@pkmn/dex";
 import type { TeamSnapshotInput } from "@/data/schemas/team";
 import { NATURES, natureByName } from "@/data/fixtures/natures";
 import { analyzeTeam, type AnalysisMember, type TeamAnalysis } from "@/domain/team/analysis";
@@ -10,8 +11,40 @@ import {
   type ValidatableMember,
   type ValidationReport,
 } from "@/domain/team/validate";
-import type { MoveFixture } from "@/domain/types/pokemon";
+import { POKEMON_TYPES, type MoveFixture } from "@/domain/types/pokemon";
 import { getPokemonBySlug } from "./repositories/pokemonRepo";
+
+const TARGET_MAP: Record<string, MoveFixture["target"]> = {
+  normal: "normal",
+  allAdjacentFoes: "all-adjacent-foes",
+  allAdjacent: "all-adjacent",
+  self: "self",
+  adjacentAlly: "ally",
+  adjacentAllyOrSelf: "ally",
+};
+
+// Build a MoveFixture from @pkmn/dex for a move that isn't in the curated
+// battle subset. The teambuilder lets members pick from the full legal
+// movepool, so the analysis must see those moves too - otherwise offensive
+// coverage is computed from an incomplete moveset and reports phantom gaps.
+function fixtureFromDex(name: string): MoveFixture | null {
+  const d = Dex.moves.get(name);
+  if (!d.exists) return null;
+  const t = d.type?.toLowerCase();
+  const type = (POKEMON_TYPES as readonly string[]).includes(t ?? "")
+    ? (t as MoveFixture["type"])
+    : "normal";
+  const category = (d.category?.toLowerCase() as MoveFixture["category"]) ?? "status";
+  return {
+    name: d.name,
+    type,
+    category,
+    power: d.basePower || null,
+    accuracy: d.accuracy === true ? null : (d.accuracy ?? null),
+    priority: d.priority ?? 0,
+    target: TARGET_MAP[d.target ?? "normal"] ?? "normal",
+  };
+}
 
 const LEGAL_NATURES = Object.keys(NATURES);
 
@@ -55,8 +88,11 @@ export async function resolveTeam(
       legalAbilities: ref.abilities,
     });
 
+    // Prefer the curated fixture (richer, hand-verified data) and fall back to
+    // @pkmn/dex for any full-movepool move outside the curated subset, so the
+    // analysis reflects the member's real four moves.
     const resolvedMoves: MoveFixture[] = set.moves
-      .map((name) => ref.moves.find((mv) => mv.name === name))
+      .map((name) => ref.moves.find((mv) => mv.name === name) ?? fixtureFromDex(name))
       .filter((mv): mv is MoveFixture => Boolean(mv));
 
     analysable.push({

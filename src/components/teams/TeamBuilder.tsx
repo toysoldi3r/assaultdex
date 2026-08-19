@@ -119,7 +119,7 @@ export function TeamBuilder({
     }));
   const suggestionsOf = (r: MemberRef) => suggestSets(r.types, r.baseStats, r.abilities, moveLikeOf(r));
 
-  const defaultSet = (slug: string): PokemonSet => {
+  const defaultSet = (slug: string, usedItems: Set<string> = new Set()): PokemonSet => {
     const r = refOf(slug);
     const tm = tournament[uKey(slug)];
     const suggestions = suggestionsOf(r);
@@ -131,9 +131,18 @@ export function TeamBuilder({
       (bulky && suggestions.find((s) => s.label === "Bulky attacker" || s.label === "Balanced")) ||
       suggestions[0];
     const ability = tm?.abilities[0]?.name ?? suggestion?.ability ?? r.abilities[0] ?? null;
-    // Most common held item when tournament usage is available, else the item
-    // from the chosen suggested set.
-    const item = tm?.items[0]?.name ?? suggestion?.item ?? null;
+    // Held item, most-popular first: tournament usage for this species (ranked
+    // by share), then the suggested-set items as a fallback. The item clause
+    // forbids two Pokémon holding the same item, so skip anything already on the
+    // team and drop to the next most popular; only if every candidate is taken
+    // do we fall back to the single most popular (flagged as a duplicate).
+    const itemRanked = [
+      ...(tm?.items ?? []).map((x) => x.name),
+      suggestion?.item,
+      ...suggestions.map((s) => s.item),
+    ].filter((n): n is string => Boolean(n));
+    const item =
+      itemRanked.find((n) => !usedItems.has(n)) ?? itemRanked[0] ?? null;
     const legal = new Set(r.legalMoves);
     const popularMoves = (tm?.moves ?? []).map((x) => x.name).filter((n) => legal.has(n));
     const moves = (popularMoves.length ? popularMoves : suggestion?.moves ?? r.legalMoves.slice(0, 4)).slice(0, 4);
@@ -146,7 +155,8 @@ export function TeamBuilder({
   const addMember = (slug: string) => {
     if (!slug || members.length >= limit) return;
     setMembers((prev) => {
-      const next = [...prev, defaultSet(slug)];
+      const usedItems = new Set(prev.map((m) => m.item).filter((i): i is string => Boolean(i)));
+      const next = [...prev, defaultSet(slug, usedItems)];
       setTab(next.length - 1);
       return next;
     });
@@ -156,9 +166,14 @@ export function TeamBuilder({
 
   const changeSpecies = (i: number, slug: string) => {
     if (!slug) return;
-    setMembers((prev) =>
-      prev.map((m, idx) => (idx !== i ? m : { ...defaultSet(slug), nickname: m.nickname, level: m.level })),
-    );
+    setMembers((prev) => {
+      const usedItems = new Set(
+        prev.filter((_, idx) => idx !== i).map((m) => m.item).filter((it): it is string => Boolean(it)),
+      );
+      return prev.map((m, idx) =>
+        idx !== i ? m : { ...defaultSet(slug, usedItems), nickname: m.nickname, level: m.level },
+      );
+    });
     setDirty(true);
   };
 
