@@ -39,7 +39,17 @@ export interface WeatherSetter {
 export interface WeaknessEntry {
   type: PokemonType;
   members: string[]; // member names weak to this type
+  /** Per-member multiplier (2 = weak, 4 = double weak). */
+  detail: { name: string; mult: number }[];
   shared: boolean;
+  /** At least one member takes 4× from this type (a major weakness). */
+  major: boolean;
+}
+
+export interface ResistEntry {
+  type: PokemonType; // attacking type
+  /** Members that take reduced or no damage, with their multiplier (0, 0.25, 0.5). */
+  members: { name: string; mult: number }[];
 }
 
 export interface CoverageEntry {
@@ -55,6 +65,7 @@ export interface SpeedTier {
 export interface TeamAnalysis {
   size: number;
   weaknesses: WeaknessEntry[];
+  resistances: ResistEntry[];
   offensiveGaps: PokemonType[];
   coverage: CoverageEntry[];
   speedTiers: SpeedTier[];
@@ -143,32 +154,45 @@ const WEATHER_MOVES: Record<string, string> = {
   "Chilly Reception": "snow",
 };
 
-function memberWeakTo(
+function memberMultiplier(
   types: [PokemonType] | [PokemonType, PokemonType],
   attacking: PokemonType,
-): boolean {
-  return typeEffectiveness(attacking, types).multiplier > 1;
+): number {
+  return typeEffectiveness(attacking, types).multiplier;
 }
 
 export function analyzeTeam(members: AnalysisMember[]): TeamAnalysis {
   const size = members.length;
   const sharedThreshold = Math.max(2, Math.ceil(size / 2));
 
-  // Defensive weaknesses per attacking type.
+  // Defensive weaknesses and resistances/immunities per attacking type.
   const weaknesses: WeaknessEntry[] = [];
+  const resistances: ResistEntry[] = [];
   for (const attacking of POKEMON_TYPES) {
-    const weak = members
-      .filter((m) => memberWeakTo(m.types, attacking))
-      .map((m) => m.name);
-    if (weak.length > 0) {
+    const weakDetail: { name: string; mult: number }[] = [];
+    const resistDetail: { name: string; mult: number }[] = [];
+    for (const m of members) {
+      const mult = memberMultiplier(m.types, attacking);
+      if (mult > 1) weakDetail.push({ name: m.name, mult });
+      else if (mult < 1) resistDetail.push({ name: m.name, mult });
+    }
+    if (weakDetail.length > 0) {
       weaknesses.push({
         type: attacking,
-        members: weak,
-        shared: weak.length >= sharedThreshold,
+        members: weakDetail.map((d) => d.name),
+        detail: weakDetail,
+        shared: weakDetail.length >= sharedThreshold,
+        major: weakDetail.some((d) => d.mult >= 4),
       });
     }
+    if (resistDetail.length > 0) {
+      // Show the strongest resistance first (immunities, then double-resists).
+      resistDetail.sort((a, b) => a.mult - b.mult);
+      resistances.push({ type: attacking, members: resistDetail });
+    }
   }
-  weaknesses.sort((a, b) => b.members.length - a.members.length);
+  weaknesses.sort((a, b) => b.members.length - a.members.length || Number(b.major) - Number(a.major));
+  resistances.sort((a, b) => b.members.length - a.members.length);
 
   // Offensive coverage by defending type (which members hit it ≥2×).
   const coverage: CoverageEntry[] = [];
@@ -254,6 +278,7 @@ export function analyzeTeam(members: AnalysisMember[]): TeamAnalysis {
   return {
     size,
     weaknesses,
+    resistances,
     offensiveGaps,
     coverage,
     speedTiers,

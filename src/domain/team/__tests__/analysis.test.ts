@@ -44,6 +44,26 @@ describe("analyzeTeam", () => {
     expect(water?.shared).toBe(true);
   });
 
+  it("flags a 4× weakness as major and records per-member multipliers", () => {
+    // Grass/Ground takes 4× from Ice (2× × 2×).
+    const team = [member("A", ["grass", "ground"], [move("Vine", "grass")])];
+    const a = analyzeTeam(team);
+    const ice = a.weaknesses.find((w) => w.type === "ice");
+    expect(ice?.major).toBe(true);
+    expect(ice?.detail).toEqual([{ name: "A", mult: 4 }]);
+  });
+
+  it("lists immunities and resistances with their multipliers", () => {
+    // Ground is immune to Electric; Grass/Ground resists nothing extra here.
+    const team = [member("A", ["ground"], [move("Quake", "ground")])];
+    const a = analyzeTeam(team);
+    const electric = a.resistances.find((r) => r.type === "electric");
+    expect(electric?.members).toEqual([{ name: "A", mult: 0 }]);
+    // A resisted type (Rock resists Poison at 0.5×) shows the fractional mult.
+    const poison = a.resistances.find((r) => r.type === "poison");
+    expect(poison?.members).toEqual([{ name: "A", mult: 0.5 }]);
+  });
+
   it("reports offensive coverage and gaps", () => {
     const team = [member("A", ["fire"], [move("Ember", "fire")])];
     const a = analyzeTeam(team);

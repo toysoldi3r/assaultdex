@@ -66,8 +66,11 @@ export function MetaCards({
   const max = Math.max(1, ...list.map(metricOf));
   const cores = coreSize === 2 ? cores2 : coreSize === 3 ? cores3 : cores4;
 
+  // Height tracks the viewport so the Ladder and Top-teams cards fill the space
+  // below the banner/stat strip exactly, without pushing the page into a scroll.
+  // Inner lists scroll within each card.
   return (
-    <div className="grid min-w-0 items-stretch gap-[18px] lg:h-[760px] lg:grid-cols-[1.35fr_1fr]">
+    <div className="grid min-w-0 items-stretch gap-[18px] lg:h-[calc(100dvh-330px)] lg:min-h-[480px] lg:grid-cols-[1.35fr_1fr]">
       {/* Ladder */}
       <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-panel lg:h-full">
         <div className="flex items-center gap-3 border-b border-line px-3.5 py-[9px]">

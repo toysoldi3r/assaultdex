@@ -41,7 +41,7 @@ export default async function HomePage() {
     { value: String(pokemon.length), label: "Valid pokemons", href: "/pokemon" },
     { value: grouped(legalMoves), label: "Legal moves", href: "/database?tab=moves" },
     { value: grouped(legalItems), label: "Legal items", href: "/database?tab=items" },
-    { value: "Reg M-B", label: "Format · Bo3", href: "/database?tab=items" },
+    { value: "Reg M-B", label: "Format · Bo3", href: "/sources" },
   ];
 
   const banners = [

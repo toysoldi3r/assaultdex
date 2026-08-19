@@ -14,13 +14,10 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
   const [advOpen, setAdvOpen] = useState(false);
   // Advanced filters + sort (all folded into one panel).
   const [category, setCategory] = useState("");
-  const [hideBerries, setHideBerries] = useState(false);
-  const [hideMega, setHideMega] = useState(false);
   const [sortField, setSortField] = useState<SortField>("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-  const advCount =
-    (category ? 1 : 0) + (hideBerries ? 1 : 0) + (hideMega ? 1 : 0) + (sortField ? 1 : 0);
+  const advCount = (category ? 1 : 0) + (sortField ? 1 : 0);
 
   // No legal-item flags present → show the full list rather than nothing.
   const champsAvailable = useMemo(() => items.some((i) => i.competitive), [items]);
@@ -36,8 +33,6 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
       (i) =>
         (!champsOnly || !champsAvailable || i.competitive) &&
         (!category || i.category === category) &&
-        (!hideBerries || !i.berry) &&
-        (!hideMega || !i.mega) &&
         (!needle ||
           i.name.toLowerCase().includes(needle) ||
           i.desc.toLowerCase().includes(needle)),
@@ -51,9 +46,9 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
       else c = a.name.localeCompare(b.name);
       return c * dir;
     });
-  }, [items, q, champsOnly, champsAvailable, category, hideBerries, hideMega, sortField, sortDir]);
+  }, [items, q, champsOnly, champsAvailable, category, sortField, sortDir]);
 
-  const sig = `${q}|${champsOnly}|${category}|${hideBerries}|${hideMega}|${sortField}|${sortDir}`;
+  const sig = `${q}|${champsOnly}|${category}|${sortField}|${sortDir}`;
   const { visible, sentinel, shown } = useInfinite(filtered, sig, 50);
   const showFling = sortField === "fling";
 
@@ -88,14 +83,6 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
               {ITEM_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
-          <label className="flex items-center gap-1.5 text-slate-300">
-            <input type="checkbox" checked={hideBerries} onChange={(e) => setHideBerries(e.target.checked)} />
-            Hide berries
-          </label>
-          <label className="flex items-center gap-1.5 text-slate-300">
-            <input type="checkbox" checked={hideMega} onChange={(e) => setHideMega(e.target.checked)} />
-            Hide mega stones
-          </label>
           <label className="flex items-center gap-1.5 text-slate-400">
             Sort by
             <select value={sortField} onChange={(e) => setSortField(e.target.value as SortField)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100">
@@ -115,7 +102,7 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
           </button>
           {advCount > 0 && (
             <button
-              onClick={() => { setCategory(""); setHideBerries(false); setHideMega(false); setSortField(""); setSortDir("asc"); }}
+              onClick={() => { setCategory(""); setSortField(""); setSortDir("asc"); }}
               className="rounded border border-slate-700 px-2 py-1 text-slate-400 hover:border-rose-500"
             >
               Clear
@@ -139,7 +126,11 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
               <tr key={i.name} className="border-t border-slate-800/60 align-top">
                 <td className="whitespace-nowrap px-3 py-2 font-medium">
                   <Link href={`/database/item/${encodeURIComponent(i.name)}`} className="flex items-center gap-1.5 hover:text-amber-300">
-                    <ItemIcon item={i.name} />
+                    {/* Fixed-width slot so the name aligns whether or not the
+                        item has a sprite (Mega Stones have none). */}
+                    <span className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center">
+                      <ItemIcon item={i.name} />
+                    </span>
                     {i.name}
                   </Link>
                 </td>
