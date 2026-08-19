@@ -261,7 +261,9 @@ export function PokedexBrowser({
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="flex min-w-0 items-center gap-1.5 font-semibold">
-                    <span className="grid h-[26px] w-[38px] shrink-0 place-items-center overflow-hidden">
+                    {/* Match the 40×30 icon footprint so artwork/sprites are
+                        fully visible instead of clipped by the box. */}
+                    <span className="grid h-[30px] w-[40px] shrink-0 place-items-center">
                       <PokeIcon species={p.slug} />
                     </span>
                     <span className="mr-1 tabular-nums text-xs text-slate-500">

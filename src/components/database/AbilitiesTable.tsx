@@ -17,12 +17,16 @@ export function AbilitiesTable({
   const [q, setQ] = useState("");
   const [champsOnly, setChampsOnly] = useState(true);
   const [advOpen, setAdvOpen] = useState(false);
+  // Minimum @pkmn competitive rating (−1..5); "" = any.
+  const [minRating, setMinRating] = useState("");
+  // Only abilities AssaultDex's engine actually models (they carry a calc).
+  const [modeledOnly, setModeledOnly] = useState(false);
   const [sortField, setSortField] = useState<SortField>("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const champs = useMemo(() => new Set(championsAbilities), [championsAbilities]);
   // No roster loaded (unseeded DB) → show the full list instead of nothing.
   const champsAvailable = champs.size > 0;
-  const advCount = sortField ? 1 : 0;
+  const advCount = (minRating ? 1 : 0) + (modeledOnly ? 1 : 0) + (sortField ? 1 : 0);
 
   const scopeCount = useMemo(
     () => abilities.filter((a) => !champsOnly || champs.has(a.name)).length,
@@ -31,9 +35,12 @@ export function AbilitiesTable({
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
+    const minR = minRating ? Number(minRating) : null;
     const list = abilities.filter(
       (a) =>
         (!champsOnly || !champsAvailable || champs.has(a.name)) &&
+        (minR === null || a.rating >= minR) &&
+        (!modeledOnly || a.calc !== null) &&
         (!needle ||
           a.name.toLowerCase().includes(needle) ||
           a.desc.toLowerCase().includes(needle)),
@@ -43,9 +50,13 @@ export function AbilitiesTable({
     return [...list].sort((a, b) =>
       (sortField === "rating" ? a.rating - b.rating : a.name.localeCompare(b.name)) * dir,
     );
-  }, [abilities, q, champsOnly, champs, sortField, sortDir]);
+  }, [abilities, q, champsOnly, champsAvailable, champs, minRating, modeledOnly, sortField, sortDir]);
 
-  const { visible, sentinel, shown } = useInfinite(filtered, `${q}|${champsOnly}|${sortField}|${sortDir}`, 50);
+  const { visible, sentinel, shown } = useInfinite(
+    filtered,
+    `${q}|${champsOnly}|${minRating}|${modeledOnly}|${sortField}|${sortDir}`,
+    50,
+  );
 
   return (
     <div className="space-y-3">
@@ -82,6 +93,21 @@ export function AbilitiesTable({
       {advOpen && (
         <div className="flex flex-wrap items-center gap-4 rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs">
           <label className="flex items-center gap-1.5 text-slate-400">
+            Min rating
+            <select value={minRating} onChange={(e) => setMinRating(e.target.value)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100">
+              <option value="">Any rating</option>
+              <option value="5">5 (best)</option>
+              <option value="4">4+</option>
+              <option value="3">3+</option>
+              <option value="2">2+</option>
+              <option value="1">1+</option>
+            </select>
+          </label>
+          <label className="flex items-center gap-1.5 text-slate-300">
+            <input type="checkbox" checked={modeledOnly} onChange={(e) => setModeledOnly(e.target.checked)} />
+            Modeled by engine
+          </label>
+          <label className="flex items-center gap-1.5 text-slate-400">
             Sort by
             <select value={sortField} onChange={(e) => setSortField(e.target.value as SortField)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100">
               <option value="">Default</option>
@@ -98,7 +124,7 @@ export function AbilitiesTable({
             {sortDir === "asc" ? "Ascending ↑" : "Descending ↓"}
           </button>
           {advCount > 0 && (
-            <button onClick={() => { setSortField(""); setSortDir("asc"); }} className="rounded border border-slate-700 px-2 py-1 text-slate-400 hover:border-rose-500">Clear</button>
+            <button onClick={() => { setMinRating(""); setModeledOnly(false); setSortField(""); setSortDir("asc"); }} className="rounded border border-slate-700 px-2 py-1 text-slate-400 hover:border-rose-500">Clear</button>
           )}
         </div>
       )}
