@@ -205,9 +205,15 @@ export function MetaCards({
             {teams.length ? (
               teams.map((t, i) => (
                 <div key={i} className="flex items-center gap-2 border-b border-soft px-3.5 py-1.5">
-                  <span className="mono w-3.5 text-[11px] text-t3">{i + 1}</span>
-                  <span className="flex flex-1 flex-wrap gap-px">
-                    {t.members.map((n) => <PokeIcon key={n} species={n} />)}
+                  <span className="mono w-3.5 shrink-0 text-[11px] text-t3">{i + 1}</span>
+                  {/* Keep all six members on one row - compact fixed-width slots,
+                      no wrapping, so a team never spills into a second line. */}
+                  <span className="flex min-w-0 flex-1 flex-nowrap gap-px">
+                    {t.members.map((n) => (
+                      <span key={n} className="grid h-[26px] w-[30px] shrink-0 place-items-center overflow-hidden">
+                        <PokeIcon species={n} />
+                      </span>
+                    ))}
                   </span>
                   <span className="mono w-9 flex-shrink-0 text-right text-[11px] text-t3">×{t.count}</span>
                   <span className={`mono w-[46px] flex-shrink-0 text-right text-xs ${wrColor(t.winRate)}`}>{t.winRate}%</span>
