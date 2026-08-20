@@ -70,7 +70,7 @@ export function MetaCards({
   // below the banner/stat strip exactly, without pushing the page into a scroll.
   // Inner lists scroll within each card.
   return (
-    <div className="grid min-w-0 items-stretch gap-[18px] lg:h-[calc(100dvh-330px)] lg:min-h-[480px] lg:grid-cols-[1.35fr_1fr]">
+    <div className="grid min-w-0 items-stretch gap-[18px] lg:h-[calc(100dvh-408px)] lg:min-h-[400px] lg:grid-cols-[1.35fr_1fr] lg:[grid-template-rows:minmax(0,1fr)]">
       {/* Ladder */}
       <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-panel lg:h-full">
         <div className="flex items-center gap-3 border-b border-line px-3.5 py-[9px]">
@@ -151,9 +151,10 @@ export function MetaCards({
 
       {/* Right stack */}
       <div className="flex min-w-0 flex-col gap-[18px] lg:h-full">
-        {/* Common cores */}
-        <section className="overflow-hidden rounded-lg border border-line bg-panel">
-          <div className="flex items-center gap-3 px-3.5 py-2">
+        {/* Common cores — shares the column height with Top teams so neither
+            collapses to a sliver. */}
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-panel">
+          <div className="flex shrink-0 items-center gap-3 px-3.5 py-2">
             <h2 className="text-[13px] font-semibold text-t1">Common cores</h2>
             <div className="ml-auto flex gap-1">
               {([2, 3, 4] as const).map((s) => (
@@ -169,7 +170,7 @@ export function MetaCards({
               ))}
             </div>
           </div>
-          <div className="max-h-[330px] overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto max-h-[330px] lg:max-h-none">
             <div className="sticky top-0 z-[1] flex items-center justify-between border-y border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3">
               <span>Pairing</span>
               <span>Win rate</span>
@@ -204,9 +205,15 @@ export function MetaCards({
             {teams.length ? (
               teams.map((t, i) => (
                 <div key={i} className="flex items-center gap-2 border-b border-soft px-3.5 py-1.5">
-                  <span className="mono w-3.5 text-[11px] text-t3">{i + 1}</span>
-                  <span className="flex flex-1 flex-wrap gap-px">
-                    {t.members.map((n) => <PokeIcon key={n} species={n} />)}
+                  <span className="mono w-3.5 shrink-0 text-[11px] text-t3">{i + 1}</span>
+                  {/* Keep all six members on one row - compact fixed-width slots,
+                      no wrapping, so a team never spills into a second line. */}
+                  <span className="flex min-w-0 flex-1 flex-nowrap gap-px">
+                    {t.members.map((n) => (
+                      <span key={n} className="grid h-[26px] w-[30px] shrink-0 place-items-center overflow-hidden">
+                        <PokeIcon species={n} />
+                      </span>
+                    ))}
                   </span>
                   <span className="mono w-9 flex-shrink-0 text-right text-[11px] text-t3">×{t.count}</span>
                   <span className={`mono w-[46px] flex-shrink-0 text-right text-xs ${wrColor(t.winRate)}`}>{t.winRate}%</span>
