@@ -66,6 +66,13 @@ export interface OffenseInferenceInput {
   defenderConditions?: SideConditions;
   /** HP points removed from your Pokémon by the hit. */
   observedDamage: number;
+  /**
+   * ± slack in HP points on the observed damage. The observation usually comes
+   * from an integer HP% readout, which quantizes the true damage, so an exact
+   * range test spuriously rules out spreads. Default 0 (exact) for callers that
+   * pass a precise HP delta.
+   */
+  tolerance?: number;
   /** Was the hit a spread move (0.75 modifier)? */
   spread?: boolean;
 }
@@ -116,6 +123,7 @@ function syntheticAttacker(
 export function inferOffense(input: OffenseInferenceInput): SpreadInference {
   const signs: NatureSign[] = ["+", "0", "-"];
   const stat = input.which;
+  const tol = Math.max(0, input.tolerance ?? 0);
   const surviving: { ev: number; sign: NatureSign; value: number }[] = [];
   let total = 0;
 
@@ -144,7 +152,9 @@ export function inferOffense(input: OffenseInferenceInput): SpreadInference {
           defenderConditions: input.defenderConditions,
           fast: true,
         });
-        if (input.observedDamage >= dmg.minDamage && input.observedDamage <= dmg.maxDamage) {
+        // Keep the candidate when its roll range overlaps the observed damage
+        // (widened by the tolerance), not only when the point falls inside it.
+        if (dmg.maxDamage >= input.observedDamage - tol && dmg.minDamage <= input.observedDamage + tol) {
           surviving.push({ ev, sign, value });
         }
       }
