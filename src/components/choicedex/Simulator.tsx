@@ -42,6 +42,10 @@ export function Simulator({ pokemon }: { pokemon: PokemonRef[] }) {
   const [profile, setProfile] = useState<ProfileName>("aggressive");
   const [difficulty, setDifficulty] = useState<Difficulty>("standard");
   const [runs, setRuns] = useState(500);
+  // The <input> caps the spinner at 5000, but a typed/pasted value bypasses it.
+  // Clamp the effective count so a huge number never freezes the main thread and
+  // an empty field (0) never divides the progress bar by zero.
+  const safeRuns = Math.min(5000, Math.max(50, Math.floor(runs) || 50));
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<SimResult | null>(null);
@@ -85,9 +89,9 @@ export function Simulator({ pokemon }: { pokemon: PokemonRef[] }) {
     const userPol = greedyPolicy(profile);
     const oppPol = practicePolicy(difficulty);
     const chunk = 50;
-    for (let i = 0; i < runs; i += chunk) {
+    for (let i = 0; i < safeRuns; i += chunk) {
       if (cancelRef.current) break;
-      for (let j = 0; j < chunk && i + j < runs; j++) {
+      for (let j = 0; j < chunk && i + j < safeRuns; j++) {
         accumulate(acc, simulateBattle(state, userPol, oppPol, rng, 20));
       }
       if (!mountedRef.current) return;
@@ -204,7 +208,7 @@ export function Simulator({ pokemon }: { pokemon: PokemonRef[] }) {
         <div className="h-2 overflow-hidden rounded bg-slate-800">
           <div
             className="h-full bg-amber-500 transition-all"
-            style={{ width: `${(progress / runs) * 100}%` }}
+            style={{ width: `${(progress / safeRuns) * 100}%` }}
           />
         </div>
       )}
@@ -217,7 +221,7 @@ export function Simulator({ pokemon }: { pokemon: PokemonRef[] }) {
             </span>
             <span className="text-xs text-slate-500">
               ±{(result.winCiHalfWidth * 100).toFixed(1)}% (95% CI) ·{" "}
-              {result.completed}/{runs} runs
+              {result.completed}/{safeRuns} runs
               {result.cancelled ? " · cancelled" : ""}
             </span>
           </div>

@@ -57,8 +57,8 @@ export function MovesTable({
   };
 
   const scopeCount = useMemo(
-    () => moves.filter((m) => !champsOnly || champs.has(m.name)).length,
-    [moves, champsOnly, champs],
+    () => moves.filter((m) => !champsOnly || !champsAvailable || champs.has(m.name)).length,
+    [moves, champsOnly, champsAvailable, champs],
   );
 
   const filtered = useMemo(() => {
@@ -95,7 +95,7 @@ export function MovesTable({
       else c = a.priority - b.priority;
       return c * dir;
     });
-  }, [moves, q, champsOnly, champs, fType, fCat, fPrio, minPow, maxPow, sortField, sortDir]);
+  }, [moves, q, champsOnly, champsAvailable, champs, fType, fCat, fPrio, minPow, maxPow, sortField, sortDir]);
 
   const sig = `${q}|${champsOnly}|${fType}|${fCat}|${fPrio}|${minPow}|${maxPow}|${sortField}|${sortDir}`;
   const { visible, sentinel, shown } = useInfinite(filtered, sig, 50);
