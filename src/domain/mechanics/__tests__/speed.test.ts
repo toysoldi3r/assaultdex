@@ -22,6 +22,19 @@ describe("[provisional] effectiveSpeed", () => {
     const para = effectiveSpeed({ ...fast, status: "paralysis" }).effectiveSpeed;
     expect(para).toBe(Math.floor(base * 0.5));
   });
+
+  it("Quick Feet ignores the paralysis drop instead of stacking with it", () => {
+    const mon = combatant({ name: "QF", types: ["normal"], base: stats({ spe: 200 }) });
+    const plain = effectiveSpeed(mon).effectiveSpeed;
+    const qfPara = effectiveSpeed({
+      ...mon,
+      ability: "Quick Feet",
+      status: "paralysis",
+    }).effectiveSpeed;
+    // 1.5x boost, no 0.5x penalty - so faster than base, not 0.75x slower.
+    expect(qfPara).toBe(Math.floor(plain * 1.5));
+    expect(qfPara).toBeGreaterThan(plain);
+  });
 });
 
 describe("moveOrder", () => {
