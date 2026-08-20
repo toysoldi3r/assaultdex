@@ -151,9 +151,10 @@ export function MetaCards({
 
       {/* Right stack */}
       <div className="flex min-w-0 flex-col gap-[18px] lg:h-full">
-        {/* Common cores */}
-        <section className="overflow-hidden rounded-lg border border-line bg-panel">
-          <div className="flex items-center gap-3 px-3.5 py-2">
+        {/* Common cores — shares the column height with Top teams so neither
+            collapses to a sliver. */}
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-panel">
+          <div className="flex shrink-0 items-center gap-3 px-3.5 py-2">
             <h2 className="text-[13px] font-semibold text-t1">Common cores</h2>
             <div className="ml-auto flex gap-1">
               {([2, 3, 4] as const).map((s) => (
@@ -169,7 +170,7 @@ export function MetaCards({
               ))}
             </div>
           </div>
-          <div className="max-h-[330px] overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto max-h-[330px] lg:max-h-none">
             <div className="sticky top-0 z-[1] flex items-center justify-between border-y border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3">
               <span>Pairing</span>
               <span>Win rate</span>
