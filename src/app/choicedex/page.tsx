@@ -63,7 +63,7 @@ export default async function ChoiceDexPage() {
 
   const advancedTools =
     refs.length === 0 ? null : (
-      <details style={{ borderRadius: 14, border: "1px solid oklch(30% 0.01 240)", background: "oklch(20% 0.008 240)" }}>
+      <details key="advanced-tools" style={{ borderRadius: 14, border: "1px solid oklch(30% 0.01 240)", background: "oklch(20% 0.008 240)" }}>
         <summary style={{ cursor: "pointer", padding: "13px 16px", fontSize: 13, fontWeight: 800, color: "oklch(72% 0.01 240)" }}>Advanced tools</summary>
         <div style={{ borderTop: "1px solid oklch(30% 0.01 240)", padding: 16, display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 14 }}>
           <section style={{ borderRadius: 11, border: "1px solid oklch(28% 0.01 240)", padding: 12 }}>
