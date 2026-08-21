@@ -215,6 +215,12 @@ export function getSpeciesTypes(slug: string): PokemonType[] {
   return s.exists ? mapTypes(s.types) : [];
 }
 
+/** A move's type by name (for usage/move lists), or null if unknown. */
+export function moveTypeByName(name: string): PokemonType | null {
+  const m = Dex.moves.get(name);
+  return m.exists ? toType(m.type) : null;
+}
+
 const speciesCache = new Map<string, DexSpecies | null>();
 
 /** Detail for one species by slug (@pkmn id). Null if unknown. Memoised - the

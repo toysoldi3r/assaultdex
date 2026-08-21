@@ -11,6 +11,7 @@ import {
   getDexSpecies,
   getSpeciesForms,
   getSpeciesTypes,
+  moveTypeByName,
   type DexMoveRow,
   type LearnMethod,
 } from "@/data/pokedexSource";
@@ -19,7 +20,13 @@ import {
   LANGUAGE_LABELS,
   versionLabel,
 } from "@/data/pokedexFlavor";
-import { CHAMPIONS_FORMAT_LABEL, getMonUsage } from "@/data/usageStats";
+import {
+  CHAMPIONS_FORMAT_LABEL,
+  getMonUsage,
+  getUsageRank,
+  getRankedCount,
+} from "@/data/usageStats";
+import { getMonTournament, type TournEntry } from "@/data/tournamentStats";
 import { suggestSets } from "@/data/suggestSets";
 import { statColor } from "@/domain/mechanics/statColor";
 import { STAT_KEYS, STAT_LABELS, type PokemonType } from "@/domain/types/pokemon";
@@ -85,6 +92,28 @@ function MoveTable({ rows, showLevel }: { rows: DexMoveRow[]; showLevel?: boolea
   );
 }
 
+/** A ranked percentage bar list (abilities / items / natures / moves usage). */
+function UsageBars({ rows, showType }: { rows: TournEntry[]; showType?: boolean }) {
+  const max = Math.max(1, ...rows.map((r) => r.pct));
+  return (
+    <ul className="space-y-1">
+      {rows.map((r) => {
+        const ty = showType ? moveTypeByName(r.name) : null;
+        return (
+          <li key={r.name} className="flex items-center gap-2 text-xs">
+            {ty && <TypeBadge type={ty} />}
+            <span className="w-28 shrink-0 truncate text-slate-300" title={r.name}>{r.name}</span>
+            <span className="h-2 flex-1 overflow-hidden rounded bg-slate-800">
+              <span className="block h-full bg-amber-500" style={{ width: `${(r.pct / max) * 100}%` }} />
+            </span>
+            <span className="w-12 shrink-0 text-right tabular-nums text-slate-400">{r.pct}%</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const p = await getDexSpecies(slug);
@@ -121,6 +150,9 @@ export default async function PokemonPage({
   const meta = speciesMeta(p.name, p.abilities);
   const history = changeHistory(p.name);
   const usage = await getMonUsage(p.name);
+  const rank = getUsageRank(p.name);
+  const rankedCount = getRankedCount();
+  const tourn = getMonTournament(p.name);
   const sets = suggestSets(p.types, p.baseStats, p.abilities, p.moves);
   const flavor = getPokedexFlavor(target) ?? getPokedexFlavor(baseSlug);
   const moveType = new Map<string, PokemonType>(
@@ -156,7 +188,12 @@ export default async function PokemonPage({
           {usage && (
             <span className="mt-1 block text-xs text-slate-400">
               {CHAMPIONS_FORMAT_LABEL}:{" "}
-              <span className="text-amber-300">{usage.usage}%</span> usage ·{" "}
+              {rank && (
+                <span className="text-amber-300" title={`Usage rank ${rank} of ${rankedCount}`}>
+                  #{rank}
+                </span>
+              )}{" "}
+              · <span className="text-amber-300">{usage.usage}%</span> usage ·{" "}
               {usage.winRate}% win rate
             </span>
           )}
@@ -262,6 +299,41 @@ export default async function PokemonPage({
           </div>
         )}
       </Panel>
+
+      {tourn && (
+        <Panel title={`Usage details · ${CHAMPIONS_FORMAT_LABEL}`}>
+          <div className="grid gap-x-8 gap-y-4 md:grid-cols-2">
+            {tourn.items.length > 0 && (
+              <div>
+                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-300">Most common items</h3>
+                <UsageBars rows={tourn.items} />
+              </div>
+            )}
+            {tourn.abilities.length > 0 && (
+              <div>
+                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-300">Most common abilities</h3>
+                <UsageBars rows={tourn.abilities} />
+              </div>
+            )}
+            {tourn.natures.length > 0 && (
+              <div>
+                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-300">Most common natures</h3>
+                <UsageBars rows={tourn.natures} />
+              </div>
+            )}
+            {tourn.moves.length > 0 && (
+              <div>
+                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-300">Most common moves</h3>
+                <UsageBars rows={tourn.moves} showType />
+              </div>
+            )}
+          </div>
+          <p className="mt-3 text-[10px] uppercase tracking-wide text-slate-600">
+            Share of open tournament team sheets ({tourn.usage}% of the field ran {p.name}).
+            EV spreads aren&rsquo;t published on team sheets, so no spread breakdown is shown.
+          </p>
+        </Panel>
+      )}
 
       <Panel title="Height, weight & stat range">
         <div className="mb-3 flex flex-wrap gap-6 text-sm">
