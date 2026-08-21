@@ -206,6 +206,10 @@ export function ChoiceDexApp({
   const canStart = !uIssue && !oIssue;
   const startMsg = uIssue ? `Your team — ${uIssue}.` : oIssue ? `Opponent team — ${oIssue}.` : "";
   const nameOf = (slug: string) => bySlug.get(slug)?.name ?? slug;
+  const slugByName = useMemo(() => new Map(pokemon.map((p) => [p.name, p.slug])), [pokemon]);
+  // Lead pair the user picked in "Pick your lead" (stored as slugs); seeds the
+  // battle's two active slots on Start.
+  const [lead, setLead] = useState<[string, string] | null>(null);
 
   const setSlot = (side: Side, idx: number, slug: string | null) =>
     (side === "user" ? setUserTeam : setOppTeam)((t) => t.map((s, i) => (i === idx ? slug : s)));
@@ -236,6 +240,7 @@ export function ChoiceDexApp({
         userTeam={userTeam.filter((s): s is string => !!s)}
         oppTeam={oppTeam.filter((s): s is string => !!s)}
         loadedSets={loadedSets} onBack={() => setPhase("preview")}
+        initialLead={lead ?? undefined}
         advancedTools={advancedTools}
       />
     );
@@ -305,8 +310,16 @@ export function ChoiceDexApp({
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 9 }}>
             {leads.map((l, i) => {
               const first = i === 0;
+              const leadSlugs: [string, string] = [
+                slugByName.get(l.lead[0]) ?? l.lead[0],
+                slugByName.get(l.lead[1]) ?? l.lead[1],
+              ];
+              const picked = !!lead && lead[0] === leadSlugs[0] && lead[1] === leadSlugs[1];
               return (
-                <div key={i} style={{ borderRadius: 12, border: `1px solid ${first ? "oklch(72% 0.1 190 / 0.4)" : "oklch(30% 0.01 240)"}`, background: first ? "oklch(72% 0.1 190 / 0.08)" : RAISE, padding: 11, display: "flex", flexDirection: "column", gap: 8 }}>
+                <button key={i} type="button"
+                  onClick={() => setLead(picked ? null : leadSlugs)}
+                  title={picked ? "Selected lead — click to clear" : "Use this pair as your lead"}
+                  style={{ textAlign: "left", cursor: "pointer", borderRadius: 12, border: `1px solid ${picked ? ACC : first ? "oklch(72% 0.1 190 / 0.4)" : "oklch(30% 0.01 240)"}`, boxShadow: picked ? `0 0 0 1px ${ACC}` : undefined, background: picked ? "oklch(72% 0.1 190 / 0.16)" : first ? "oklch(72% 0.1 190 / 0.08)" : RAISE, padding: 11, display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                     <span style={{ borderRadius: 6, background: first ? ACC : "oklch(45% 0.03 240)", color: "oklch(16% 0.008 240)", fontWeight: 800, fontSize: 10, padding: "2px 6px" }}>#{i + 1}</span>
                     <span className="mono" style={{ marginLeft: "auto", fontSize: 11, color: first ? "oklch(82% 0.1 190)" : "oklch(64% 0.012 240)" }}>{l.score.toFixed(3)}</span>
@@ -320,7 +333,7 @@ export function ChoiceDexApp({
                     <span style={{ display: "block", height: "100%", width: `${Math.round(l.score * 100)}%`, background: first ? ACC : "oklch(50% 0.04 240)" }} />
                   </span>
                   <span style={{ fontSize: 10, color: "oklch(56% 0.012 240)", lineHeight: 1.4 }}>best vs {nameOf(l.bestAgainst)}<br />worst vs {nameOf(l.worstAgainst)}</span>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -506,7 +519,7 @@ function koText(d: ReturnType<typeof calculateDamage> | null): { text: string; c
 }
 
 function BattleView({
-  pokemon, bySlug, items, megaForms, userTeam, oppTeam, loadedSets, onBack, advancedTools,
+  pokemon, bySlug, items, megaForms, userTeam, oppTeam, loadedSets, onBack, initialLead, advancedTools,
 }: {
   pokemon: PokemonRef[];
   bySlug: Map<string, PokemonRef>;
@@ -516,6 +529,8 @@ function BattleView({
   oppTeam: string[];
   loadedSets: Record<string, KnownSet>;
   onBack: () => void;
+  /** Lead pair (slugs) picked on the preview screen; seeds the two active slots. */
+  initialLead?: [string, string];
   advancedTools?: React.ReactNode;
 }) {
   void pokemon;
@@ -529,7 +544,12 @@ function BattleView({
   const [round, setRound] = useState(1);
   const [uTeam, setUTeam] = useState<string[]>(userTeam);
   const [oTeam, setOTeam] = useState<string[]>(oppTeam);
-  const [activeUser, setActiveUser] = useState<[string, string]>([userTeam[0]!, userTeam[1] ?? userTeam[0]!]);
+  const [activeUser, setActiveUser] = useState<[string, string]>(
+    // Seed from the picked lead when both mons are on the team, else the first two.
+    initialLead && initialLead.every((s) => userTeam.includes(s))
+      ? initialLead
+      : [userTeam[0]!, userTeam[1] ?? userTeam[0]!],
+  );
   const [activeOpp, setActiveOpp] = useState<[string, string]>([oppTeam[0]!, oppTeam[1] ?? oppTeam[0]!]);
   const [sentUser, setSentUser] = useState<string[]>([userTeam[0]!, userTeam[1]].filter(Boolean) as string[]);
   const [sentOpp, setSentOpp] = useState<string[]>([oppTeam[0]!, oppTeam[1]].filter(Boolean) as string[]);
@@ -770,7 +790,7 @@ function BattleView({
     return (
       <button key={key} onClick={() => focus(side, i)} style={{ flex: "1 1 0", minWidth: 0, maxWidth: `${40 * spot.scale}px`, background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", marginBottom: spot.lift }}>
         <span style={{ position: "relative", display: "block", width: "100%" }}>
-          <Sprite species={slug} w="100%" h={96} scale={spot.scale} flip={spot.flip < 0} filter={filter} />
+          <Sprite species={formeOf(side, slug)?.species ?? formeOf(side, slug)?.name ?? slug} w="100%" h={96} scale={spot.scale} flip={spot.flip < 0} filter={filter} />
           {hasStatus && <>
             <span style={{ position: "absolute", inset: "6%", borderRadius: "50%", background: STATUS_WASH[st.status] ?? "transparent", pointerEvents: "none" }} />
             <span title={st.status} style={{ position: "absolute", top: -2, right: 0, display: "flex", alignItems: "center", justifyContent: "center", minWidth: 18, height: 18, padding: "0 3px", borderRadius: 999, fontSize: 10, fontWeight: 800, lineHeight: 1, background: STATUS_COLOR[st.status] ?? "transparent", color: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{STATUS_GLYPH[st.status] ?? ""}</span>
@@ -858,7 +878,7 @@ function BattleView({
     return (
       <div key={i} style={{ minWidth: 0, display: "flex", alignItems: "flex-start", gap: 7, borderRadius: 10, border: `1px solid ${o ? "oklch(72% 0.1 190 / 0.4)" : "oklch(30% 0.01 240)"}`, background: o ? "oklch(72% 0.1 190 / 0.08)" : RAISE, padding: "7px 8px" }}>
         <button onClick={() => setSelUser(i)} title={focused ? `${p.name} is shown in Your active` : `Show ${p.name} in Your active`} style={{ position: "relative", flexShrink: 0, display: "flex", alignItems: "center", borderRadius: 8, border: `1px solid ${focused ? ACC : "oklch(30% 0.01 240)"}`, background: focused ? "oklch(72% 0.1 190 / 0.18)" : "transparent", padding: "1px 3px", cursor: "pointer" }}>
-          <Sprite species={slug} w={36} h={27} />
+          <Sprite species={formeOf("user", slug)?.species ?? formeOf("user", slug)?.name ?? slug} w={36} h={27} />
           {hasStatus && <span title={mst.status} style={{ position: "absolute", top: -4, right: -4, display: "flex", alignItems: "center", justifyContent: "center", minWidth: 15, height: 15, padding: "0 2px", borderRadius: 999, fontSize: 9, fontWeight: 800, lineHeight: 1, background: STATUS_COLOR[mst.status] ?? "transparent", color: "#fff" }}>{STATUS_GLYPH[mst.status] ?? ""}</span>}
         </button>
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -1104,7 +1124,7 @@ function BattleView({
 
         {/* identity row */}
         <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
-          <Sprite species={slug} w={50} h={38} scale={1.25} />
+          <Sprite species={forme?.species ?? forme?.name ?? slug} w={50} h={38} scale={1.25} />
           <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-0.01em" }}>{forme ? forme.name : p.name}</span>
           <span style={{ display: "flex", gap: 4 }}>
             {typesFor(forme ? forme.types : p.types).map((t) => <span key={t.name} style={{ borderRadius: 999, fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", padding: "2px 7px", color: "#fff", background: t.hex }}>{t.name}</span>)}

@@ -20,6 +20,9 @@ export interface TournMon {
   moves: TournEntry[];
   tera: TournEntry[];
   natures: TournEntry[];
+  /** EV spreads (e.g. "252 HP / 252 Atk / 4 Def"). Present only if the source
+   *  carries them - open team sheets don't, so this stays absent for now. */
+  spreads?: TournEntry[];
 }
 
 export interface TournData {

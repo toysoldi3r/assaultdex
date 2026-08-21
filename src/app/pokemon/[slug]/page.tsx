@@ -114,6 +114,40 @@ function UsageBars({ rows, showType }: { rows: TournEntry[]; showType?: boolean 
   );
 }
 
+/** One usage category: ranked % bars when the snapshot has data, otherwise a
+ *  dash placeholder (or the known option names with dashes, e.g. abilities). */
+function UsageSection({
+  title,
+  rows,
+  showType,
+  fallbackNames,
+}: {
+  title: string;
+  rows?: TournEntry[];
+  showType?: boolean;
+  fallbackNames?: string[];
+}) {
+  return (
+    <div>
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-300">{title}</h3>
+      {rows && rows.length > 0 ? (
+        <UsageBars rows={rows} showType={showType} />
+      ) : fallbackNames && fallbackNames.length > 0 ? (
+        <ul className="space-y-1">
+          {fallbackNames.map((n) => (
+            <li key={n} className="flex items-center justify-between gap-2 text-xs">
+              <span className="truncate text-slate-300">{n}</span>
+              <span className="tabular-nums text-slate-500">—</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-xs text-slate-500">—</p>
+      )}
+    </div>
+  );
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const p = await getDexSpecies(slug);
@@ -185,18 +219,23 @@ export default async function PokemonPage({
             <span className="block text-sm text-slate-300">{flavor.genus}</span>
           )}
           {meta && <span className="text-xs text-slate-400">{meta.genderLabel}</span>}
-          {usage && (
-            <span className="mt-1 block text-xs text-slate-400">
-              {CHAMPIONS_FORMAT_LABEL}:{" "}
-              {rank && (
-                <span className="text-amber-300" title={`Usage rank ${rank} of ${rankedCount}`}>
-                  #{rank}
-                </span>
-              )}{" "}
-              · <span className="text-amber-300">{usage.usage}%</span> usage ·{" "}
-              {usage.winRate}% win rate
+          <span className="mt-1 block text-xs text-slate-400">
+            {CHAMPIONS_FORMAT_LABEL}:{" "}
+            <span
+              className="text-amber-300"
+              title={rank ? `Usage rank ${rank} of ${rankedCount}` : "Not ranked on the ladder"}
+            >
+              #{rank ?? "—"}
             </span>
-          )}
+            {usage ? (
+              <>
+                {" "}· <span className="text-amber-300">{usage.usage}%</span> usage ·{" "}
+                {usage.winRate}% win rate
+              </>
+            ) : (
+              <> · not on the ladder</>
+            )}
+          </span>
         </div>
       </div>
 
@@ -300,40 +339,20 @@ export default async function PokemonPage({
         )}
       </Panel>
 
-      {tourn && (
-        <Panel title={`Usage details · ${CHAMPIONS_FORMAT_LABEL}`}>
-          <div className="grid gap-x-8 gap-y-4 md:grid-cols-2">
-            {tourn.items.length > 0 && (
-              <div>
-                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-300">Most common items</h3>
-                <UsageBars rows={tourn.items} />
-              </div>
-            )}
-            {tourn.abilities.length > 0 && (
-              <div>
-                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-300">Most common abilities</h3>
-                <UsageBars rows={tourn.abilities} />
-              </div>
-            )}
-            {tourn.natures.length > 0 && (
-              <div>
-                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-300">Most common natures</h3>
-                <UsageBars rows={tourn.natures} />
-              </div>
-            )}
-            {tourn.moves.length > 0 && (
-              <div>
-                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-300">Most common moves</h3>
-                <UsageBars rows={tourn.moves} showType />
-              </div>
-            )}
-          </div>
-          <p className="mt-3 text-[10px] uppercase tracking-wide text-slate-600">
-            Share of open tournament team sheets ({tourn.usage}% of the field ran {p.name}).
-            EV spreads aren&rsquo;t published on team sheets, so no spread breakdown is shown.
-          </p>
-        </Panel>
-      )}
+      <Panel title={`Usage details · ${CHAMPIONS_FORMAT_LABEL}`}>
+        <div className="grid gap-x-8 gap-y-4 md:grid-cols-2">
+          <UsageSection title="Most common items" rows={tourn?.items} />
+          <UsageSection title="Most common abilities" rows={tourn?.abilities} fallbackNames={p.abilities} />
+          <UsageSection title="Most common natures" rows={tourn?.natures} />
+          <UsageSection title="Most common EV spreads" rows={tourn?.spreads} />
+          <UsageSection title="Most common moves" rows={tourn?.moves} showType />
+        </div>
+        <p className="mt-3 text-[10px] uppercase tracking-wide text-slate-600">
+          {tourn
+            ? `Share of open tournament team sheets (${tourn.usage}% of the field ran ${p.name}).`
+            : "— shown where no usage snapshot is loaded yet. Populate it with `pnpm refresh:tournaments` (needs a reachable source)."}
+        </p>
+      </Panel>
 
       <Panel title="Height, weight & stat range">
         <div className="mb-3 flex flex-wrap gap-6 text-sm">

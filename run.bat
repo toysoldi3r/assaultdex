@@ -1,11 +1,16 @@
 @echo off
 REM AssaultDex one-click launcher for Windows.
 REM Double-click this file. It installs Node.js (via winget) if missing, installs
-REM dependencies, sets up the local SQLite database, and starts the site at
-REM http://localhost:3000. Keep the window open; Ctrl+C stops.
+REM dependencies with pnpm, sets up the local SQLite database, and starts the
+REM site at http://localhost:3000. Keep the window open; Ctrl+C stops.
 
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
+
+REM Quieter, faster boot: skip Next telemetry and let corepack fetch pnpm
+REM without an interactive download prompt.
+set "NEXT_TELEMETRY_DISABLED=1"
+set "COREPACK_ENABLE_DOWNLOAD_PROMPT=0"
 
 echo.
 echo ===============================
@@ -49,24 +54,44 @@ if not exist ".env" (
   copy /y ".env.example" ".env" >nul
 )
 
-REM --- 3. Dependencies (npm) ------------------------------------------------
-if exist "pnpm-lock.yaml" if not exist "package-lock.json" if exist "node_modules" (
-  echo Clearing a previous pnpm install...
+REM --- 3. Dependencies (pnpm via corepack) ---------------------------------
+REM This is a pnpm project (same as CI). pnpm ships with Node through corepack,
+REM installs faster than npm, and honours the project's .npmrc and build-script
+REM settings - so none of npm's "unknown config" / "allow-scripts" warnings show.
+REM Corepack reads the "packageManager" field in package.json to pick pnpm 9.
+set "PM=corepack pnpm"
+set "RUN=corepack pnpm run"
+call corepack --version >nul 2>&1
+if errorlevel 1 (
+  echo corepack not found; falling back to npm.
+  set "PM=npm"
+  set "RUN=npm run"
+)
+
+REM A previous npm/older install leaves a flat node_modules without pnpm's
+REM ".pnpm" store dir; clear it so pnpm can lay out its own tree cleanly.
+if exist "node_modules" if not exist "node_modules\.pnpm" if not "!PM!"=="npm" (
+  echo Clearing a previous non-pnpm install...
   rmdir /s /q node_modules
 )
+
 if not exist "node_modules\next\package.json" (
-  echo Installing dependencies with npm. First time takes a few minutes...
-  call npm install --prefer-offline --no-audit --no-fund
+  echo Installing dependencies with !PM!. First time takes a minute...
+  if "!PM!"=="npm" (
+    call npm install --prefer-offline --no-audit --no-fund
+  ) else (
+    call corepack pnpm install --frozen-lockfile --prefer-offline --config.confirmModulesPurge=false
+  )
   if not exist "node_modules\next\package.json" goto :fail
 )
 
 REM --- 4. Database ----------------------------------------------------------
 if not exist "prisma\dev.db" (
   echo Setting up the database...
-  call npm run db:migrate
+  call !RUN! db:migrate
   if errorlevel 1 goto :fail
   echo Seeding Pokemon...
-  call npm run db:seed
+  call !RUN! db:seed
   if errorlevel 1 goto :fail
 )
 
@@ -77,7 +102,7 @@ echo The first page load compiles on demand and may take ~15s - refresh if blank
 echo Keep this window open. Press Ctrl+C to stop.
 echo.
 start "" http://localhost:3000
-call npm run dev:turbo
+call !RUN! dev:turbo
 goto :eof
 
 :fail

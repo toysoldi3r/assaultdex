@@ -40,8 +40,6 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Hide Next's dev-only static-route indicator (bottom-left overlay badge).
-  devIndicators: { appIsrStatus: false },
   // Self-contained server bundle for container deployment.
   output: "standalone",
   // Prisma client is server-only; keep it external to the server bundle.

@@ -221,6 +221,123 @@ export function moveTypeByName(name: string): PokemonType | null {
   return m.exists ? toType(m.type) : null;
 }
 
+// ---------------------------------------------------------------------------
+// Move detail (for the per-move reference page). All from @pkmn/dex; provisional
+// for Champions like the rest of the mechanics.
+// ---------------------------------------------------------------------------
+
+/** A short description that held from `genFrom` until the next change. */
+export interface MoveGenDesc {
+  genFrom: number;
+  desc: string;
+}
+
+export interface MoveDetail {
+  name: string;
+  type: PokemonType | null;
+  category: MoveCategory;
+  power: number | null;
+  accuracy: number | null;
+  pp: number | null;
+  priority: number;
+  /** Raw @pkmn target id (e.g. "normal", "allAdjacentFoes", "self"). */
+  target: string;
+  /** Relevant move flags present (contact, protect, mirror, reflectable, …). */
+  flags: string[];
+  /** Drains HP from the target (Big Root boosts it). */
+  drain: boolean;
+  /** Already has an inherent flinch chance (so King's Rock adds nothing). */
+  flinchAlready: boolean;
+  /** shortDesc per generation, collapsed to change points. */
+  descByGen: MoveGenDesc[];
+}
+
+/** Full reference detail for a move by name, or null if unknown. */
+export function getMoveDetail(name: string): MoveDetail | null {
+  const m = Dex.moves.get(name);
+  if (!m.exists) return null;
+
+  const descByGen: MoveGenDesc[] = [];
+  let prev = "";
+  for (let g = m.gen || 1; g <= 9; g++) {
+    let dg;
+    try {
+      dg = Dex.forGen(g);
+    } catch {
+      continue;
+    }
+    const mg = dg.moves.get(m.id);
+    if (!mg.exists) continue;
+    const d = mg.shortDesc || mg.desc || "";
+    if (!d || d === prev) continue;
+    descByGen.push({ genFrom: g, desc: d });
+    prev = d;
+  }
+
+  const raw = m as unknown as { drain?: unknown; secondary?: { volatileStatus?: string } | null };
+  return {
+    name: m.name,
+    type: toType(m.type),
+    category: m.category.toLowerCase() as MoveCategory,
+    power: m.category === "Status" ? null : m.basePower || null,
+    accuracy: m.accuracy === true ? null : m.accuracy,
+    pp: m.pp ?? null,
+    priority: m.priority,
+    target: m.target,
+    flags: Object.keys(m.flags ?? {}),
+    drain: Boolean(raw.drain),
+    flinchAlready: raw.secondary?.volatileStatus === "flinch",
+    descByGen,
+  };
+}
+
+/** A species that can learn a given move, with how it learns it. */
+export interface MoveLearner {
+  slug: string;
+  name: string;
+  num: number;
+  types: PokemonType[];
+  methods: LearnMethod[];
+  champions: boolean;
+}
+
+// Reverse learnset index (move id → learners), built once and cached. Scans
+// every base species' Gen 9 learnset, so the first move page pays the cost and
+// the rest are instant.
+let learnerIndex: Promise<Map<string, MoveLearner[]>> | null = null;
+
+async function buildLearnerIndex(): Promise<Map<string, MoveLearner[]>> {
+  const map = new Map<string, MoveLearner[]>();
+  for (const s of Dex.species.all()) {
+    if (!inShowdown(s) || s.baseSpecies !== s.name) continue;
+    let ls = await Dex.learnsets.get(s.id);
+    if ((!ls || !ls.learnset) && s.baseSpecies) {
+      ls = await Dex.learnsets.get(Dex.species.get(s.baseSpecies).id);
+    }
+    const learn = ls?.learnset;
+    if (!learn) continue;
+    const types = mapTypes(s.types);
+    const champions = CHAMPIONS_BASE.has(s.id);
+    for (const [mid, codes] of Object.entries(learn)) {
+      const { methods } = parseLearn(codes);
+      if (methods.length === 0) continue; // Gen 9-legal only
+      const arr = map.get(mid) ?? [];
+      arr.push({ slug: s.id, name: s.name, num: s.num, types, methods, champions });
+      map.set(mid, arr);
+    }
+  }
+  return map;
+}
+
+/** Species that can learn a move (Gen 9), sorted by dex number. Memoised. */
+export async function moveLearners(name: string): Promise<MoveLearner[]> {
+  const m = Dex.moves.get(name);
+  if (!m.exists) return [];
+  learnerIndex ??= buildLearnerIndex();
+  const map = await learnerIndex;
+  return (map.get(m.id) ?? []).slice().sort((a, b) => a.num - b.num);
+}
+
 const speciesCache = new Map<string, DexSpecies | null>();
 
 /** Detail for one species by slug (@pkmn id). Null if unknown. Memoised - the
