@@ -104,19 +104,31 @@ export function TeamAnalysisPanel({ analysis }: { analysis: TeamAnalysis }) {
           <h3 className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-t3">Immunities &amp; resistances</h3>
           {resistances.length === 0 && <p className="text-xs text-t3">No resistances.</p>}
           <ul className="space-y-1 text-xs">
-            {resistances.slice(0, 12).map((r) => (
-              <li key={r.type} className="flex items-center gap-2">
-                <TypeBadge type={r.type as PokemonType} />
-                <span className="ml-auto flex flex-wrap items-center gap-1">
-                  {r.members.map((m, mi) => (
-                    <span key={`${m.name}-${mi}`} className="flex items-center gap-0.5" title={`${m.name} ${multLabel(m.mult)}`}>
-                      <PokeIcon species={m.name} />
-                      <span className={`tabular-nums ${m.mult === 0 ? "font-semibold text-pos" : "text-t3"}`}>{multLabel(m.mult)}</span>
+            {resistances.slice(0, 12).map((r) => {
+              const immune = r.members.some((m) => m.mult === 0);
+              return (
+                <li key={r.type} className="flex items-center gap-2">
+                  <TypeBadge type={r.type as PokemonType} />
+                  {immune && (
+                    <span className="rounded px-1 text-[10px] font-semibold text-pos" style={{ background: "rgba(111,196,143,0.16)" }} title="At least one member is immune">
+                      0× immune
                     </span>
-                  ))}
-                </span>
-              </li>
-            ))}
+                  )}
+                  {/* Fixed-width cells (icon + right-aligned multiplier) so ×0.5
+                      and ×0.25 line up in straight columns across rows. */}
+                  <span className="flex flex-1 flex-wrap items-center gap-1">
+                    {r.members.map((m, mi) => (
+                      <span key={`${m.name}-${mi}`} className="flex w-[72px] items-center gap-0.5" title={`${m.name} ${multLabel(m.mult)}`}>
+                        <span className={m.mult === 0 ? "rounded ring-1 ring-pos" : undefined}>
+                          <PokeIcon species={m.name} />
+                        </span>
+                        <span className={`w-[30px] text-right tabular-nums ${m.mult === 0 ? "font-semibold text-pos" : "text-t3"}`}>{multLabel(m.mult)}</span>
+                      </span>
+                    ))}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>

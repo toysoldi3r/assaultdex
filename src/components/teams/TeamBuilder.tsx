@@ -145,16 +145,19 @@ export function TeamBuilder({
     // forbids two Pokémon holding the same item, so skip anything already on the
     // team and drop to the next most popular; only if every candidate is taken
     // do we fall back to the single most popular (flagged as a duplicate).
+    // Only ever auto-pick items that exist in the selectable (format-legal) pool,
+    // so the fallback ladder never assigns something the item picker can't show.
+    const legalItems = new Set(items.map((o) => o.name));
     const itemRanked = [
       ...(tm?.items ?? []).map((x) => x.name),
       suggestion?.item,
       ...suggestions.map((s) => s.item),
-      // Broad fallback ladder of common legal items, so the item-clause skip
-      // below can still find a distinct item when there's no per-species usage
-      // data and the suggested-set items are all taken (otherwise every added
-      // Pokémon defaults to the same Life Orb).
+      // Broad fallback ladder of common items, so the item-clause skip below can
+      // still find a distinct item when there's no per-species usage data and the
+      // suggested-set items are all taken (otherwise every added Pokémon defaults
+      // to the same Life Orb).
       ...GENERIC_ITEMS,
-    ].filter((n): n is string => Boolean(n));
+    ].filter((n): n is string => n != null && legalItems.has(n));
     const item =
       itemRanked.find((n) => !usedItems.has(n)) ?? itemRanked[0] ?? null;
     const legal = new Set(r.legalMoves);
@@ -456,48 +459,62 @@ export function TeamBuilder({
     const open = flags.some((f) => f.i === i);
     return (
       <button key={i} onClick={() => setTab(i)}
-        className={`rounded-lg bg-panel p-3 text-left ${open ? "border border-warn" : "border border-line"}`}>
+        className={`min-w-0 rounded-lg bg-panel p-3 text-left ${open ? "border border-warn" : "border border-line"}`}>
         <div className="flex items-center gap-2">
-          <span className="inline-flex h-6 w-6 items-center justify-center overflow-hidden"><PokeIcon species={m.species} className="scale-125" /></span>
-          <span className="text-[13px] font-[600] text-t1">{r.name}</span>
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: legal ? "var(--pos)" : "var(--warn)" }} />
-          <span className="ml-auto flex gap-1">{r.types.map((t) => <TypeBadge key={t} type={t} />)}</span>
+          {/* Fit the 40x30 pixel icon in its box so it isn't cut off. */}
+          <span className="grid h-[30px] w-10 shrink-0 place-items-center"><PokeIcon species={m.species} /></span>
+          <span className="truncate text-[13px] font-[600] text-t1">{r.name}</span>
+          <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: legal ? "var(--pos)" : "var(--warn)" }} />
+          <span className="ml-auto flex shrink-0 gap-1">{r.types.map((t) => <TypeBadge key={t} type={t} />)}</span>
+        </div>
+        {/* Ability + nature */}
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+          <span className="flex items-center gap-1"><span className="text-t3">Ability</span><span className={m.ability ? "text-t2" : "text-t3"}>{m.ability ?? "—"}</span></span>
+          <span className="flex items-center gap-1"><span className="text-t3">Nature</span><span className="text-t2">{m.nature}</span></span>
         </div>
         <div className="mt-2 grid gap-3.5 md:grid-cols-2">
-          <ul className="space-y-0.5">
+          <ul className="min-w-0 space-y-0.5">
             {[0, 1, 2, 3].map((mi) => {
               const mv = m.moves[mi];
               const meta = mv ? moveMeta[mv] : undefined;
               return (
                 <li key={mi} className="flex items-center gap-1.5 text-[11.5px]">
                   <span className="h-[11px] w-[3px] shrink-0 rounded-sm" style={{ background: meta ? TYPE_HEX[meta.type] : "var(--line)" }} />
-                  <span className={mv ? "text-t2" : "text-t3"}>{mv ?? "empty slot"}</span>
+                  <span className={`truncate ${mv ? "text-t2" : "text-t3"}`}>{mv ?? "empty slot"}</span>
                 </li>
               );
             })}
           </ul>
-          <div className="w-[148px] space-y-0.5">
-            {STAT_KEYS.map((k) => (
-              <div key={k} className="grid items-center gap-1.5" style={{ gridTemplateColumns: "22px 1fr 26px" }}>
-                <span className="text-[10px] uppercase text-t3">{STAT_LABELS[k]}</span>
-                <StatBar base={r.baseStats[k]} ev={m.spread.evs[k] || 0} height={6} />
-                <span className="text-right text-[10px] tabular-nums text-t2">
-                  {computeStat(r.baseStats[k], m.spread.ivs[k] ?? 31, m.spread.evs[k] || 0, m.level, k, nat)}
-                </span>
-              </div>
-            ))}
+          <div className="min-w-0 space-y-0.5">
+            <div className="grid items-center gap-1.5 text-[9px] uppercase text-t3" style={{ gridTemplateColumns: "22px 1fr 28px 26px" }}>
+              <span /><span /><span className="text-right">EV</span><span className="text-right">Val</span>
+            </div>
+            {STAT_KEYS.map((k) => {
+              const evv = m.spread.evs[k] || 0;
+              return (
+                <div key={k} className="grid items-center gap-1.5" style={{ gridTemplateColumns: "22px 1fr 28px 26px" }}>
+                  <span className="text-[10px] uppercase text-t3">{STAT_LABELS[k]}</span>
+                  <StatBar base={r.baseStats[k]} ev={evv} height={6} />
+                  <span className={`text-right text-[10px] tabular-nums ${evv ? "text-acc" : "text-t3"}`}>{evv}</span>
+                  <span className="text-right text-[10px] tabular-nums text-t2">
+                    {computeStat(r.baseStats[k], m.spread.ivs[k] ?? 31, evv, m.level, k, nat)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
-        <div className="mt-2 flex items-center justify-between text-[11px]">
+        <div className="mt-2 flex items-center gap-1.5 text-[11px]">
+          <ItemIcon item={m.item ?? ""} size={16} />
           <span className="text-t3">{m.item ?? "no item"}</span>
-          <span className={ev < 508 ? "text-warn" : "text-t3"}>{ev}/508</span>
+          <span className={`ml-auto tabular-nums ${ev < 508 ? "text-warn" : "text-t3"}`}>{ev}/508</span>
         </div>
       </button>
     );
   }
 
   const rightColumn = (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       {/* Tab bar */}
       <div className="flex flex-wrap items-center gap-1.5">
         <button onClick={() => setTab("team")}
@@ -567,9 +584,9 @@ export function TeamBuilder({
         <StatCell value={savedLabel} label="Last saved" />
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[320px_1fr]">
+      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         {/* Left rail */}
-        <div className="space-y-3.5">
+        <div className="min-w-0 space-y-3.5">
           {/* Team sheet */}
           <div className="overflow-hidden rounded-lg border border-line bg-panel">
             <div className="flex items-center justify-between px-[10px] py-2">
