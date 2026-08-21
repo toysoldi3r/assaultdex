@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Panel, ProvisionalTag } from "@/components/ui";
 import { Simulator } from "@/components/choicedex/Simulator";
+import { BattleCalculator } from "@/components/database/BattleCalculator";
 import { toNameOptions, toPokemonRefs, type PokemonRef } from "@/lib/choicedexBuild";
 import { buildDashboard } from "@/domain/analysis/dashboard";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
@@ -54,6 +55,18 @@ export default async function BattlesPage({
       {err && ERR_MESSAGES[err] && (
         <p className="text-sm text-rose-400">{ERR_MESSAGES[err]}</p>
       )}
+
+      <Panel title="Damage calculator - two Pokémon">
+        <p className="mb-3 text-sm text-slate-400">
+          Pick both Pokémon, their sets and a move to read the exact speed order,
+          damage rolls, KO chance, and every modifier the engine applies.
+        </p>
+        {refs.length > 0 ? (
+          <BattleCalculator pokemon={refs} />
+        ) : (
+          <p className="text-sm text-slate-500">Import Pokémon first: <code>pnpm db:seed</code>.</p>
+        )}
+      </Panel>
 
       <Panel title="Batch simulation - run many outcomes">
         <p className="mb-3 text-sm text-slate-400">
