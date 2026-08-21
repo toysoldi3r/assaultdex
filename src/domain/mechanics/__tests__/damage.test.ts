@@ -71,6 +71,41 @@ describe("[provisional] calculateDamage", () => {
     expect(double.rolls.length).toBe(16);
   });
 
+  // Exact integer damage, cross-checked against the mainline @smogon/calc
+  // pipeline (modifiers applied in order with per-stage poke-rounding). These
+  // lock in the KO-threshold accuracy: collapsing modifiers into one multiply
+  // used to drift 1-2 HP here (292-346 instead of 290-344).
+  it("matches mainline integer damage for a STAB super-effective hit in sun", () => {
+    // atk base 152 -> stat 172; def base 100 -> def 120; fire vs grass = 2x.
+    const attacker = combatant({ name: "A", types: ["fire"], base: stats({ atk: 152 }) });
+    const defender = combatant({ name: "D", types: ["grass"], base: stats() });
+    const sun = { ...DEFAULT_FIELD, weather: "sun" as const };
+    const r = calculateDamage(attacker, defender, move({ type: "fire", power: 120 }), sun);
+    expect(r.minDamage).toBe(290);
+    expect(r.maxDamage).toBe(344);
+  });
+
+  it("applies burn as a final damage step (mainline order)", () => {
+    // Burned physical STAB, power 120, neutral: 48-57 with end-step burn.
+    const attacker = {
+      ...combatant({ name: "A", types: ["normal"], base: stats({ atk: 152 }) }),
+      status: "burn" as const,
+    };
+    const defender = combatant({ name: "D", types: ["normal"], base: stats() });
+    const r = calculateDamage(attacker, defender, move({ type: "normal", power: 120 }), field);
+    expect(r.minDamage).toBe(48);
+    expect(r.maxDamage).toBe(57);
+  });
+
+  it("guarantees at least 1 damage on a connecting, non-immune hit", () => {
+    // A doubly-resisted chip (0.25x) that a single-floor multiply rounds to 0.
+    const attacker = combatant({ name: "A", types: ["normal"], base: stats({ atk: 5 }) });
+    const defender = combatant({ name: "D", types: ["fire", "dragon"], base: stats({ def: 250, hp: 255 }) });
+    const r = calculateDamage(attacker, defender, move({ type: "grass", power: 10 }), field);
+    expect(r.effectiveness.multiplier).toBe(0.25);
+    expect(r.minDamage).toBeGreaterThanOrEqual(1);
+  });
+
   it("handles large fixed hit counts without exploding the convolution", () => {
     // Population Bomb = 10 hits. Exact convolution would be 16^10 buckets, so it
     // must fall back to the scaled approximation and return finite values fast.
