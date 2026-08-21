@@ -24,7 +24,8 @@
     "db:generate:pg": "prisma generate --schema prisma/schema.postgres.prisma",
     "db:push:pg": "prisma db push --schema prisma/schema.postgres.prisma",
     "deploy:setup:pg": "prisma generate --schema prisma/schema.postgres.prisma && prisma db push --schema prisma/schema.postgres.prisma && tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "refresh:source-icons": "tsx scripts/refreshSourceIcons.ts"
   },
   "packageManager": "pnpm@9.15.9",
   "prisma": {
