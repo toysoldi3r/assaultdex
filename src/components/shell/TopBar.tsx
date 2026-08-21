@@ -17,7 +17,7 @@ const DESTINATIONS: Dest[] = [
   { label: "Teams", href: "/teams", keywords: "team builder build" },
   { label: "ChoiceDex", href: "/choicedex", keywords: "choice picker" },
   { label: "Battles", href: "/battles", keywords: "battle replay log" },
-  { label: "Damage calc", href: "/database?tab=calc", keywords: "calculator damage dmg" },
+  { label: "Damage calc", href: "/battles", keywords: "calculator damage dmg" },
   { label: "Moves", href: "/database?tab=moves", keywords: "move attack database" },
   { label: "Abilities", href: "/database?tab=abilities", keywords: "ability database" },
   { label: "Items", href: "/database?tab=items", keywords: "item held database" },

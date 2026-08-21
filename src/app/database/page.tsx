@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Database",
-  description: "One index for items, abilities, moves — with the exact formulas the battle engine applies — plus a calculator, type chart, rulesets, and a glossary.",
+  description: "One index for items, abilities, and moves — with the exact formulas the battle engine applies — plus a type chart, rulesets, and a glossary.",
 };
 
 export default async function DatabasePage() {
