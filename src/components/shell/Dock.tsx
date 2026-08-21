@@ -24,12 +24,14 @@ import {
 
 function RowIcon({ href }: { href: string }) {
   const slug = spriteSlug(href);
+  // The Showdown pixel icon is 40x30; the box must be at least that tall or the
+  // sprite is cropped ("cut in half"). Center it in a 40x30 slot, no crop.
   return slug ? (
-    <span className="grid h-[26px] w-10 shrink-0 place-items-center overflow-hidden">
+    <span className="grid h-[30px] w-10 shrink-0 place-items-center">
       <PokeIcon species={slug} />
     </span>
   ) : (
-    <span className="grid h-[26px] w-10 shrink-0 place-items-center">
+    <span className="grid h-[30px] w-10 shrink-0 place-items-center">
       <span className="h-2.5 w-2.5 rounded-sm bg-raise" />
     </span>
   );

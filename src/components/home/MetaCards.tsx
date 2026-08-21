@@ -210,8 +210,12 @@ export function MetaCards({
                       no wrapping, so a team never spills into a second line. */}
                   <span className="flex min-w-0 flex-1 flex-nowrap gap-px">
                     {t.members.map((n) => (
-                      <span key={n} className="grid h-[26px] w-[30px] shrink-0 place-items-center overflow-hidden">
-                        <PokeIcon species={n} />
+                      // The 40x30 pixel icon is scaled to fit the compact slot so
+                      // it isn't cropped at the right/bottom; six still fit a row.
+                      <span key={n} className="grid h-[30px] w-[32px] shrink-0 place-items-center overflow-hidden">
+                        <span style={{ transform: "scale(0.8)" }}>
+                          <PokeIcon species={n} />
+                        </span>
                       </span>
                     ))}
                   </span>

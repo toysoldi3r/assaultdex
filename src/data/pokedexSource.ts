@@ -20,10 +20,14 @@ const CHAMPIONS_BASE: Set<string> = (() => {
   }
   return set;
 })();
+import { computeStat } from "@/domain/mechanics/stats";
 import {
   POKEMON_TYPES,
+  STAT_KEYS,
   type MoveCategory,
+  type Nature,
   type PokemonType,
+  type StatKey,
 } from "@/domain/types/pokemon";
 
 function toType(t: string): PokemonType | null {
@@ -123,6 +127,9 @@ function computeSpeciesForms(anySlug: string): SpeciesForm[] {
   return forms.length > 1 ? forms : [];
 }
 
+/** How a species learns a move in Gen 9 (parsed from the learnset source codes). */
+export type LearnMethod = "level" | "tm" | "egg" | "tutor" | "event";
+
 export interface DexMoveRow {
   name: string;
   type: PokemonType | null;
@@ -131,6 +138,18 @@ export interface DexMoveRow {
   accuracy: number | null;
   pp: number | null;
   effect: string | null;
+  /** Ways this species can learn the move (a move can have several). */
+  methods: LearnMethod[];
+  /** Lowest level it is learnt at, when learnt by level-up (0 = on evolution). */
+  level: number | null;
+}
+
+/** Min/max possible value of a stat (pokemondb.net style): min = 0 IV / 0 EV /
+ *  hindering nature, max = 31 IV / 252 EV / boosting nature, at the given level. */
+export interface StatRange {
+  base: number;
+  min: number;
+  max: number;
 }
 
 export interface DexSpecies {
@@ -140,8 +159,66 @@ export interface DexSpecies {
   types: PokemonType[];
   baseStats: ReturnType<typeof statsOf>;
   abilities: string[];
+  /** Weight in kilograms (@pkmn/dex). */
+  weightKg: number;
+  /** Per-stat min/max at level 100 (the level pokemondb.net tabulates). */
+  statRanges: Record<StatKey, StatRange>;
   /** Gen 9-legal movepool as a full move table (pokemondb.net style). */
   moves: DexMoveRow[];
+}
+
+const RANGE_LEVEL = 100;
+
+/** A nature that boosts `boost` and lowers `lower` (or neutral when equal). */
+function natureFor(boost: StatKey, lower: StatKey): Nature {
+  return { name: "range", boosted: boost, lowered: lower };
+}
+
+function statRanges(bs: ReturnType<typeof statsOf>): Record<StatKey, StatRange> {
+  const out = {} as Record<StatKey, StatRange>;
+  for (const k of STAT_KEYS) {
+    const other: StatKey = k === "atk" ? "def" : "atk"; // any distinct stat
+    // HP ignores nature; for others min uses a hindering nature, max a boosting one.
+    const min = computeStat(bs[k], 0, 0, RANGE_LEVEL, k, natureFor(other, k));
+    const max = computeStat(bs[k], 31, 252, RANGE_LEVEL, k, natureFor(k, other));
+    out[k] = { base: bs[k], min, max };
+  }
+  return out;
+}
+
+/** Parse Gen 9 learnset source codes (e.g. "9L15", "9M", "9E") into methods. */
+function parseLearn(codes: string[]): { methods: LearnMethod[]; level: number | null } {
+  const methods = new Set<LearnMethod>();
+  let level: number | null = null;
+  for (const c of codes) {
+    if (!c.startsWith("9")) continue;
+    switch (c[1]) {
+      case "L": {
+        methods.add("level");
+        const n = parseInt(c.slice(2), 10);
+        if (!Number.isNaN(n)) level = level === null ? n : Math.min(level, n);
+        break;
+      }
+      case "M": methods.add("tm"); break;
+      case "E": methods.add("egg"); break;
+      case "T": methods.add("tutor"); break;
+      case "S": methods.add("event"); break;
+      default: break;
+    }
+  }
+  return { methods: [...methods], level };
+}
+
+/** Types for a species by slug/usage key, for teammate badges. [] if unknown. */
+export function getSpeciesTypes(slug: string): PokemonType[] {
+  const s = Dex.species.get(slug);
+  return s.exists ? mapTypes(s.types) : [];
+}
+
+/** A move's type by name (for usage/move lists), or null if unknown. */
+export function moveTypeByName(name: string): PokemonType | null {
+  const m = Dex.moves.get(name);
+  return m.exists ? toType(m.type) : null;
 }
 
 const speciesCache = new Map<string, DexSpecies | null>();
@@ -167,9 +244,9 @@ async function computeDexSpecies(slug: string): Promise<DexSpecies | null> {
 
   const moves: DexMoveRow[] = Object.entries(ls?.learnset ?? {})
     .filter(([, src]) => src.some((x) => x.startsWith("9")))
-    .map(([id]) => Dex.moves.get(id))
-    .filter((m) => m.exists)
-    .map((m) => ({
+    .map(([id, src]) => ({ move: Dex.moves.get(id), learn: parseLearn(src) }))
+    .filter(({ move }) => move.exists)
+    .map(({ move: m, learn }) => ({
       name: m.name,
       type: toType(m.type),
       category: m.category.toLowerCase() as MoveCategory,
@@ -177,16 +254,21 @@ async function computeDexSpecies(slug: string): Promise<DexSpecies | null> {
       accuracy: m.accuracy === true ? null : m.accuracy,
       pp: m.pp ?? null,
       effect: m.shortDesc || m.desc || null,
+      methods: learn.methods,
+      level: learn.level,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  const baseStats = statsOf(s.baseStats);
   return {
     slug: s.id,
     name: s.name,
     num: s.num,
     types: mapTypes(s.types),
-    baseStats: statsOf(s.baseStats),
+    baseStats,
     abilities: Object.values(s.abilities),
+    weightKg: s.weightkg,
+    statRanges: statRanges(baseStats),
     moves,
   };
 }

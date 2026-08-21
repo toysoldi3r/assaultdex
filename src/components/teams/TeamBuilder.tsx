@@ -65,6 +65,15 @@ const isLegal = (m: PokemonSet) => !!m.ability && m.moves.filter(Boolean).length
 // power/accuracy line up in columns across all four slots.
 const MOVE_COLS = "1fr 58px 20px 84px";
 
+// Common held items, in rough competitive priority, used only as a last-resort
+// ladder so the item-clause auto-pick can hand each new member a distinct item
+// when there is no per-species usage data to rank from.
+const GENERIC_ITEMS = [
+  "Life Orb", "Leftovers", "Focus Sash", "Choice Specs", "Choice Band",
+  "Choice Scarf", "Assault Vest", "Sitrus Berry", "Rocky Helmet", "Expert Belt",
+  "Safety Goggles", "Mystic Water",
+];
+
 export function TeamBuilder({
   teamId,
   teamName,
@@ -140,6 +149,11 @@ export function TeamBuilder({
       ...(tm?.items ?? []).map((x) => x.name),
       suggestion?.item,
       ...suggestions.map((s) => s.item),
+      // Broad fallback ladder of common legal items, so the item-clause skip
+      // below can still find a distinct item when there's no per-species usage
+      // data and the suggested-set items are all taken (otherwise every added
+      // Pokémon defaults to the same Life Orb).
+      ...GENERIC_ITEMS,
     ].filter((n): n is string => Boolean(n));
     const item =
       itemRanked.find((n) => !usedItems.has(n)) ?? itemRanked[0] ?? null;

@@ -17,6 +17,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "generate:fixtures": "tsx scripts/generateFixtures.ts && tsx scripts/genDexNumbers.ts",
     "refresh:usage": "tsx scripts/refreshUsage.ts",
+    "refresh:pokedex": "tsx scripts/refreshPokedex.ts",
     "refresh:tournaments": "tsx scripts/refreshTournaments.ts",
     "refresh:item-icons": "tsx scripts/refreshItemIcons.ts",
     "refresh:pokemon-art": "tsx scripts/refreshPokemonArt.ts",
