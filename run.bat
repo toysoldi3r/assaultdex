@@ -102,7 +102,22 @@ echo The first page load compiles on demand and may take ~15s - refresh if blank
 echo Keep this window open. Press Ctrl+C to stop.
 echo.
 start "" http://localhost:3000
-call !RUN! dev:turbo
+
+REM Use the plain (webpack) dev server. It is more stable on Windows than
+REM "dev:turbo" (--turbopack), which can exit unexpectedly on some setups -
+REM which looked like the window closing on its own right after startup.
+call !RUN! dev
+
+REM If we reach here the dev server has stopped. Keep the window open so any
+REM error it printed stays readable instead of the window vanishing.
+echo.
+echo ============================================================
+echo The dev server has stopped.
+echo If the window closed on its own right after startup, an error
+echo is printed above - common causes are port 3000 already in use
+echo or a code error. Read it, fix it, then run this file again.
+echo ============================================================
+pause
 goto :eof
 
 :fail
