@@ -1,8 +1,15 @@
 @echo off
-REM AssaultDex one-click launcher for Windows.
-REM Double-click this file. It installs Node.js (via winget) if missing, installs
-REM dependencies, sets up the local SQLite database, and starts the site at
-REM http://localhost:3000. Keep the window open; Ctrl+C stops.
+REM ============================================================================
+REM  AssaultDex one-click launcher for Windows (npm only).
+REM
+REM  Double-click this file. It checks for Node.js, installs dependencies with
+REM  npm, sets up the local SQLite database, and starts the site at
+REM  http://localhost:3000. Keep the window open; Ctrl+C stops it.
+REM
+REM  This launcher uses npm on purpose. npm ships with Node, needs no Corepack,
+REM  enforces no packageManager version, and builds native dependencies without
+REM  an allow-list - so it avoids the pnpm/Corepack version errors entirely.
+REM ============================================================================
 
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
@@ -40,6 +47,15 @@ if errorlevel 1 (
   exit /b 1
 )
 
+where /q npm
+if errorlevel 1 (
+  echo.
+  echo npm was not found next to Node. Reinstall Node.js LTS from
+  echo https://nodejs.org/en/download and run this file again.
+  pause
+  exit /b 1
+)
+
 for /f "delims=" %%v in ('node -v') do set "NODEV=%%v"
 echo Using Node !NODEV!
 
@@ -50,13 +66,16 @@ if not exist ".env" (
 )
 
 REM --- 3. Dependencies (npm) ------------------------------------------------
-if exist "pnpm-lock.yaml" if not exist "package-lock.json" if exist "node_modules" (
-  echo Clearing a previous pnpm install...
+REM A node_modules left by a previous pnpm install uses symlinks that break an
+REM npm install. If there is no package-lock.json yet, start clean.
+if not exist "package-lock.json" if exist "node_modules" (
+  echo Removing a previous non-npm install...
   rmdir /s /q node_modules
 )
 if not exist "node_modules\next\package.json" (
   echo Installing dependencies with npm. First time takes a few minutes...
-  call npm install --prefer-offline --no-audit --no-fund
+  call npm install --no-audit --no-fund
+  if errorlevel 1 goto :fail
   if not exist "node_modules\next\package.json" goto :fail
 )
 
@@ -77,11 +96,12 @@ echo The first page load compiles on demand and may take ~15s - refresh if blank
 echo Keep this window open. Press Ctrl+C to stop.
 echo.
 start "" http://localhost:3000
-call npm run dev:turbo
+call npm run dev
 goto :eof
 
 :fail
 echo.
 echo A step above failed. Read the message, fix it, and run this file again.
+echo Common causes: no internet during install, or port 3000 already in use.
 pause
 exit /b 1
