@@ -228,6 +228,25 @@ export function getTotalBattles(): number {
   return data.totalBattles;
 }
 
+// Species ranked by usage (desc); index+1 is the ladder rank shown on the home
+// page. Computed once - the snapshot is constant for the process.
+const usageRankMap: Map<string, number> = (() => {
+  const ranked = [...allMons()].sort((a, b) => b.usage - a.usage);
+  const m = new Map<string, number>();
+  ranked.forEach((mon, i) => m.set(usageKey(mon.name), i + 1));
+  return m;
+})();
+
+/** The ladder usage rank (1 = most used) for a species, or null if unranked. */
+export function getUsageRank(name: string): number | null {
+  return usageRankMap.get(usageKey(name)) ?? null;
+}
+
+/** How many species carry a usage rank (the ranked-mon count). */
+export function getRankedCount(): number {
+  return usageRankMap.size;
+}
+
 /** How many Pokémon have any recorded games (for the home stat strip). */
 export function getRankedMonCount(): number {
   return Object.keys(data.mons).length;

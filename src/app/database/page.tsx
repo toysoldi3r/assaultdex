@@ -1,13 +1,12 @@
 import { DatabaseApp } from "@/components/database/DatabaseApp";
 import { listDbItems, listDbAbilities, listDbMoves } from "@/data/dexDatabase";
-import { toPokemonRefs, type PokemonRef } from "@/lib/choicedexBuild";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Database",
-  description: "Reference data for items, abilities, moves, a battle calculator, and a terminology glossary.",
+  description: "One index for items, abilities, and moves — with the exact formulas the battle engine applies — plus a type chart, rulesets, and a glossary.",
 };
 
 export default async function DatabasePage() {
@@ -17,7 +16,6 @@ export default async function DatabasePage() {
     Promise.resolve(listDbMoves()),
     listPokemon(),
   ]);
-  const refs: PokemonRef[] = toPokemonRefs(pokemon);
   // Abilities / moves that appear in the Champions roster, for the default filter.
   const championsAbilities = [...new Set(pokemon.flatMap((p) => p.abilities))];
   const championsMoves = [
@@ -25,21 +23,12 @@ export default async function DatabasePage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Database</h1>
-      <p className="max-w-2xl text-sm text-slate-400">
-        Reference data for items, abilities, moves, and a two-Pokémon battle
-        calculator, plus a terminology glossary. Calculations are provisional for
-        Pokémon Champions.
-      </p>
-      <DatabaseApp
-        items={items}
-        abilities={abilities}
-        moves={moves}
-        pokemon={refs}
-        championsAbilities={championsAbilities}
-        championsMoves={championsMoves}
-      />
-    </div>
+    <DatabaseApp
+      items={items}
+      abilities={abilities}
+      moves={moves}
+      championsAbilities={championsAbilities}
+      championsMoves={championsMoves}
+    />
   );
 }

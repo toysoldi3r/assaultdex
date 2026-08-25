@@ -105,7 +105,7 @@ export function SelectorPanel({
         />
       </div>
 
-      <ul className="max-h-[246px] overflow-y-auto">
+      <ul className="max-h-[440px] overflow-y-auto">
         {clearLabel && !q && (
           <li>
             <button

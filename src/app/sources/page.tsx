@@ -1,3 +1,5 @@
+import { SourceIcon } from "@/components/SourceIcon";
+
 export const metadata = {
   title: "Sources",
   description: "Major Pokémon community sites, tools, and references AssaultDex draws on.",
@@ -7,6 +9,16 @@ interface Source {
   name: string;
   url: string;
   what: string;
+}
+
+/** Stable icon slug from a site URL (domain's first label): the key
+ *  scripts/refreshSourceIcons.ts writes public/sourceicons/<slug>.png under. */
+function slugOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").split(".")[0]!.replace(/[^a-z0-9]/gi, "").toLowerCase();
+  } catch {
+    return "site";
+  }
 }
 
 const SOURCES: { group: string; items: Source[] }[] = [
@@ -145,16 +157,20 @@ export default function SourcesPage() {
           </h2>
           <ul className="grid gap-2 sm:grid-cols-2">
             {g.items.map((s) => (
-              <li key={s.name} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+              <li key={s.name}>
+                {/* Whole card is the link, not just the name. */}
                 <a
                   href={s.url}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="font-semibold text-amber-400 hover:underline"
+                  className="flex h-full gap-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3 transition-colors hover:border-amber-500/60 hover:bg-slate-900/70"
                 >
-                  {s.name} ↗
+                  <SourceIcon slug={slugOf(s.url)} name={s.name} />
+                  <div className="min-w-0">
+                    <span className="font-semibold text-amber-400">{s.name} ↗</span>
+                    <p className="mt-1 text-sm text-slate-300">{s.what}</p>
+                  </div>
                 </a>
-                <p className="mt-1 text-sm text-slate-300">{s.what}</p>
               </li>
             ))}
           </ul>

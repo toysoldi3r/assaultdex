@@ -13,7 +13,7 @@ import type {
 } from "../types/battle";
 
 /** Abilities that set weather on entry → the weather they set. */
-const WEATHER_SETTERS: Record<string, Weather> = {
+export const WEATHER_SETTERS: Record<string, Weather> = {
   Drought: "sun",
   "Orichalcum Pulse": "sun",
   Drizzle: "rain",
@@ -22,7 +22,7 @@ const WEATHER_SETTERS: Record<string, Weather> = {
 };
 
 /** Abilities that set terrain on entry → the terrain they set. */
-const TERRAIN_SETTERS: Record<string, Terrain> = {
+export const TERRAIN_SETTERS: Record<string, Terrain> = {
   "Electric Surge": "electric",
   "Hadron Engine": "electric",
   "Grassy Surge": "grassy",

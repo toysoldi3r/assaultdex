@@ -61,24 +61,22 @@ function fd(entries: Record<string, string>): FormData {
 const evTotalOf = (m: PokemonSet) => STAT_KEYS.reduce((s, k) => s + (m.spread.evs[k] || 0), 0);
 const isLegal = (m: PokemonSet) => !!m.ability && m.moves.filter(Boolean).length >= 1;
 
-/** Compact type + category + power label for a selected move. */
-function MoveMetaLine({ meta }: { meta?: MoveMeta }) {
-  if (!meta) return null;
-  return (
-    <span className="flex items-center gap-1.5">
-      <TypeBadge type={meta.type} />
-      <CategoryIcon category={meta.category} />
-      <span className="text-[10px] tabular-nums text-t3">
-        {meta.category === "status"
-          ? "status"
-          : `${meta.power ?? "-"} power · ${meta.accuracy == null ? "-" : `${meta.accuracy}%`} acc`}
-      </span>
-    </span>
-  );
-}
+// Shared column template for the move rows so the name, type, category and
+// power/accuracy line up in columns across all four slots.
+const MOVE_COLS = "1fr 58px 20px 84px";
+
+// Common held items, in rough competitive priority, used only as a last-resort
+// ladder so the item-clause auto-pick can hand each new member a distinct item
+// when there is no per-species usage data to rank from.
+const GENERIC_ITEMS = [
+  "Life Orb", "Leftovers", "Focus Sash", "Choice Specs", "Choice Band",
+  "Choice Scarf", "Assault Vest", "Sitrus Berry", "Rocky Helmet", "Expert Belt",
+  "Safety Goggles", "Mystic Water",
+];
 
 export function TeamBuilder({
   teamId,
+  teamName,
   isBox,
   initialMembers,
   refs,
@@ -90,6 +88,7 @@ export function TeamBuilder({
   tournament = {},
 }: {
   teamId: string;
+  teamName?: string;
   isBox: boolean;
   initialMembers: PokemonSet[];
   refs: Record<string, MemberRef>;
@@ -120,18 +119,47 @@ export function TeamBuilder({
     setDirty(true);
   };
 
-  const defaultSet = (slug: string): PokemonSet => {
-    const r = refOf(slug);
-    const tm = tournament[uKey(slug)];
-    const moveLike = r.legalMoves.map((n) => ({
+  const moveLikeOf = (r: MemberRef) =>
+    r.legalMoves.map((n) => ({
       name: n,
       type: moveMeta[n]?.type ?? null,
       category: moveMeta[n]?.category ?? ("status" as const),
       power: moveMeta[n]?.power ?? null,
     }));
-    const suggestion = suggestSets(r.types, r.baseStats, r.abilities, moveLike)[0];
+  const suggestionsOf = (r: MemberRef) => suggestSets(r.types, r.baseStats, r.abilities, moveLikeOf(r));
+
+  const defaultSet = (slug: string, usedItems: Set<string> = new Set()): PokemonSet => {
+    const r = refOf(slug);
+    const tm = tournament[uKey(slug)];
+    const suggestions = suggestionsOf(r);
+    // Pick the archetype that fits the species instead of always the first
+    // (offensive) one, so the default item varies across the roster rather than
+    // defaulting every Pokémon to the offensive set's Life Orb.
+    const bulky = (r.baseStats.hp ?? 0) >= 90 && Math.max(r.baseStats.def ?? 0, r.baseStats.spd ?? 0) >= 90;
+    const suggestion =
+      (bulky && suggestions.find((s) => s.label === "Bulky attacker" || s.label === "Balanced")) ||
+      suggestions[0];
     const ability = tm?.abilities[0]?.name ?? suggestion?.ability ?? r.abilities[0] ?? null;
-    const item = tm?.items[0]?.name ?? suggestion?.item ?? null;
+    // Held item, most-popular first: tournament usage for this species (ranked
+    // by share), then the suggested-set items as a fallback. The item clause
+    // forbids two Pokémon holding the same item, so skip anything already on the
+    // team and drop to the next most popular; only if every candidate is taken
+    // do we fall back to the single most popular (flagged as a duplicate).
+    // Only ever auto-pick items that exist in the selectable (format-legal) pool,
+    // so the fallback ladder never assigns something the item picker can't show.
+    const legalItems = new Set(items.map((o) => o.name));
+    const itemRanked = [
+      ...(tm?.items ?? []).map((x) => x.name),
+      suggestion?.item,
+      ...suggestions.map((s) => s.item),
+      // Broad fallback ladder of common items, so the item-clause skip below can
+      // still find a distinct item when there's no per-species usage data and the
+      // suggested-set items are all taken (otherwise every added Pokémon defaults
+      // to the same Life Orb).
+      ...GENERIC_ITEMS,
+    ].filter((n): n is string => n != null && legalItems.has(n));
+    const item =
+      itemRanked.find((n) => !usedItems.has(n)) ?? itemRanked[0] ?? null;
     const legal = new Set(r.legalMoves);
     const popularMoves = (tm?.moves ?? []).map((x) => x.name).filter((n) => legal.has(n));
     const moves = (popularMoves.length ? popularMoves : suggestion?.moves ?? r.legalMoves.slice(0, 4)).slice(0, 4);
@@ -144,7 +172,8 @@ export function TeamBuilder({
   const addMember = (slug: string) => {
     if (!slug || members.length >= limit) return;
     setMembers((prev) => {
-      const next = [...prev, defaultSet(slug)];
+      const usedItems = new Set(prev.map((m) => m.item).filter((i): i is string => Boolean(i)));
+      const next = [...prev, defaultSet(slug, usedItems)];
       setTab(next.length - 1);
       return next;
     });
@@ -154,9 +183,14 @@ export function TeamBuilder({
 
   const changeSpecies = (i: number, slug: string) => {
     if (!slug) return;
-    setMembers((prev) =>
-      prev.map((m, idx) => (idx !== i ? m : { ...defaultSet(slug), nickname: m.nickname, level: m.level })),
-    );
+    setMembers((prev) => {
+      const usedItems = new Set(
+        prev.filter((_, idx) => idx !== i).map((m) => m.item).filter((it): it is string => Boolean(it)),
+      );
+      return prev.map((m, idx) =>
+        idx !== i ? m : { ...defaultSet(slug, usedItems), nickname: m.nickname, level: m.level },
+      );
+    });
     setDirty(true);
   };
 
@@ -204,30 +238,55 @@ export function TeamBuilder({
     return map;
   }, [pool]);
 
+  // Item clause: no two Pokémon may hold the same item. Members sharing an item
+  // are marked illegal (both the offender and the earlier holder).
+  const dupItemIdx = useMemo(() => {
+    const seen = new Map<string, number>();
+    const dup = new Set<number>();
+    members.forEach((m, i) => {
+      if (!m.item) return;
+      const prev = seen.get(m.item);
+      if (prev !== undefined) { dup.add(i); dup.add(prev); }
+      else seen.set(m.item, i);
+    });
+    return dup;
+  }, [members]);
+
+  const memberLegal = (i: number) => isLegal(members[i]!) && !dupItemIdx.has(i);
+
   // Advisory flags, recomputed from live state.
   const flags = useMemo(() => {
     const out: { i: number; kind: "Warning" | "Note"; text: string }[] = [];
     members.forEach((m, i) => {
       const name = refOf(m.species).name;
       if (!m.item) out.push({ i, kind: "Note", text: `${name} holds no item (optional in this format).` });
+      else if (dupItemIdx.has(i)) out.push({ i, kind: "Warning", text: `${name} holds ${m.item}, which another Pokémon also holds - duplicate items are illegal.` });
       const ev = evTotalOf(m);
       if (ev < 508) out.push({ i, kind: "Warning", text: `${name} has ${508 - ev} EVs unspent.` });
     });
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [members]);
+  }, [members, dupItemIdx]);
 
   const savedLabel = saving ? "Saving…" : dirty ? "Unsaved…" : savedAt ?? "-";
-  const completeCount = members.filter((m) => isLegal(m) && !!m.item && evTotalOf(m) === 508).length;
+  const completeCount = members.filter((m, i) => memberLegal(i) && !!m.item && evTotalOf(m) === 508).length;
 
   // -- picker for a member card --------------------------------------------
   function renderPanel(i: number, m: PokemonSet, r: MemberRef, tm: TournamentPopular | undefined) {
     const kind = panel!.kind;
     const forLabel = `for ${r.name}`;
+    // Suggested-set items/moves float to the top as "recommended" even when
+    // there is no tournament usage, ahead of the full alphabetical list.
+    const suggestions = suggestionsOf(r);
     if (kind === "item") {
+      const tmItems = asPopular(tm?.items);
+      const seen = new Set(tmItems.map((o) => o.name));
+      const recItems = [...new Set(suggestions.map((s) => s.item).filter(Boolean))]
+        .filter((n) => !seen.has(n))
+        .map((n) => ({ name: n, desc: "suggested" }));
       return (
         <SelectorPanel
-          key={`item-${i}`} title="Item" forLabel={forLabel} options={items} popular={asPopular(tm?.items)}
+          key={`item-${i}`} title="Item" forLabel={forLabel} options={items} popular={[...tmItems, ...recItems]}
           value={m.item} clearLabel={m.item ? "No item - a held item is optional in this format." : undefined}
           leading={(o) => <ItemIcon item={o.name} />}
           onSelect={(v) => update(i, { item: v })} onClose={closePanel}
@@ -249,7 +308,13 @@ export function TeamBuilder({
     }
     const mi = Number(kind.slice(4));
     const rows: MoveRow[] = r.legalMoves.map((mv) => ({ name: mv, meta: moveMeta[mv] }));
-    const pop: MoveRow[] = (tm?.moves ?? []).map((x) => ({ name: x.name, meta: moveMeta[x.name], pct: `${x.pct}%` }));
+    const legalSet = new Set(r.legalMoves);
+    const tmMoves: MoveRow[] = (tm?.moves ?? []).map((x) => ({ name: x.name, meta: moveMeta[x.name], pct: `${x.pct}%` }));
+    const seenMoves = new Set(tmMoves.map((x) => x.name));
+    const recMoves: MoveRow[] = [...new Set(suggestions.flatMap((s) => s.moves))]
+      .filter((n) => legalSet.has(n) && !seenMoves.has(n))
+      .map((n) => ({ name: n, meta: moveMeta[n] }));
+    const pop: MoveRow[] = [...tmMoves, ...recMoves];
     const otherMoves = m.moves.filter((_, idx) => idx !== mi);
     return (
       <MoveSelectorPanel
@@ -269,30 +334,31 @@ export function TeamBuilder({
     return (
       <div className="overflow-hidden rounded-lg border border-line bg-panel">
         {/* Identity row */}
-        <div className="flex flex-wrap items-start gap-5 px-[18px] py-[14px]">
-          <span className="grid h-[76px] w-[76px] shrink-0 place-items-center overflow-hidden rounded-lg border border-line bg-bg">
-            <PokeIcon species={m.species} className="scale-[2.3]" />
+        <div className="flex flex-wrap items-start gap-4 px-[14px] py-[10px]">
+          <span className="grid h-[58px] w-[58px] shrink-0 place-items-center overflow-hidden rounded-lg border border-line bg-bg">
+            <PokeIcon species={m.species} className="scale-[1.8]" />
           </span>
           <div className="flex flex-col gap-1">
             <button onClick={() => openPanel(i, "species")} title="Change Pokémon"
-              className="w-[210px] rounded border border-line bg-bg px-2 py-1.5 text-left hover:border-accln">
-              <span className="text-[15px] font-[650] text-t1">{r.name}</span>
+              className="w-[210px] rounded border border-line bg-bg px-2 py-1 text-left hover:border-accln">
+              <span className="text-[14px] font-[650] text-t1">{r.name}</span>
               <span className="ml-1 text-[10px] text-t3">change</span>
             </button>
             <span className="flex gap-1">{r.types.map((t) => <TypeBadge key={t} type={t} />)}</span>
           </div>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3">
             <Field label="Item">
               <button onClick={() => openPanel(i, "item")}
-                className={`flex w-[170px] items-center gap-1.5 rounded px-2 py-1.5 text-[13px] ${
-                  m.item ? "border border-line bg-bg" : "border border-dashed border-line bg-bg text-t3"}`}>
+                title={dupItemIdx.has(i) ? "Duplicate item - another Pokémon holds this too (illegal)." : undefined}
+                className={`flex w-[170px] items-center gap-1.5 rounded px-2 py-1 text-[13px] ${
+                  dupItemIdx.has(i) ? "border border-neg bg-bg text-neg" : m.item ? "border border-line bg-bg" : "border border-dashed border-line bg-bg text-t3"}`}>
                 {m.item ? <ItemIcon item={m.item} /> : null}
                 <span className="truncate">{m.item ?? "No item"}</span>
               </button>
             </Field>
             <Field label="Ability">
               <button onClick={() => openPanel(i, "ability")}
-                className="w-[170px] truncate rounded border border-line bg-bg px-2 py-1.5 text-left text-[13px] hover:border-accln">
+                className="w-[170px] truncate rounded border border-line bg-bg px-2 py-1 text-left text-[13px] hover:border-accln">
                 {m.ability || <span className="text-t3">-</span>}
               </button>
             </Field>
@@ -300,23 +366,23 @@ export function TeamBuilder({
         </div>
 
         {/* Details row */}
-        <div className="flex flex-wrap items-end gap-4 border-b border-line px-[18px] pb-[14px]">
+        <div className="flex flex-wrap items-end gap-3 border-b border-line px-[14px] pb-[10px]">
           <Field label="Nickname">
             <input value={m.nickname ?? ""} onChange={(e) => update(i, { nickname: e.target.value || undefined })}
-              placeholder={r.name} className="w-[170px] rounded border border-line bg-bg px-2 py-1.5 text-[13px]" />
+              placeholder={r.name} className="w-[170px] rounded border border-line bg-bg px-2 py-1 text-[13px]" />
           </Field>
           <Field label="Level">
-            <span title="Every battle is set to level 50" className="inline-block rounded bg-raise px-3 py-1.5 text-[13px] text-t3">50</span>
+            <span title="Every battle is set to level 50" className="inline-block rounded bg-raise px-3 py-1 text-[13px] text-t3">50</span>
           </Field>
           <Field label="Gender">
             <select value={m.gender ?? ""} onChange={(e) => update(i, { gender: (e.target.value || undefined) as "M" | "F" | undefined })}
-              className="w-[96px] rounded border border-line bg-bg px-2 py-1.5 text-[13px]">
+              className="w-[96px] rounded border border-line bg-bg px-2 py-1 text-[13px]">
               <option value="">-</option><option value="M">♂ M</option><option value="F">♀ F</option>
             </select>
           </Field>
           <Field label="Shiny">
             <select value={m.shiny ? "yes" : "no"} onChange={(e) => update(i, { shiny: e.target.value === "yes" })}
-              className="w-[96px] rounded border border-line bg-bg px-2 py-1.5 text-[13px]">
+              className="w-[96px] rounded border border-line bg-bg px-2 py-1 text-[13px]">
               <option value="no">No</option><option value="yes">Yes</option>
             </select>
           </Field>
@@ -324,26 +390,48 @@ export function TeamBuilder({
 
         {/* Body: moves | stats */}
         <div className="grid md:grid-cols-2">
-          <div className="space-y-1.5 border-line px-[18px] py-[14px] md:border-r">
+          <div className="space-y-1.5 border-line px-[14px] py-[10px] md:border-r">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-t3">Moves</span>
+            <div className="grid items-center gap-2 pl-3 pr-7 text-[9px] uppercase tracking-wide text-t3" style={{ gridTemplateColumns: MOVE_COLS }}>
+              <span>Move</span>
+              <span>Type</span>
+              <span>Cat</span>
+              <span className="text-right">Pow · Acc</span>
+            </div>
             {[0, 1, 2, 3].map((mi) => {
               const mv = m.moves[mi];
               const meta = mv ? moveMeta[mv] : undefined;
               const stripe = meta ? TYPE_HEX[meta.type] : "transparent";
               return (
-                <button key={mi} onClick={() => openPanel(i, `move${mi}`)}
-                  className={`relative flex w-full items-center gap-2 overflow-hidden rounded pl-3 pr-2 py-1.5 text-left ${
+                <div key={mi}
+                  className={`relative flex items-center overflow-hidden rounded ${
                     mv ? "border border-line bg-bg" : "border border-dashed border-line bg-bg"}`}>
                   <span className="absolute left-0 top-0 h-full w-[3px]" style={{ background: stripe }} />
-                  {mv ? (
-                    <>
-                      <span className="flex-1 truncate text-[13px] text-t1">{mv}</span>
-                      <MoveMetaLine meta={meta} />
-                    </>
-                  ) : (
-                    <span className="text-[13px] text-t3">Empty slot - optional</span>
+                  <button onClick={() => openPanel(i, `move${mi}`)}
+                    className="grid min-w-0 flex-1 items-center gap-2 py-1.5 pl-3 pr-1 text-left"
+                    style={{ gridTemplateColumns: MOVE_COLS }}>
+                    {mv ? (
+                      <>
+                        <span className="truncate text-[13px] text-t1">{mv}</span>
+                        <span>{meta ? <TypeBadge type={meta.type} /> : null}</span>
+                        <span>{meta ? <CategoryIcon category={meta.category} /> : null}</span>
+                        <span className="text-right text-[10px] tabular-nums text-t3">
+                          {!meta || meta.category === "status"
+                            ? "status"
+                            : `${meta.power ?? "-"} · ${meta.accuracy == null ? "-" : `${meta.accuracy}%`}`}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="col-span-4 text-[13px] text-t3">Empty slot - optional</span>
+                    )}
+                  </button>
+                  {mv && (
+                    <button onClick={() => setMove(i, mi, null)} title="Remove move"
+                      className="mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded text-[11px] text-t3 hover:text-neg">
+                      ✕
+                    </button>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>
@@ -367,52 +455,66 @@ export function TeamBuilder({
     const r = refOf(m.species);
     const nat = NATURES[m.nature] ?? NATURES.Serious!;
     const ev = evTotalOf(m);
-    const legal = isLegal(m);
+    const legal = memberLegal(i);
     const open = flags.some((f) => f.i === i);
     return (
       <button key={i} onClick={() => setTab(i)}
-        className={`rounded-lg bg-panel p-3 text-left ${open ? "border border-warn" : "border border-line"}`}>
+        className={`min-w-0 rounded-lg bg-panel p-3 text-left ${open ? "border border-warn" : "border border-line"}`}>
         <div className="flex items-center gap-2">
-          <span className="inline-flex h-6 w-6 items-center justify-center overflow-hidden"><PokeIcon species={m.species} className="scale-125" /></span>
-          <span className="text-[13px] font-[600] text-t1">{r.name}</span>
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: legal ? "var(--pos)" : "var(--warn)" }} />
-          <span className="ml-auto flex gap-1">{r.types.map((t) => <TypeBadge key={t} type={t} />)}</span>
+          {/* Fit the 40x30 pixel icon in its box so it isn't cut off. */}
+          <span className="grid h-[30px] w-10 shrink-0 place-items-center"><PokeIcon species={m.species} /></span>
+          <span className="truncate text-[13px] font-[600] text-t1">{r.name}</span>
+          <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: legal ? "var(--pos)" : "var(--warn)" }} />
+          <span className="ml-auto flex shrink-0 gap-1">{r.types.map((t) => <TypeBadge key={t} type={t} />)}</span>
+        </div>
+        {/* Ability + nature */}
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+          <span className="flex items-center gap-1"><span className="text-t3">Ability</span><span className={m.ability ? "text-t2" : "text-t3"}>{m.ability ?? "—"}</span></span>
+          <span className="flex items-center gap-1"><span className="text-t3">Nature</span><span className="text-t2">{m.nature}</span></span>
         </div>
         <div className="mt-2 grid gap-3.5 md:grid-cols-2">
-          <ul className="space-y-0.5">
+          <ul className="min-w-0 space-y-0.5">
             {[0, 1, 2, 3].map((mi) => {
               const mv = m.moves[mi];
               const meta = mv ? moveMeta[mv] : undefined;
               return (
                 <li key={mi} className="flex items-center gap-1.5 text-[11.5px]">
                   <span className="h-[11px] w-[3px] shrink-0 rounded-sm" style={{ background: meta ? TYPE_HEX[meta.type] : "var(--line)" }} />
-                  <span className={mv ? "text-t2" : "text-t3"}>{mv ?? "empty slot"}</span>
+                  <span className={`truncate ${mv ? "text-t2" : "text-t3"}`}>{mv ?? "empty slot"}</span>
                 </li>
               );
             })}
           </ul>
-          <div className="w-[148px] space-y-0.5">
-            {STAT_KEYS.map((k) => (
-              <div key={k} className="grid items-center gap-1.5" style={{ gridTemplateColumns: "22px 1fr 26px" }}>
-                <span className="text-[10px] uppercase text-t3">{STAT_LABELS[k]}</span>
-                <StatBar base={r.baseStats[k]} ev={m.spread.evs[k] || 0} height={6} />
-                <span className="text-right text-[10px] tabular-nums text-t2">
-                  {computeStat(r.baseStats[k], m.spread.ivs[k] ?? 31, m.spread.evs[k] || 0, m.level, k, nat)}
-                </span>
-              </div>
-            ))}
+          <div className="min-w-0 space-y-0.5">
+            <div className="grid items-center gap-1.5 text-[9px] uppercase text-t3" style={{ gridTemplateColumns: "22px 1fr 28px 26px" }}>
+              <span /><span /><span className="text-right">EV</span><span className="text-right">Val</span>
+            </div>
+            {STAT_KEYS.map((k) => {
+              const evv = m.spread.evs[k] || 0;
+              return (
+                <div key={k} className="grid items-center gap-1.5" style={{ gridTemplateColumns: "22px 1fr 28px 26px" }}>
+                  <span className="text-[10px] uppercase text-t3">{STAT_LABELS[k]}</span>
+                  <StatBar base={r.baseStats[k]} ev={evv} height={6} />
+                  <span className={`text-right text-[10px] tabular-nums ${evv ? "text-acc" : "text-t3"}`}>{evv}</span>
+                  <span className="text-right text-[10px] tabular-nums text-t2">
+                    {computeStat(r.baseStats[k], m.spread.ivs[k] ?? 31, evv, m.level, k, nat)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
-        <div className="mt-2 flex items-center justify-between text-[11px]">
+        <div className="mt-2 flex items-center gap-1.5 text-[11px]">
+          <ItemIcon item={m.item ?? ""} size={16} />
           <span className="text-t3">{m.item ?? "no item"}</span>
-          <span className={ev < 508 ? "text-warn" : "text-t3"}>{ev}/508</span>
+          <span className={`ml-auto tabular-nums ${ev < 508 ? "text-warn" : "text-t3"}`}>{ev}/508</span>
         </div>
       </button>
     );
   }
 
   const rightColumn = (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       {/* Tab bar */}
       <div className="flex flex-wrap items-center gap-1.5">
         <button onClick={() => setTab("team")}
@@ -467,8 +569,14 @@ export function TeamBuilder({
 
   return (
     <div className="space-y-3.5">
-      {/* Status strip */}
-      <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-line sm:grid-cols-4" style={{ gap: 1, background: "var(--line)" }}>
+      {/* Status strip — team name lives here so the page header stays slim */}
+      <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-line sm:grid-cols-[minmax(0,1.4fr)_repeat(4,1fr)]" style={{ gap: 1, background: "var(--line)" }}>
+        {teamName && (
+          <div className="col-span-2 bg-panel px-[14px] py-[10px] sm:col-span-1">
+            <div className="truncate text-[17px] font-bold tracking-[-0.01em] text-t1" title={teamName}>{teamName}</div>
+            <div className="mt-0.5 text-[10px] uppercase tracking-wide text-t3">Team</div>
+          </div>
+        )}
         <StatCell value={`${members.length} / ${limit}`} label="Slots filled" />
         <StatCell value="Reg M-B" suffix="Bo3" label="Champions VGC 2026" />
         <StatCell value={String(flags.length)} valueClass={flags.length ? "text-warn" : "text-pos"}
@@ -476,9 +584,9 @@ export function TeamBuilder({
         <StatCell value={savedLabel} label="Last saved" />
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[320px_1fr]">
+      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         {/* Left rail */}
-        <div className="space-y-3.5">
+        <div className="min-w-0 space-y-3.5">
           {/* Team sheet */}
           <div className="overflow-hidden rounded-lg border border-line bg-panel">
             <div className="flex items-center justify-between px-[10px] py-2">
@@ -496,14 +604,21 @@ export function TeamBuilder({
             </div>
             {members.map((m, i) => {
               const r = refOf(m.species);
-              const checks = [!!m.item, !!m.ability, evTotalOf(m) === 508, isLegal(m)];
+              const checks = [!!m.item, !!m.ability, evTotalOf(m) === 508, memberLegal(i)];
               const selected = tab === i;
               return (
                 <div key={i} className="grid items-center border-b border-soft px-[10px] py-1.5"
                   style={{ gridTemplateColumns: "1fr repeat(4, 20px) 24px", borderLeft: `2px solid ${selected ? "var(--acc)" : "transparent"}`, background: selected ? "var(--soft)" : "transparent" }}>
-                  <button onClick={() => setTab(i)} className="flex items-center gap-1.5 truncate text-left">
-                    <PokeIcon species={m.species} />
-                    <span className="truncate text-[12px] font-medium text-t1">{r.name}</span>
+                  <button onClick={() => setTab(i)} className="flex min-w-0 items-center gap-1.5 text-left">
+                    <span className="grid h-[26px] w-8 shrink-0 place-items-center overflow-hidden">
+                      <PokeIcon species={m.species} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[12px] font-medium text-t1">{r.name}</span>
+                      <span className="flex gap-0.5">
+                        {r.types.map((t) => <TypeBadge key={t} type={t} />)}
+                      </span>
+                    </span>
                   </button>
                   {checks.map((ok, ci) => (
                     <span key={ci} className="mx-auto inline-flex h-[18px] w-[18px] items-center justify-center rounded text-[10px] font-bold"
@@ -537,11 +652,13 @@ export function TeamBuilder({
               <ul className="border-t border-soft">
                 {flags.map((f, idx) => (
                   <li key={idx}>
-                    <button onClick={() => setTab(f.i)} className="flex w-full items-start gap-2 border-b border-soft px-[10px] py-1.5 text-left last:border-0">
-                      <PokeIcon species={members[f.i]!.species} />
+                    <button onClick={() => setTab(f.i)} className="flex w-full items-center gap-2 border-b border-soft px-[10px] py-1.5 text-left last:border-0">
+                      <span className="grid h-[26px] w-8 shrink-0 place-items-center overflow-hidden">
+                        <PokeIcon species={members[f.i]!.species} />
+                      </span>
                       <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${f.kind === "Warning" ? "text-warn" : "bg-raise text-t2"}`}
                         style={f.kind === "Warning" ? { background: "rgba(215,176,106,0.16)" } : undefined}>{f.kind}</span>
-                      <span className="text-[11.5px] leading-[15px] text-t2">{f.text}</span>
+                      <span className="min-w-0 flex-1 text-[11.5px] leading-[15px] text-t2">{f.text}</span>
                     </button>
                   </li>
                 ))}

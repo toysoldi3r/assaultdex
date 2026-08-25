@@ -1,18 +1,16 @@
 @echo off
-REM ============================================================================
-REM  AssaultDex one-click launcher for Windows (npm only).
-REM
-REM  Double-click this file. It checks for Node.js, installs dependencies with
-REM  npm, sets up the local SQLite database, and starts the site at
-REM  http://localhost:3000. Keep the window open; Ctrl+C stops it.
-REM
-REM  This launcher uses npm on purpose. npm ships with Node, needs no Corepack,
-REM  enforces no packageManager version, and builds native dependencies without
-REM  an allow-list - so it avoids the pnpm/Corepack version errors entirely.
-REM ============================================================================
+REM AssaultDex one-click launcher for Windows.
+REM Double-click this file. It installs Node.js (via winget) if missing, installs
+REM dependencies with pnpm, sets up the local SQLite database, and starts the
+REM site at http://localhost:3000. Keep the window open; Ctrl+C stops.
 
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
+
+REM Quieter, faster boot: skip Next telemetry and let corepack fetch pnpm
+REM without an interactive download prompt.
+set "NEXT_TELEMETRY_DISABLED=1"
+set "COREPACK_ENABLE_DOWNLOAD_PROMPT=0"
 
 echo.
 echo ===============================
@@ -65,27 +63,44 @@ if not exist ".env" (
   copy /y ".env.example" ".env" >nul
 )
 
-REM --- 3. Dependencies (npm) ------------------------------------------------
-REM A node_modules left by a previous pnpm install uses symlinks that break an
-REM npm install. If there is no package-lock.json yet, start clean.
-if not exist "package-lock.json" if exist "node_modules" (
-  echo Removing a previous non-npm install...
+REM --- 3. Dependencies (pnpm via corepack) ---------------------------------
+REM This is a pnpm project (same as CI). pnpm ships with Node through corepack,
+REM installs faster than npm, and honours the project's .npmrc and build-script
+REM settings - so none of npm's "unknown config" / "allow-scripts" warnings show.
+REM Corepack reads the "packageManager" field in package.json to pick pnpm 9.
+set "PM=corepack pnpm"
+set "RUN=corepack pnpm run"
+call corepack --version >nul 2>&1
+if errorlevel 1 (
+  echo corepack not found; falling back to npm.
+  set "PM=npm"
+  set "RUN=npm run"
+)
+
+REM A previous npm/older install leaves a flat node_modules without pnpm's
+REM ".pnpm" store dir; clear it so pnpm can lay out its own tree cleanly.
+if exist "node_modules" if not exist "node_modules\.pnpm" if not "!PM!"=="npm" (
+  echo Clearing a previous non-pnpm install...
   rmdir /s /q node_modules
 )
+
 if not exist "node_modules\next\package.json" (
-  echo Installing dependencies with npm. First time takes a few minutes...
-  call npm install --no-audit --no-fund
-  if errorlevel 1 goto :fail
+  echo Installing dependencies with !PM!. First time takes a minute...
+  if "!PM!"=="npm" (
+    call npm install --prefer-offline --no-audit --no-fund
+  ) else (
+    call corepack pnpm install --frozen-lockfile --prefer-offline --config.confirmModulesPurge=false
+  )
   if not exist "node_modules\next\package.json" goto :fail
 )
 
 REM --- 4. Database ----------------------------------------------------------
 if not exist "prisma\dev.db" (
   echo Setting up the database...
-  call npm run db:migrate
+  call !RUN! db:migrate
   if errorlevel 1 goto :fail
   echo Seeding Pokemon...
-  call npm run db:seed
+  call !RUN! db:seed
   if errorlevel 1 goto :fail
 )
 
@@ -96,7 +111,22 @@ echo The first page load compiles on demand and may take ~15s - refresh if blank
 echo Keep this window open. Press Ctrl+C to stop.
 echo.
 start "" http://localhost:3000
-call npm run dev
+
+REM Use the plain (webpack) dev server. It is more stable on Windows than
+REM "dev:turbo" (--turbopack), which can exit unexpectedly on some setups -
+REM which looked like the window closing on its own right after startup.
+call !RUN! dev
+
+REM If we reach here the dev server has stopped. Keep the window open so any
+REM error it printed stays readable instead of the window vanishing.
+echo.
+echo ============================================================
+echo The dev server has stopped.
+echo If the window closed on its own right after startup, an error
+echo is printed above - common causes are port 3000 already in use
+echo or a code error. Read it, fix it, then run this file again.
+echo ============================================================
+pause
 goto :eof
 
 :fail

@@ -37,11 +37,11 @@ export default async function HomePage() {
   const legalMoves = listDbMoves().filter((m) => championsMoves.has(m.name)).length;
   const legalItems = listDbItems().filter((i) => i.competitive).length;
   const stats = [
-    { value: grouped(totalBattles), label: "Battles in snapshot" },
-    { value: String(pokemon.length), label: "Valid pokemons" },
-    { value: grouped(legalMoves), label: "Legal moves" },
-    { value: grouped(legalItems), label: "Legal items" },
-    { value: "Reg M-B", label: "Format · Bo3" },
+    { value: grouped(totalBattles), label: "Battles in snapshot", href: "https://munchstats.com/", external: true },
+    { value: String(pokemon.length), label: "Valid pokemons", href: "/pokemon" },
+    { value: grouped(legalMoves), label: "Legal moves", href: "/database?tab=moves" },
+    { value: grouped(legalItems), label: "Legal items", href: "/database?tab=items" },
+    { value: "Reg M-B", label: "Format · Bo3", href: "/sources" },
   ];
 
   const banners = [
@@ -54,7 +54,7 @@ export default async function HomePage() {
     <>
       {/* Banner */}
       <div
-        className="flex flex-wrap items-center gap-[18px] rounded-lg border border-line bg-panel px-[18px] py-3.5"
+        className="flex flex-col gap-3 rounded-lg border border-line bg-panel px-[18px] py-3.5 md:flex-row md:flex-wrap md:items-center md:gap-[18px]"
         style={{ borderLeft: "2px solid var(--accln)" }}
       >
         <div className="min-w-0 flex-1">
@@ -78,12 +78,37 @@ export default async function HomePage() {
 
       {/* Stat strip */}
       <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-line sm:grid-cols-3 lg:grid-cols-5" style={{ gap: 1, background: "var(--line)" }}>
-        {stats.map((s) => (
-          <div key={s.label} className="bg-panel px-3.5 py-[11px]">
-            <div className="mono text-[18px] font-bold text-t1">{s.value}</div>
-            <div className="mt-0.5 text-[10px] uppercase tracking-[0.06em] text-t3">{s.label}</div>
-          </div>
-        ))}
+        {stats.map((s) =>
+          s.href ? (
+            "external" in s && s.external ? (
+              <a
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noreferrer noopener"
+                title="Source of the ladder snapshot"
+                className="group bg-panel px-3.5 py-[11px] transition-colors hover:bg-soft"
+              >
+                <div className="mono text-[18px] font-bold text-t1 group-hover:text-acc">{s.value}</div>
+                <div className="mt-0.5 text-[10px] uppercase tracking-[0.06em] text-t3">{s.label} ↗</div>
+              </a>
+            ) : (
+              <Link
+                key={s.label}
+                href={s.href}
+                className="group bg-panel px-3.5 py-[11px] transition-colors hover:bg-soft"
+              >
+                <div className="mono text-[18px] font-bold text-t1 group-hover:text-acc">{s.value}</div>
+                <div className="mt-0.5 text-[10px] uppercase tracking-[0.06em] text-t3">{s.label}</div>
+              </Link>
+            )
+          ) : (
+            <div key={s.label} className="bg-panel px-3.5 py-[11px]">
+              <div className="mono text-[18px] font-bold text-t1">{s.value}</div>
+              <div className="mt-0.5 text-[10px] uppercase tracking-[0.06em] text-t3">{s.label}</div>
+            </div>
+          ),
+        )}
       </div>
 
       <MetaCards

@@ -3,17 +3,20 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { DbAbility } from "@/data/dexDatabase";
+import { useInfinite } from "./useInfinite";
 
 export function AbilitiesTable({
-  abilities,
+  abilities = [],
   championsAbilities = [],
 }: {
-  abilities: DbAbility[];
+  abilities?: DbAbility[];
   championsAbilities?: string[];
 }) {
   const [q, setQ] = useState("");
   const [champsOnly, setChampsOnly] = useState(true);
   const champs = useMemo(() => new Set(championsAbilities), [championsAbilities]);
+  // No roster loaded (unseeded DB) → show the full list instead of nothing.
+  const champsAvailable = champs.size > 0;
 
   const scopeCount = useMemo(
     () => abilities.filter((a) => !champsOnly || champs.has(a.name)).length,
@@ -24,12 +27,18 @@ export function AbilitiesTable({
     const needle = q.trim().toLowerCase();
     return abilities.filter(
       (a) =>
-        (!champsOnly || champs.has(a.name)) &&
+        (!champsOnly || !champsAvailable || champs.has(a.name)) &&
         (!needle ||
           a.name.toLowerCase().includes(needle) ||
           a.desc.toLowerCase().includes(needle)),
     );
-  }, [abilities, q, champsOnly, champs]);
+  }, [abilities, q, champsOnly, champsAvailable, champs]);
+
+  const { visible, sentinel, shown } = useInfinite(
+    filtered,
+    `${q}|${champsOnly}`,
+    50,
+  );
 
   return (
     <div className="space-y-3">
@@ -54,10 +63,11 @@ export function AbilitiesTable({
             Full list
           </button>
         </div>
-        <span className="text-xs text-slate-500">{filtered.length} shown</span>
+        <span className="text-xs text-slate-500">{shown} / {filtered.length} shown</span>
       </div>
+
       <ul className="grid gap-2 sm:grid-cols-2">
-        {filtered.map((a) => (
+        {visible.map((a) => (
           <li key={a.name} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
             <div className="flex items-baseline justify-between gap-2">
               <Link
@@ -72,6 +82,7 @@ export function AbilitiesTable({
           </li>
         ))}
       </ul>
+      <span ref={sentinel as React.RefObject<HTMLSpanElement>} className="block h-px" />
     </div>
   );
 }

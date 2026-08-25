@@ -64,6 +64,13 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+// Round half down, matching the mainline damage engine's "poke-round" (a value
+// ending in exactly .5 rounds down). Applied at each modifier stage so
+// compounded rolls land on the same integers the game would produce.
+function pokeRound(n: number): number {
+  return n - Math.floor(n) > 0.5 ? Math.ceil(n) : Math.floor(n);
+}
+
 // Variable multi-hit moves (2–5 hits). Expected hits ≈ 3.2 normally, 5 with
 // Skill Link - so the readout doesn't assume the maximum every time.
 const VARIABLE_MULTIHIT = new Set([
@@ -160,12 +167,14 @@ export function calculateDamage(
     defenseStage = Math.min(0, defenseStage);
   }
 
-  let attack = offSource.stats[offKey] * stageMultiplier(attackStage);
-  const defense = defender.stats[defKey] * stageMultiplier(defenseStage);
-  // Burn halves a burned attacker's physical damage - unless Guts ignores it.
-  if (isPhysical && attacker.status === "burn" && attacker.ability !== "Guts") {
-    attack *= 0.5;
-  }
+  // Boosted stats are floored after the stage multiplier, as the game does
+  // (a +1 odd stat truncates rather than carrying a half-point into the formula).
+  const attack = Math.floor(offSource.stats[offKey] * stageMultiplier(attackStage));
+  const defense = Math.floor(defender.stats[defKey] * stageMultiplier(defenseStage));
+  // Burn is applied as a final x0.5 damage step in the pipeline below (mainline
+  // order), not to the Attack stat - unless Guts ignores it.
+  const burnApplies =
+    isPhysical && attacker.status === "burn" && attacker.ability !== "Guts";
 
   const level = attacker.level;
   // Acrobatics doubles its power when the user holds no item (or it was consumed).
@@ -272,23 +281,31 @@ export function calculateDamage(
     modifiers.push({ name: variable ? `~${hits} hits (avg)` : `${hits} hits`, multiplier: hits });
   }
 
-  const modifier =
-    stab *
-    effectiveness.multiplier *
-    weather *
-    terrain *
-    spreadMod *
-    screen *
-    critMod *
-    abOff *
-    abDef *
-    itOff *
-    itDef;
+  if (burnApplies) modifiers.push({ name: "burn", multiplier: 0.5 });
+
+  // Apply the modifiers in mainline order with per-stage rounding (poke-round;
+  // ties round down) rather than collapsing them into one multiply and flooring
+  // once. This reproduces the engine's exact integer damage - and therefore its
+  // KO thresholds - instead of drifting a point or two on compounded rolls.
+  //
+  // Slots that mirror the game exactly: spread -> weather -> crit, then per roll
+  // random -> STAB -> type -> burn. Terrain, screens, abilities and items are
+  // grouped into the post-type "other" chain (as the game does for its final
+  // damage modifiers); the few that are really base-power effects are close
+  // enough there to stay within a point.
+  const otherMod = terrain * screen * abOff * abDef * itOff * itDef;
+  let pre = base;
+  if (spread) pre = pokeRound(pre * spreadMod); // targets (0.75)
+  if (weather !== 1) pre = pokeRound(pre * weather); // weather (1.5 / 0.5)
+  if (crit) pre = Math.floor(pre * critMod); // critical hit (1.5)
 
   const perHitRolls: number[] = [];
   for (let roll = 85; roll <= 100; roll++) {
-    const rolled = Math.floor((base * roll) / 100);
-    perHitRolls.push(Math.max(0, Math.floor(rolled * modifier)));
+    let d = Math.floor((pre * roll) / 100); // damage roll (85-100%)
+    d = Math.floor(pokeRound(d * stab) * effectiveness.multiplier); // STAB, then type
+    if (burnApplies) d = Math.floor(d * 0.5); // burn
+    d = pokeRound(Math.max(1, d * otherMod)); // screens/items/abilities/terrain; min 1
+    perHitRolls.push(d);
   }
 
   let buckets: [number, number][];

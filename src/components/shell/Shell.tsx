@@ -20,6 +20,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Broadcast the nav state so content that reflows on collapse (the Database
+  // detail card widens by 148px) can react without prop-drilling through pages.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent<boolean>("assaultdex:nav", { detail: open }));
+  }, [open]);
+
   const toggle = () =>
     setOpen((o) => {
       const next = !o;
@@ -33,11 +39,19 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="grid flex-1"
+      className="flex-1 md:grid"
       style={{ gridTemplateColumns: open ? "216px 1fr" : "44px 1fr", alignItems: "stretch" }}
     >
-      <Dock open={open} onToggle={toggle} />
-      <main id="content" className="flex min-w-0 flex-col gap-[18px]" style={{ padding: "22px 24px 30px" }}>
+      {/* Desktop dock only; on mobile the slide-out drawer (MobileNav) is used.
+          `hidden md:contents` drops the dock from the flow on mobile while
+          letting it participate in the grid at md+. */}
+      <div className="hidden md:contents">
+        <Dock open={open} onToggle={toggle} />
+      </div>
+      <main
+        id="content"
+        className="flex min-w-0 flex-col gap-4 p-4 md:gap-[18px] md:px-6 md:pb-[30px] md:pt-[22px]"
+      >
         {children}
       </main>
     </div>

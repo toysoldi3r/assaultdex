@@ -69,6 +69,23 @@ export function validateTeam(members: ValidatableMember[]): ValidationReport {
     }
   });
 
+  // Item clause: no two Pokémon may hold the same item.
+  const itemSeen = new Map<string, number>();
+  members.forEach((m, i) => {
+    if (!m.set.item) return;
+    const prev = itemSeen.get(m.set.item);
+    if (prev !== undefined) {
+      errors.push({
+        memberIndex: i,
+        species: m.set.species,
+        field: "item",
+        message: `Duplicate item “${m.set.item}” (also slot ${prev + 1}).`,
+      });
+    } else {
+      itemSeen.set(m.set.item, i);
+    }
+  });
+
   members.forEach((m, i) => {
     const { set } = m;
     const issue = (field: string, message: string, warn = false) =>

@@ -1,6 +1,7 @@
-// Knowledgebase: short reference explainers for the competitive building blocks
-// (base stats, EVs, IVs, nature, …). Pure data so the /guide/knowledgebase
-// pages render generically and the Guide can deep-link each term.
+// Building-block explainers: reference write-ups for the core competitive
+// concepts (base stats, EVs, IVs, nature, …). Pure data so the
+// /database/terminology/kb pages (surfaced under the Database's Terminology
+// tab) render generically.
 
 export interface KbSection {
   heading?: string;

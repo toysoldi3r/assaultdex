@@ -83,6 +83,9 @@ export function HitInference({
       const defender = combatantFromRef(mine, emptySlot(mine.slug));
       const which = move.category === "physical" ? "atk" : "spa";
       const observedDamage = Math.round(defender.stats.hp * dmgFrac);
+      // HP% is entered as whole percents, so the true damage is quantized to
+      // ~1% of max HP; allow that slack so real inputs aren't ruled out.
+      const tolerance = Math.max(1, Math.ceil(defender.stats.hp * 0.01));
       const inf = inferOffense({
         baseStat: which === "atk" ? oppBase.atk : oppBase.spa,
         which,
@@ -93,6 +96,7 @@ export function HitInference({
         field,
         defenderConditions: screenConditions(screen),
         observedDamage,
+        tolerance,
         spread,
       });
       return { kind: "offense" as const, inf, which, observedDamage, maxHp: defender.stats.hp };
