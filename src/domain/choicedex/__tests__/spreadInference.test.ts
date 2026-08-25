@@ -43,6 +43,29 @@ describe("inferOffense", () => {
     expect(inf.maxStat!).toBeGreaterThanOrEqual(trueAtk);
   });
 
+  it("tolerance recovers a spread when HP%-rounding pushes the observation just out of range", () => {
+    const defender = combatant({ name: "Me", types: ["normal"], base: stats({ hp: 180, def: 120 }) });
+    const m = move({ name: "Return", type: "normal", category: "physical", power: 100 });
+    const adamant: Nature = { name: "atk+", boosted: "atk", lowered: "spa" };
+    const maxAtk = computeStat(120, 31, 252, 50, "atk", adamant);
+    const hardest = calculateDamage(attackerWithAtk(maxAtk), defender, m, field, { fast: true });
+    // One HP above what any spread can roll: an exact test wrongly contradicts.
+    const observed = hardest.maxDamage + 1;
+
+    const exact = inferOffense({
+      baseStat: 120, which: "atk", attackerTypes: ["normal"], level: 50,
+      move: m, defender, field, observedDamage: observed,
+    });
+    expect(exact.contradiction).toBe(true);
+
+    const slack = inferOffense({
+      baseStat: 120, which: "atk", attackerTypes: ["normal"], level: 50,
+      move: m, defender, field, observedDamage: observed, tolerance: 2,
+    });
+    expect(slack.contradiction).toBe(false);
+    expect(slack.remaining).toBeGreaterThan(0);
+  });
+
   it("flags a contradiction when no spread fits", () => {
     const defender = combatant({ name: "Me", types: ["normal"], base: stats({ hp: 180, def: 120 }) });
     const m = move({ name: "Return", type: "normal", category: "physical", power: 100 });

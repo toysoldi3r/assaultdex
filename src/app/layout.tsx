@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Instrument_Sans, Space_Mono } from "next/font/google";
 import { TopBar } from "@/components/shell/TopBar";
 import { Shell } from "@/components/shell/Shell";
+import { MobileNavProvider } from "@/components/shell/MobileNav";
 import { CHAMPIONS_FORMAT_LABEL } from "@/data/usageStats";
 import "./globals.css";
 
@@ -28,8 +29,9 @@ export const metadata: Metadata = {
     "Competitive Pokémon Champions doubles - Pokédex, team builder, ChoiceDex, and battle analysis.",
 };
 
-// Set the saved theme before first paint so there is no dark→light flash.
-const THEME_SCRIPT = `try{document.documentElement.dataset.theme=localStorage.getItem('assaultdex.theme')||'dark'}catch(e){document.documentElement.dataset.theme='dark'}`;
+// Set the saved theme and sprite style before first paint so there is no
+// dark→light flash and sprites hydrate in the chosen style (no pixel→art flash).
+const THEME_SCRIPT = `try{var d=document.documentElement.dataset;d.theme=localStorage.getItem('assaultdex.theme')||'dark';d.sprite=localStorage.getItem('assaultdex.spriteStyle')||'pixel'}catch(e){document.documentElement.dataset.theme='dark';document.documentElement.dataset.sprite='pixel'}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -44,8 +46,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to content
         </a>
-        <TopBar formatLabel={CHAMPIONS_FORMAT_LABEL} />
-        <Shell>{children}</Shell>
+        <MobileNavProvider>
+          <TopBar formatLabel={CHAMPIONS_FORMAT_LABEL} />
+          <Shell>{children}</Shell>
+        </MobileNavProvider>
         <footer className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line px-6 py-4 text-[11px] text-t3">
           <span>
             Fan-made and unofficial. Pokémon and all related names are trademarks

@@ -1,45 +1,152 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Dex } from "@pkmn/dex";
 import { Panel, TypeBadge } from "@/components/ui";
 import { changeHistory, speciesMeta } from "@/data/pkmnEnrich";
+import { getDbAbility } from "@/data/dexDatabase";
+import { PokemonArt } from "@/components/PokemonArt";
 import { PokeIcon } from "@/components/PokeIcon";
 import { ItemIcon } from "@/components/ItemIcon";
-import { getDexSpecies, getSpeciesForms } from "@/data/pokedexSource";
-import { CHAMPIONS_FORMAT_LABEL, getMonUsage } from "@/data/usageStats";
-import { suggestSets, type MegaInfo } from "@/data/suggestSets";
-import { defensiveChart } from "@/domain/mechanics/typeEffectiveness";
+import { PokemonTypeMatchups } from "@/components/PokemonTypeMatchups";
+import {
+  getDexSpecies,
+  getSpeciesForms,
+  getSpeciesTypes,
+  moveTypeByName,
+  type DexMoveRow,
+  type LearnMethod,
+} from "@/data/pokedexSource";
+import {
+  getPokedexFlavor,
+  LANGUAGE_LABELS,
+  versionLabel,
+} from "@/data/pokedexFlavor";
+import {
+  CHAMPIONS_FORMAT_LABEL,
+  getMonUsage,
+  getUsageRank,
+  getRankedCount,
+} from "@/data/usageStats";
+import { getMonTournament, type TournEntry } from "@/data/tournamentStats";
+import { suggestSets } from "@/data/suggestSets";
 import { statColor } from "@/domain/mechanics/statColor";
-import { POKEMON_TYPES, STAT_KEYS, STAT_LABELS, type PokemonType } from "@/domain/types/pokemon";
+import { STAT_KEYS, STAT_LABELS, type PokemonType } from "@/domain/types/pokemon";
 
 export const dynamic = "force-dynamic";
 
-/** Colour the whole matchup card by effectiveness: white 1×, red 2×+, green
- *  resisted (0.5× / 0.25×), black immune (0×). */
-function matchupCard(m: number): { text: string; card: string } {
-  if (m === 0) return { text: "0×", card: "bg-black text-white" };
-  if (m >= 2) return { text: `${m}×`, card: "bg-rose-600 text-white" };
-  if (m < 1) return { text: `${m}×`, card: "bg-emerald-600 text-white" };
-  return { text: "1×", card: "bg-white text-slate-900" };
+/** Link an ability to its reference page when one exists in the database. */
+function abilityHref(name: string): string | null {
+  return getDbAbility(name) ? `/database/ability/${encodeURIComponent(name)}` : null;
 }
 
-/** Mega/Primal forme (stone + forme ability), for a Mega suggested set. */
-function megaInfo(slug: string): MegaInfo | null {
-  const s = Dex.species.get(slug);
-  if (!s.exists) return null;
-  for (const fn of s.otherFormes ?? []) {
-    const f = Dex.species.get(fn);
-    if (f.exists && /Mega|Primal/.test(f.forme) && f.requiredItem) {
-      return {
-        stone: f.requiredItem,
-        ability: (Object.values(f.abilities)[0] as string) ?? "",
-        label: f.forme,
-      };
-    }
-  }
-  return null;
+const METHOD_SECTIONS: { method: LearnMethod; label: string }[] = [
+  { method: "level", label: "By level up" },
+  { method: "tm", label: "By TM" },
+  { method: "egg", label: "By breeding" },
+  { method: "tutor", label: "By tutor" },
+  { method: "event", label: "By event" },
+];
+
+/** A move table for one learn method (adds a Level column for level-up). */
+function MoveTable({ rows, showLevel }: { rows: DexMoveRow[]; showLevel?: boolean }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead className="text-xs uppercase text-slate-500">
+          <tr>
+            {showLevel && <th className="py-1 pr-2 text-right">Lv</th>}
+            <th className="py-1">Name</th>
+            <th>Type</th>
+            <th>Cat.</th>
+            <th className="text-right">Power</th>
+            <th className="text-right">Acc.</th>
+            <th className="text-right">PP</th>
+            <th>Effect</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((m) => (
+            <tr key={m.name} className="border-t border-slate-800">
+              {showLevel && (
+                <td className="py-1 pr-2 text-right tabular-nums text-slate-400">
+                  {m.level === null ? "-" : m.level === 0 ? "Evo" : m.level}
+                </td>
+              )}
+              <td className="py-1">{m.name}</td>
+              <td>{m.type ? <TypeBadge type={m.type} /> : "-"}</td>
+              <td className="capitalize text-slate-400">{m.category}</td>
+              <td className="text-right tabular-nums">{m.power ?? "-"}</td>
+              <td className="text-right tabular-nums">{m.accuracy === null ? "-" : m.accuracy}</td>
+              <td className="text-right tabular-nums">{m.pp ?? "-"}</td>
+              <td>
+                {m.effect ? (
+                  <span className="text-xs text-slate-300">{m.effect}</span>
+                ) : (
+                  <span className="text-slate-600">-</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
+/** A ranked percentage bar list (abilities / items / natures / moves usage). */
+function UsageBars({ rows, showType }: { rows: TournEntry[]; showType?: boolean }) {
+  const max = Math.max(1, ...rows.map((r) => r.pct));
+  return (
+    <ul className="space-y-1">
+      {rows.map((r) => {
+        const ty = showType ? moveTypeByName(r.name) : null;
+        return (
+          <li key={r.name} className="flex items-center gap-2 text-xs">
+            {ty && <TypeBadge type={ty} />}
+            <span className="w-28 shrink-0 truncate text-slate-300" title={r.name}>{r.name}</span>
+            <span className="h-2 flex-1 overflow-hidden rounded bg-slate-800">
+              <span className="block h-full bg-amber-500" style={{ width: `${(r.pct / max) * 100}%` }} />
+            </span>
+            <span className="w-12 shrink-0 text-right tabular-nums text-slate-400">{r.pct}%</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** One usage category: ranked % bars when the snapshot has data, otherwise a
+ *  dash placeholder (or the known option names with dashes, e.g. abilities). */
+function UsageSection({
+  title,
+  rows,
+  showType,
+  fallbackNames,
+}: {
+  title: string;
+  rows?: TournEntry[];
+  showType?: boolean;
+  fallbackNames?: string[];
+}) {
+  return (
+    <div>
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-300">{title}</h3>
+      {rows && rows.length > 0 ? (
+        <UsageBars rows={rows} showType={showType} />
+      ) : fallbackNames && fallbackNames.length > 0 ? (
+        <ul className="space-y-1">
+          {fallbackNames.map((n) => (
+            <li key={n} className="flex items-center justify-between gap-2 text-xs">
+              <span className="truncate text-slate-300">{n}</span>
+              <span className="tabular-nums text-slate-500">—</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-xs text-slate-500">—</p>
+      )}
+    </div>
+  );
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -47,7 +154,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return p
     ? {
         title: p.name,
-        description: `${p.name} (#${p.num}) - ${p.types.join("/")} type. Base stats, abilities, defensive matchups, and legal moves for Pokémon Champions.`,
+        description: `${p.name} (#${p.num}) - ${p.types.join("/")} type. Base stats, abilities, type matchups, and legal moves for Pokémon Champions.`,
       }
     : { title: "Pokémon", description: "Pokémon reference for Pokémon Champions." };
 }
@@ -74,12 +181,14 @@ export default async function PokemonPage({
   const p = await getDexSpecies(target);
   if (!p) notFound();
 
-  const chart = defensiveChart(p.types);
   const meta = speciesMeta(p.name, p.abilities);
   const history = changeHistory(p.name);
   const usage = await getMonUsage(p.name);
-  const mega = megaInfo(target);
-  const sets = suggestSets(p.types, p.baseStats, p.abilities, p.moves, mega ?? undefined);
+  const rank = getUsageRank(p.name);
+  const rankedCount = getRankedCount();
+  const tourn = getMonTournament(p.name);
+  const sets = suggestSets(p.types, p.baseStats, p.abilities, p.moves);
+  const flavor = getPokedexFlavor(target) ?? getPokedexFlavor(baseSlug);
   const moveType = new Map<string, PokemonType>(
     p.moves.flatMap((m) => (m.type ? [[m.name, m.type] as [string, PokemonType]] : [])),
   );
@@ -92,7 +201,7 @@ export default async function PokemonPage({
 
       <div className="flex items-center gap-4">
         <span className="grid h-28 w-28 shrink-0 place-items-center overflow-hidden rounded bg-slate-800/50">
-          <PokeIcon species={p.name} className="scale-[2.6]" />
+          <PokemonArt slug={target} name={p.name} size={112} />
         </span>
         <div>
           <span className="tabular-nums text-sm text-slate-500">
@@ -106,16 +215,27 @@ export default async function PokemonPage({
               ))}
             </span>
           </div>
-          {meta && (
-            <span className="text-xs text-slate-400">{meta.genderLabel}</span>
+          {flavor?.genus && (
+            <span className="block text-sm text-slate-300">{flavor.genus}</span>
           )}
-          {usage && (
-            <span className="mt-1 block text-xs text-slate-400">
-              {CHAMPIONS_FORMAT_LABEL}:{" "}
-              <span className="text-amber-300">{usage.usage}%</span> usage ·{" "}
-              {usage.winRate}% win rate
+          {meta && <span className="text-xs text-slate-400">{meta.genderLabel}</span>}
+          <span className="mt-1 block text-xs text-slate-400">
+            {CHAMPIONS_FORMAT_LABEL}:{" "}
+            <span
+              className="text-amber-300"
+              title={rank ? `Usage rank ${rank} of ${rankedCount}` : "Not ranked on the ladder"}
+            >
+              #{rank ?? "—"}
             </span>
-          )}
+            {usage ? (
+              <>
+                {" "}· <span className="text-amber-300">{usage.usage}%</span> usage ·{" "}
+                {usage.winRate}% win rate
+              </>
+            ) : (
+              <> · not on the ladder</>
+            )}
+          </span>
         </div>
       </div>
 
@@ -165,56 +285,143 @@ export default async function PokemonPage({
           </ul>
         </Panel>
 
-        <Panel title="Defensive type matchups">
-          <div className="grid grid-cols-2 gap-1 text-xs sm:grid-cols-3">
-            {POKEMON_TYPES.map((t) => {
-              const l = matchupCard(chart[t]);
-              return (
-                <div
-                  key={t}
-                  className={`flex items-center justify-between gap-1 rounded px-2 py-1 ${l.card}`}
-                >
-                  <TypeBadge type={t} />
-                  <span className="font-semibold">{l.text}</span>
-                </div>
-              );
-            })}
-          </div>
-        </Panel>
+        <PokemonTypeMatchups types={p.types} abilities={p.abilities} />
       </div>
 
       <Panel title="Abilities">
         {meta ? (
           <ul className="space-y-2">
-            {meta.abilities.map((a) => (
-              <li key={a.name} className="rounded bg-slate-800/50 px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-100">{a.name}</span>
-                  {a.hidden && (
-                    <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-300">
-                      Hidden
-                    </span>
-                  )}
-                </div>
-                {a.effect && (
-                  <p className="mt-0.5 text-xs text-slate-400">{a.effect}</p>
-                )}
-              </li>
-            ))}
+            {meta.abilities.map((a) => {
+              const href = abilityHref(a.name);
+              return (
+                <li key={a.name} className="rounded bg-slate-800/50 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    {href ? (
+                      <Link
+                        href={href}
+                        className="text-sm font-semibold text-amber-300 hover:underline"
+                      >
+                        {a.name}
+                      </Link>
+                    ) : (
+                      <span className="text-sm font-semibold text-slate-100">{a.name}</span>
+                    )}
+                    {a.hidden && (
+                      <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-300">
+                        Hidden
+                      </span>
+                    )}
+                  </div>
+                  {a.effect && <p className="mt-0.5 text-xs text-slate-400">{a.effect}</p>}
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <div className="flex flex-wrap gap-2">
-            {p.abilities.map((a) => (
-              <span
-                key={a}
-                className="rounded bg-slate-800 px-2 py-1 text-sm text-slate-200"
-              >
-                {a}
-              </span>
-            ))}
+            {p.abilities.map((a) => {
+              const href = abilityHref(a);
+              return href ? (
+                <Link
+                  key={a}
+                  href={href}
+                  className="rounded bg-slate-800 px-2 py-1 text-sm text-amber-300 hover:underline"
+                >
+                  {a}
+                </Link>
+              ) : (
+                <span key={a} className="rounded bg-slate-800 px-2 py-1 text-sm text-slate-200">
+                  {a}
+                </span>
+              );
+            })}
           </div>
         )}
       </Panel>
+
+      <Panel title={`Usage details · ${CHAMPIONS_FORMAT_LABEL}`}>
+        <div className="grid gap-x-8 gap-y-4 md:grid-cols-2">
+          <UsageSection title="Most common items" rows={tourn?.items} />
+          <UsageSection title="Most common abilities" rows={tourn?.abilities} fallbackNames={p.abilities} />
+          <UsageSection title="Most common natures" rows={tourn?.natures} />
+          <UsageSection title="Most common EV spreads" rows={tourn?.spreads} />
+          <UsageSection title="Most common moves" rows={tourn?.moves} showType />
+        </div>
+        <p className="mt-3 text-[10px] uppercase tracking-wide text-slate-600">
+          {tourn
+            ? `Share of open tournament team sheets (${tourn.usage}% of the field ran ${p.name}).`
+            : "— shown where no usage snapshot is loaded yet. Populate it with `pnpm refresh:tournaments` (needs a reachable source)."}
+        </p>
+      </Panel>
+
+      <Panel title="Height, weight & stat range">
+        <div className="mb-3 flex flex-wrap gap-6 text-sm">
+          <span>
+            <span className="text-slate-500">Height </span>
+            {flavor?.heightM ? `${flavor.heightM.toFixed(1)} m` : "—"}
+          </span>
+          <span>
+            <span className="text-slate-500">Weight </span>
+            {p.weightKg ? `${p.weightKg.toFixed(1)} kg` : "—"}
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs uppercase text-slate-500">
+              <tr>
+                <th className="py-1">Stat</th>
+                <th className="text-right">Base</th>
+                <th className="text-right">Min</th>
+                <th className="text-right">Max</th>
+              </tr>
+            </thead>
+            <tbody>
+              {STAT_KEYS.map((k) => (
+                <tr key={k} className="border-t border-slate-800">
+                  <td className="py-1 text-slate-400">{STAT_LABELS[k]}</td>
+                  <td className="text-right tabular-nums">{p.statRanges[k].base}</td>
+                  <td className="text-right tabular-nums text-slate-400">{p.statRanges[k].min}</td>
+                  <td className="text-right tabular-nums text-slate-400">{p.statRanges[k].max}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
+          Min = 0 IV / 0 EV / hindering nature; Max = 31 IV / 252 EV / boosting
+          nature, at level {100}. Height needs a Pokédex refresh.
+        </p>
+      </Panel>
+
+      {flavor?.names && flavor.names.length > 0 && (
+        <Panel title="Names in other languages">
+          <ul className="grid grid-cols-2 gap-1 text-sm sm:grid-cols-3">
+            {flavor.names.map((n) => (
+              <li key={`${n.lang}-${n.name}`} className="flex items-center justify-between gap-2 rounded bg-slate-800/50 px-2 py-1">
+                <span className="text-xs uppercase tracking-wide text-slate-500">
+                  {LANGUAGE_LABELS[n.lang] ?? n.lang}
+                </span>
+                <span className="truncate">{n.name}</span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
+
+      {flavor?.entries && flavor.entries.length > 0 && (
+        <Panel title="Pokédex entries">
+          <ul className="space-y-2 text-sm">
+            {flavor.entries.map((e) => (
+              <li key={e.version} className="flex gap-3">
+                <span className="w-28 shrink-0 text-xs uppercase tracking-wide text-slate-500">
+                  {versionLabel(e.version)}
+                </span>
+                <span className="text-slate-300">{e.text}</span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
 
       <Panel title="Suggested sets">
         <p className="mb-3 text-[10px] uppercase tracking-wide text-slate-600">
@@ -251,20 +458,27 @@ export default async function PokemonPage({
 
       {usage && usage.teammates.length > 0 && (
         <Panel title={`Common teammates · ${CHAMPIONS_FORMAT_LABEL}`}>
-          <ul className="grid grid-cols-2 gap-1 text-sm sm:grid-cols-3">
-            {usage.teammates.map((t) => (
-              <li key={t.key}>
-                <Link
-                  href={`/pokemon/${t.key}`}
-                  className="flex items-center justify-between rounded bg-slate-800/50 px-2 py-1 hover:bg-slate-800 hover:text-amber-300"
-                >
-                  <span className="truncate">{t.name}</span>
-                  <span className="ml-2 shrink-0 tabular-nums text-slate-400">
-                    {t.pct}%
-                  </span>
-                </Link>
-              </li>
-            ))}
+          <ul className="grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
+            {usage.teammates.map((t) => {
+              const types = getSpeciesTypes(t.key);
+              return (
+                <li key={t.key}>
+                  <Link
+                    href={`/pokemon/${t.key}`}
+                    className="flex items-center gap-2 rounded bg-slate-800/50 px-2 py-1 hover:bg-slate-800 hover:text-amber-300"
+                  >
+                    <PokeIcon species={t.name} title="" />
+                    <span className="truncate">{t.name}</span>
+                    <span className="flex gap-0.5">
+                      {types.map((ty) => (
+                        <TypeBadge key={ty} type={ty} />
+                      ))}
+                    </span>
+                    <span className="ml-auto shrink-0 tabular-nums text-slate-400">{t.pct}%</span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
           <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
             Share of this Pokémon&rsquo;s ranked teams that also ran each
@@ -274,52 +488,30 @@ export default async function PokemonPage({
       )}
 
       <Panel title="Moves">
-        <p className="mb-2 text-xs text-slate-500">
-          {p.moves.length} Gen 9-legal moves. Columns follow the pokemondb.net
-          layout; all listed moves are legal in the current format.
+        <p className="mb-3 text-xs text-slate-500">
+          {p.moves.length} Gen 9-legal moves, grouped by how {p.name} learns them.
         </p>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="text-xs uppercase text-slate-500">
-              <tr>
-                <th className="py-1">Name</th>
-                <th>Type</th>
-                <th>Cat.</th>
-                <th className="text-right">Power</th>
-                <th className="text-right">Acc.</th>
-                <th className="text-right">PP</th>
-                <th>Effect</th>
-                <th>Legal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {p.moves.map((m) => (
-                <tr key={m.name} className="border-t border-slate-800">
-                  <td className="py-1">{m.name}</td>
-                  <td>{m.type ? <TypeBadge type={m.type} /> : "-"}</td>
-                  <td className="capitalize text-slate-400">{m.category}</td>
-                  <td className="text-right tabular-nums">{m.power ?? "-"}</td>
-                  <td className="text-right tabular-nums">
-                    {m.accuracy === null ? "-" : m.accuracy}
-                  </td>
-                  <td className="text-right tabular-nums">{m.pp ?? "-"}</td>
-                  <td>
-                    {m.effect ? (
-                      <span className="text-xs text-slate-300">{m.effect}</span>
-                    ) : (
-                      <span className="text-slate-600">-</span>
-                    )}
-                  </td>
-                  <td>
-                    <span className="text-emerald-400">Legal</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+          {METHOD_SECTIONS.map(({ method, label }) => {
+            let rows = p.moves.filter((m) => m.methods.includes(method));
+            if (rows.length === 0) return null;
+            if (method === "level") {
+              rows = [...rows].sort(
+                (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name),
+              );
+            }
+            return (
+              <div key={method}>
+                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-300">
+                  {label} ({rows.length})
+                </h3>
+                <MoveTable rows={rows} showLevel={method === "level"} />
+              </div>
+            );
+          })}
         </div>
         <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
-          Move data from @pkmn/dex; usage % pending a usage dataset.
+          Move data + learn methods from @pkmn/dex (Gen 9 learnset).
         </p>
       </Panel>
 

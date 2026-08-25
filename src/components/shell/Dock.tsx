@@ -8,71 +8,30 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PokeIcon } from "@/components/PokeIcon";
-
-interface NavItem {
-  href: string;
-  label: string;
-}
-
-const SECTIONS: NavItem[] = [
-  { href: "/", label: "Home" },
-  { href: "/guide", label: "Guide" },
-  { href: "/pokemon", label: "Pokédex" },
-  { href: "/teams", label: "Teams" },
-  { href: "/choicedex", label: "ChoiceDex" },
-  { href: "/battles", label: "Battles" },
-  { href: "/database", label: "Database" },
-  { href: "/sources", label: "Sources" },
-];
-
-const RECENT_KEY = "assaultdex.recentNav";
-const PIN_KEY = "assaultdex.pinnedNav";
-const MAX_RECENT = 8;
-
-function labelFor(path: string): string {
-  if (path === "/") return "Home";
-  const seg = path.split("/").filter(Boolean);
-  const last = seg[seg.length - 1] ?? "";
-  const pretty = last.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-  if (seg.length > 1) {
-    const section = seg[0] === "pokemon" ? "Pokédex" : labelFor("/" + seg[0]);
-    return `${section} · ${pretty}`;
-  }
-  return seg[0] === "pokemon" ? "Pokédex" : pretty;
-}
-function read(key: string): NavItem[] {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as NavItem[]) : [];
-  } catch {
-    return [];
-  }
-}
-function write(key: string, items: NavItem[]): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(items));
-  } catch {
-    /* ignore */
-  }
-}
-/** Pokémon-detail routes get a sprite; other routes a neutral square. */
-function spriteSlug(href: string): string | null {
-  const m = /^\/pokemon\/([a-z0-9]+)$/.exec(href);
-  return m ? m[1]! : null;
-}
-
-function isActive(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
-}
+import { SectionIcon } from "./SectionIcon";
+import {
+  isActive,
+  labelFor,
+  MAX_RECENT,
+  type NavItem,
+  PIN_KEY,
+  read,
+  RECENT_KEY,
+  SECTIONS,
+  spriteSlug,
+  write,
+} from "./nav";
 
 function RowIcon({ href }: { href: string }) {
   const slug = spriteSlug(href);
+  // The Showdown pixel icon is 40x30; the box must be at least that tall or the
+  // sprite is cropped ("cut in half"). Center it in a 40x30 slot, no crop.
   return slug ? (
-    <span className="grid h-[26px] w-10 shrink-0 place-items-center overflow-hidden">
+    <span className="grid h-[30px] w-10 shrink-0 place-items-center">
       <PokeIcon species={slug} />
     </span>
   ) : (
-    <span className="grid h-[26px] w-10 shrink-0 place-items-center">
+    <span className="grid h-[30px] w-10 shrink-0 place-items-center">
       <span className="h-2.5 w-2.5 rounded-sm bg-raise" />
     </span>
   );
@@ -123,15 +82,28 @@ export function Dock({ open, onToggle }: { open: boolean; onToggle: () => void }
 
   if (!open) {
     return (
-      <aside className="border-r border-line bg-panel" style={{ padding: "16px 8px" }}>
+      <aside className="flex flex-col items-center gap-1 border-r border-line bg-panel" style={{ padding: "16px 6px" }}>
         <button
           onClick={onToggle}
           aria-label="Expand navigation"
-          className="w-full rounded-md border border-line text-[11px] text-t3 hover:text-t2"
-          style={{ padding: "6px 0" }}
+          className="mb-1 grid h-8 w-8 place-items-center rounded-md border border-line text-[13px] text-t3 hover:text-t2"
         >
           ›
         </button>
+        {SECTIONS.map((s) => {
+          const active = isActive(pathname, s.href);
+          return (
+            <Link
+              key={s.href}
+              href={s.href}
+              title={s.label}
+              aria-label={s.label}
+              className={`grid h-8 w-8 place-items-center rounded-md ${active ? "bg-accbg text-acc" : "text-t3 hover:bg-soft hover:text-t2"}`}
+            >
+              {s.icon && <SectionIcon name={s.icon} />}
+            </Link>
+          );
+        })}
       </aside>
     );
   }
@@ -152,11 +124,12 @@ export function Dock({ open, onToggle }: { open: boolean; onToggle: () => void }
             <Link
               key={s.href}
               href={s.href}
-              className={`mb-px block rounded-[5px] px-2 py-1.5 text-[13px] font-medium ${
+              className={`mb-px flex items-center gap-2.5 rounded-[5px] px-2 py-1.5 text-[13px] font-medium ${
                 active ? "bg-accbg text-acc" : "text-t2 hover:bg-soft"
               }`}
             >
-              {s.label}
+              {s.icon && <SectionIcon name={s.icon} />}
+              <span>{s.label}</span>
             </Link>
           );
         })}

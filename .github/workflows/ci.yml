@@ -17,16 +17,18 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     env:
-      # Prisma generate reads this; no connection is opened during CI.
+      # SQLite database file used by Prisma for migrate, seed, and the build's
+      # prerender queries (e.g. /pokemon reads the seeded roster at build time).
       DATABASE_URL: "file:./dev.db"
       NEXT_TELEMETRY_DISABLED: "1"
       PRISMA_HIDE_UPDATE_MESSAGE: "1"
     steps:
       - uses: actions/checkout@v4
 
+      # No `version:` here on purpose — pnpm/action-setup@v4 reads the pnpm
+      # version from package.json's "packageManager" field. Specifying it in
+      # both places makes the action fail with ERR_PNPM_BAD_PM_VERSION.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
@@ -39,4 +41,11 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
+
+      # The production build prerenders pages that query the database at build
+      # time (e.g. /pokemon), so the schema must be migrated and the fixture
+      # roster seeded first. The seed is fully offline (committed fixtures).
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+
       - run: pnpm build

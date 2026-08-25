@@ -45,7 +45,6 @@ export function suggestSets(
   baseStats: BaseStats,
   abilities: string[],
   moves: MoveLike[],
-  mega?: MegaInfo,
 ): SuggestedSet[] {
   const ability = abilities[0] ?? "";
   const names = new Set(moves.map((m) => m.name));
@@ -127,19 +126,6 @@ export function suggestSets(
       evs: { hp: 252, spe: 132, [bulkDef]: 124 },
       ivs,
       moves: build([protect], util, stab.slice(0, 1)),
-    });
-  }
-
-  // 4) Mega: same offensive shell, holding the Mega Stone with the forme ability.
-  if (mega) {
-    sets.push({
-      label: `Mega (${mega.label})`,
-      item: mega.stone,
-      ability: mega.ability || ability,
-      nature: physical ? "Adamant" : "Modest",
-      evs: { [atkStat]: 252, spe: 252, hp: 4 },
-      ivs,
-      moves: build(stab.slice(0, 2), coverage.slice(0, 1), [protect], coverage.slice(1)),
     });
   }
 

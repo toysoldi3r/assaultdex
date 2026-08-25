@@ -14,6 +14,11 @@ export function stageMultiplier(stage: number): number {
   return s >= 0 ? (2 + s) / 2 : 2 / (2 - s);
 }
 
+/** Round half down, as the mainline engine does (poke-round). */
+function pokeRound(n: number): number {
+  return n - Math.floor(n) > 0.5 ? Math.ceil(n) : Math.floor(n);
+}
+
 export interface SpeedResult {
   effectiveSpeed: number;
   assumptions: AssumptionId[];
@@ -32,25 +37,37 @@ export function effectiveSpeed(
   ctx: SpeedContext = {},
 ): SpeedResult {
   const assumptions: AssumptionId[] = ["speedOrder", "statFormula"];
-  let speed = combatant.stats.spe * stageMultiplier(combatant.stages.spe);
-  if (combatant.status === "paralysis") {
-    speed *= 0.5; // provisional mainline paralysis modifier
-  }
+  // Boosted Speed is floored before the multipliers, matching the game (a
+  // fractional boosted stat truncates rather than carrying into the modifiers).
+  let speed = Math.floor(combatant.stats.spe * stageMultiplier(combatant.stages.spe));
+
+  // Speed multipliers (Tailwind, Choice Scarf, Iron Ball, weather/terrain
+  // abilities) are chained and applied together with a single poke-round.
+  let mod = 1;
   if (ctx.tailwind) {
-    speed *= 2;
+    mod *= 2;
     assumptions.push("tailwind");
   }
   const item = itemSpeed(combatant);
   if (item !== 1) {
-    speed *= item;
+    mod *= item;
     assumptions.push("itemEffects");
   }
   const ability = abilitySpeed(combatant, ctx.field ?? DEFAULT_FIELD);
   if (ability !== 1) {
-    speed *= ability;
+    mod *= ability;
     assumptions.push("abilityEffects");
   }
-  return { effectiveSpeed: Math.floor(speed), assumptions };
+  if (mod !== 1) speed = pokeRound(speed * mod);
+
+  // Paralysis is applied last, floored on its own. Quick Feet ignores the
+  // paralysis Speed drop (and grants its 1.5x boost via abilitySpeed above),
+  // so the two must not stack into a net 0.75x.
+  if (combatant.status === "paralysis" && combatant.ability !== "Quick Feet") {
+    speed = Math.floor(speed * 0.5); // provisional mainline paralysis modifier
+  }
+
+  return { effectiveSpeed: speed, assumptions };
 }
 
 export type OrderWinner = "a" | "b" | "tie";

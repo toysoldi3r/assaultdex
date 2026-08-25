@@ -66,10 +66,13 @@ export function MetaCards({
   const max = Math.max(1, ...list.map(metricOf));
   const cores = coreSize === 2 ? cores2 : coreSize === 3 ? cores3 : cores4;
 
+  // Height tracks the viewport so the Ladder and Top-teams cards fill the space
+  // below the banner/stat strip exactly, without pushing the page into a scroll.
+  // Inner lists scroll within each card.
   return (
-    <div className="grid min-w-0 gap-[18px] lg:grid-cols-[1.35fr_1fr]">
+    <div className="grid min-w-0 items-stretch gap-[18px] lg:h-[calc(100dvh-408px)] lg:min-h-[400px] lg:grid-cols-[1.35fr_1fr] lg:[grid-template-rows:minmax(0,1fr)]">
       {/* Ladder */}
-      <section className="overflow-hidden rounded-lg border border-line bg-panel">
+      <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-panel lg:h-full">
         <div className="flex items-center gap-3 border-b border-line px-3.5 py-[9px]">
           <h2 className="text-[13px] font-semibold text-t1">Ladder</h2>
           <div className="ml-auto flex gap-1">
@@ -89,9 +92,9 @@ export function MetaCards({
         <p className="border-b border-line px-3.5 py-[7px] text-[11px] leading-4 text-t3">
           {CAPTION[tab](grouped(totalBattles))}
         </p>
-        <div className="max-h-[560px] overflow-y-auto overflow-x-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden max-h-[560px] lg:max-h-none">
           <div
-            className="sticky top-0 z-[1] grid items-center border-b border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3"
+            className="sticky top-0 z-[1] hidden items-center border-b border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3 md:grid"
             style={{ gridTemplateColumns: LADDER_COLS }}
           >
             <span>#</span>
@@ -109,24 +112,37 @@ export function MetaCards({
                 key={m.name}
                 href={`/pokemon/${uKey(m.name)}`}
                 title={`${m.usage}% usage · ${m.winRate}% win rate · ${m.teams} teams`}
-                className="grid items-center border-b border-soft px-3.5 py-[5px] hover:bg-soft"
+                className="block border-b border-soft px-3.5 py-2 hover:bg-soft md:grid md:items-center md:py-[5px]"
                 style={{ gridTemplateColumns: LADDER_COLS }}
               >
-                <span className="mono text-[11px] text-t3">{i + 1}</span>
-                <PokeIcon species={m.name} />
-                <span className="flex min-w-0 items-center gap-1 pr-2">
-                  <span className="truncate text-[13px] font-medium text-t1">{m.name}</span>
-                  <span className="flex flex-shrink-0 gap-1">
-                    {types.map((t) => <TypeBadge key={t} type={t} />)}
-                  </span>
+                {/* Mobile: rank · icon · name+badges · metric on one line, bar below.
+                    Desktop (md+): the grid cells below flow into LADDER_COLS. */}
+                <span className="mono hidden text-[11px] text-t3 md:inline">{i + 1}</span>
+                <span className="hidden md:inline">
+                  <PokeIcon species={m.name} />
                 </span>
-                <span className="h-[5px] rounded-[3px] bg-raise">
+                <div className="flex items-center gap-2 md:contents">
+                  <span className="mono w-4 flex-shrink-0 text-[11px] text-t3 md:hidden">{i + 1}</span>
+                  <span className="flex-shrink-0 md:hidden">
+                    <PokeIcon species={m.name} />
+                  </span>
+                  <span className="flex min-w-0 flex-1 items-center gap-1 md:pr-2">
+                    <span className="truncate text-[13px] font-medium text-t1">{m.name}</span>
+                    <span className="flex flex-shrink-0 gap-1">
+                      {types.map((t) => <TypeBadge key={t} type={t} />)}
+                    </span>
+                  </span>
+                  <span className={`mono flex-shrink-0 text-right text-xs md:hidden ${tab === "winrate" ? wrColor(m.winRate) : "text-t1"}`}>
+                    {tab === "teams" ? v : `${v}%`}
+                  </span>
+                </div>
+                <span className="mt-1.5 block h-[5px] rounded-[3px] bg-raise md:mt-0">
                   <span className="block h-full rounded-[3px] bg-acc" style={{ width: `${(v / max) * 100}%` }} />
                 </span>
-                <span className={`mono text-right text-xs ${tab === "winrate" ? wrColor(m.winRate) : "text-t1"}`}>
+                <span className={`mono hidden text-right text-xs md:inline ${tab === "winrate" ? wrColor(m.winRate) : "text-t1"}`}>
                   {tab === "teams" ? v : `${v}%`}
                 </span>
-                <span className="mono text-right text-[11px] text-t3">{grouped((m.usage / 100) * totalBattles)}</span>
+                <span className="mono hidden text-right text-[11px] text-t3 md:inline">{grouped((m.usage / 100) * totalBattles)}</span>
               </Link>
             );
           })}
@@ -134,10 +150,11 @@ export function MetaCards({
       </section>
 
       {/* Right stack */}
-      <div className="flex min-w-0 flex-col gap-[18px]">
-        {/* Common cores */}
-        <section className="overflow-hidden rounded-lg border border-line bg-panel">
-          <div className="flex items-center gap-3 px-3.5 py-2">
+      <div className="flex min-w-0 flex-col gap-[18px] lg:h-full">
+        {/* Common cores — shares the column height with Top teams so neither
+            collapses to a sliver. */}
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-panel">
+          <div className="flex shrink-0 items-center gap-3 px-3.5 py-2">
             <h2 className="text-[13px] font-semibold text-t1">Common cores</h2>
             <div className="ml-auto flex gap-1">
               {([2, 3, 4] as const).map((s) => (
@@ -153,7 +170,7 @@ export function MetaCards({
               ))}
             </div>
           </div>
-          <div className="max-h-[330px] overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto max-h-[330px] lg:max-h-none">
             <div className="sticky top-0 z-[1] flex items-center justify-between border-y border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3">
               <span>Pairing</span>
               <span>Win rate</span>
@@ -174,12 +191,12 @@ export function MetaCards({
           </div>
         </section>
 
-        {/* Top teams */}
-        <section className="overflow-hidden rounded-lg border border-line bg-panel">
+        {/* Top teams — grows to fill so its bottom aligns with the Ladder card */}
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-panel">
           <div className="px-3.5 py-[11px]">
             <h2 className="text-[13px] font-semibold text-t1">Top teams</h2>
           </div>
-          <div className="max-h-[330px] overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto max-h-[330px] lg:max-h-none">
             <div className="sticky top-0 z-[1] flex items-center gap-2 border-y border-line bg-panel px-3.5 py-1.5 text-[10px] uppercase tracking-[0.07em] text-t3">
               <span className="flex-1">Exact composition</span>
               <span className="w-9 text-right">Entries</span>
@@ -188,9 +205,19 @@ export function MetaCards({
             {teams.length ? (
               teams.map((t, i) => (
                 <div key={i} className="flex items-center gap-2 border-b border-soft px-3.5 py-1.5">
-                  <span className="mono w-3.5 text-[11px] text-t3">{i + 1}</span>
-                  <span className="flex flex-1 flex-wrap gap-px">
-                    {t.members.map((n) => <PokeIcon key={n} species={n} />)}
+                  <span className="mono w-3.5 shrink-0 text-[11px] text-t3">{i + 1}</span>
+                  {/* Keep all six members on one row - compact fixed-width slots,
+                      no wrapping, so a team never spills into a second line. */}
+                  <span className="flex min-w-0 flex-1 flex-nowrap gap-px">
+                    {t.members.map((n) => (
+                      // The 40x30 pixel icon is scaled to fit the compact slot so
+                      // it isn't cropped at the right/bottom; six still fit a row.
+                      <span key={n} className="grid h-[30px] w-[32px] shrink-0 place-items-center overflow-hidden">
+                        <span style={{ transform: "scale(0.8)" }}>
+                          <PokeIcon species={n} />
+                        </span>
+                      </span>
+                    ))}
                   </span>
                   <span className="mono w-9 flex-shrink-0 text-right text-[11px] text-t3">×{t.count}</span>
                   <span className={`mono w-[46px] flex-shrink-0 text-right text-xs ${wrColor(t.winRate)}`}>{t.winRate}%</span>

@@ -59,6 +59,14 @@ body {
      together, unlike bumping the root font-size alone. */
   zoom: 1.12;
 }
+/* On phones the 1.12 zoom pushes the layout ~12% past the device viewport,
+   forcing a horizontal scroll. Native mobile text is already comfortably
+   sized, so drop the zoom below the md breakpoint. */
+@media (max-width: 767px) {
+  body {
+    zoom: 1;
+  }
+}
 a {
   color: var(--acc);
   text-decoration: none;
@@ -71,6 +79,11 @@ a:hover {
 .mono {
   font-family: var(--font-space-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
+}
+
+/* Crisp upscaling for the pixel-art sprite sheet (ChoiceDex redesign). */
+.px {
+  image-rendering: pixelated;
 }
 
 /* --------------------------------------------------------------------------
