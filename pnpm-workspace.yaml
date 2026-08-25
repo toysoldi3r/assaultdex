@@ -1,0 +1,10 @@
+# pnpm v10+ reads onlyBuiltDependencies from here, not the package.json "pnpm"
+# field (which newer pnpm ignores with a warning). Lets these native packages
+# run their install/build scripts. npm ignores this file and builds them anyway.
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - prisma
+  - esbuild
+  - sharp
+  - unrs-resolver
