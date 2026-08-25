@@ -15,6 +15,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "db:setup": "prisma migrate deploy && tsx prisma/seed.ts",
     "generate:fixtures": "tsx scripts/generateFixtures.ts && tsx scripts/genDexNumbers.ts",
     "refresh:usage": "tsx scripts/refreshUsage.ts",
     "refresh:tournaments": "tsx scripts/refreshTournaments.ts",
@@ -25,16 +26,6 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "prisma",
-      "esbuild",
-      "sharp",
-      "unrs-resolver"
-    ]
   },
   "dependencies": {
     "@pkmn/data": "^0.10.11",
