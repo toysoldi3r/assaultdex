@@ -45,6 +45,15 @@ if errorlevel 1 (
   exit /b 1
 )
 
+where /q npm
+if errorlevel 1 (
+  echo.
+  echo npm was not found next to Node. Reinstall Node.js LTS from
+  echo https://nodejs.org/en/download and run this file again.
+  pause
+  exit /b 1
+)
+
 for /f "delims=" %%v in ('node -v') do set "NODEV=%%v"
 echo Using Node !NODEV!
 
@@ -123,5 +132,6 @@ goto :eof
 :fail
 echo.
 echo A step above failed. Read the message, fix it, and run this file again.
+echo Common causes: no internet during install, or port 3000 already in use.
 pause
 exit /b 1
