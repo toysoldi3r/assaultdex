@@ -58,7 +58,10 @@ export function Sprite({
   title?: string;
 }) {
   const spriteStyle = useSpriteStyle();
-  const [artFailed, setArtFailed] = useState(false);
+  // Track the specific art URL that 404'd, not a boolean: when the species (and
+  // thus the URL) changes — e.g. switching mons after a Mega whose battle-forme
+  // art is missing — we retry the new art instead of staying stuck on the icon.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const box: CSSProperties = {
     width: typeof w === "number" ? `${w}px` : w,
     height: typeof h === "number" ? `${h}px` : h,
@@ -70,16 +73,17 @@ export function Sprite({
     filter,
   };
 
-  if (spriteStyle !== "pixel" && !artFailed) {
+  const artSrc = spriteStyle !== "pixel" ? pokemonArtSrc(spriteStyle, toID(species)) : null;
+  if (artSrc && failedSrc !== artSrc) {
     return (
       <span title={title} aria-label={species} role="img" style={box}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={pokemonArtSrc(spriteStyle, toID(species))}
+          src={artSrc}
           alt={species}
           loading="lazy"
           decoding="async"
-          onError={() => setArtFailed(true)}
+          onError={() => setFailedSrc(artSrc)}
           style={{
             maxWidth: "100%",
             maxHeight: "100%",

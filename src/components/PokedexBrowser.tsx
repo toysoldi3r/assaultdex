@@ -47,6 +47,12 @@ export function PokedexBrowser({
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("num");
   const [dir, setDir] = useState<"asc" | "desc">("asc");
+  // Picking a sort sets a sensible default order: dex number reads low→high,
+  // every stat sort defaults to high→low (strongest first).
+  const pickSort = (key: SortKey) => {
+    setSort(key);
+    setDir(key === "num" ? "asc" : "desc");
+  };
   const [showAll, setShowAll] = useState(false);
   const [full, setFull] = useState<PokedexEntry[] | null>(null);
   const [loadingFull, setLoadingFull] = useState(false);
@@ -173,20 +179,23 @@ export function PokedexBrowser({
         <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-slate-500">Sort by</span>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
-              className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
-            >
-              {SORTS.map((s) => (
-                <option key={s.key} value={s.key}>{s.label}</option>
-              ))}
-            </select>
+            {SORTS.map((s) => (
+              <button
+                key={s.key}
+                onClick={() => pickSort(s.key)}
+                className={`rounded border px-2.5 py-1 ${sort === s.key ? "border-amber-500 bg-amber-500 font-semibold text-black" : "border-slate-700 bg-slate-900 text-slate-200 hover:border-slate-500"}`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-slate-500">Order</span>
             <span className="flex overflow-hidden rounded border border-slate-700">
               <button onClick={() => setDir("asc")}
-                className={`px-2 py-1 ${dir === "asc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>↑ Ascending</button>
+                className={`px-3 py-1.5 font-medium ${dir === "asc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-200 hover:bg-slate-800"}`}>↑ Ascending</button>
               <button onClick={() => setDir("desc")}
-                className={`px-2 py-1 ${dir === "desc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>↓ Descending</button>
+                className={`border-l border-slate-700 px-3 py-1.5 font-medium ${dir === "desc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-200 hover:bg-slate-800"}`}>↓ Descending</button>
             </span>
           </div>
           <div>

@@ -5,6 +5,7 @@ import { HitInference } from "@/components/choicedex/HitInference";
 import { OpponentInference } from "@/components/choicedex/OpponentInference";
 import { Simulator } from "@/components/choicedex/Simulator";
 import { toPokemonRefs, type PokemonRef } from "@/lib/choicedexBuild";
+import { moveFixtureFromDex } from "@/data/catalog";
 import { buildVariants, buildMegaForms } from "@/data/battleFormes";
 import { listPokemon } from "@/server/repositories/pokemonRepo";
 import { listTeams } from "@/server/repositories/teamRepo";
@@ -30,6 +31,33 @@ const manrope = Manrope({
 export default async function ChoiceDexPage() {
   const [pokemon, teams] = await Promise.all([listPokemon(), listTeams()]);
   const refs: PokemonRef[] = toPokemonRefs(pokemon);
+
+  // A species' curated `moves` is only a subset of its movepool, so a saved
+  // set can bring moves with no fixture — those silently vanished from the
+  // ChoiceDex readout (showing 2-3 of 4). Give every move used on any saved
+  // team a real battle fixture, added to that species' move list.
+  const neededBySlug = new Map<string, Set<string>>();
+  for (const t of teams) {
+    if (t.isBox) continue;
+    const members = t.versions[t.versions.length - 1]?.snapshot.members ?? [];
+    for (const m of members) {
+      const set = neededBySlug.get(m.species) ?? new Set<string>();
+      for (const mv of m.moves) set.add(mv);
+      neededBySlug.set(m.species, set);
+    }
+  }
+  for (const ref of refs) {
+    const need = neededBySlug.get(ref.slug);
+    if (!need) continue;
+    const have = new Set(ref.moves.map((mv) => mv.name));
+    const extra: typeof ref.moves = [];
+    for (const name of need) {
+      if (have.has(name)) continue;
+      const fx = moveFixtureFromDex(name);
+      if (fx) extra.push(fx);
+    }
+    if (extra.length) ref.moves = [...ref.moves, ...extra];
+  }
 
   const savedTeams: SavedTeam[] = teams
     .filter((t) => !t.isBox)

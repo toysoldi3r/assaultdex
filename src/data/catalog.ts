@@ -3,10 +3,75 @@
 // client so the picker panels can show a description next to every option.
 
 import { Dex } from "@pkmn/dex";
+import type { MoveFixture, MoveTarget, PokemonType } from "@/domain/types/pokemon";
 
 export interface CatalogEntry {
   name: string;
   desc: string;
+}
+
+// Runtime @pkmn/dex → MoveFixture, mirroring scripts/generateFixtures.ts so
+// ChoiceDex can build a battle fixture for any legal move (not only the curated
+// subset baked into a species' `moves`).
+const TARGET_MAP: Record<string, MoveTarget> = {
+  normal: "normal", any: "normal", randomNormal: "normal", scripted: "normal", adjacentFoe: "normal",
+  allAdjacentFoes: "all-adjacent-foes", allAdjacent: "all-adjacent",
+  self: "self", adjacentAlly: "ally", adjacentAllyOrSelf: "self",
+  allySide: "self", allyTeam: "self", foeSide: "self", all: "self",
+};
+const STATUS_MAP: Record<string, "burn" | "paralysis" | "poison" | "toxic" | "sleep" | "freeze"> = {
+  brn: "burn", par: "paralysis", psn: "poison", tox: "toxic", slp: "sleep", frz: "freeze",
+};
+const RELEVANT_FLAGS = new Set(["contact", "punch", "sound", "bullet", "bite", "pulse", "slicing"]);
+
+export function moveFixtureFromDex(name: string): MoveFixture | null {
+  const m = Dex.moves.get(name);
+  if (!m.exists) return null;
+  const mm = m as unknown as {
+    overrideOffensiveStat?: string; overrideDefensiveStat?: string; overrideOffensivePokemon?: string;
+    multihit?: number | [number, number]; flags?: Record<string, unknown>;
+    secondary?: { chance?: number; status?: string; volatileStatus?: string; boosts?: Record<string, number> } | null;
+    self?: { boosts?: Record<string, number> } | null;
+  };
+  const isStatus = m.category === "Status" || !m.basePower;
+  const out: MoveFixture = {
+    name: m.name,
+    type: m.type.toLowerCase() as PokemonType,
+    category: m.category.toLowerCase() as MoveFixture["category"],
+    power: isStatus ? null : m.basePower,
+    accuracy: m.accuracy === true ? null : m.accuracy,
+    priority: m.priority,
+    target: TARGET_MAP[m.target] ?? "normal",
+  };
+  if (mm.overrideOffensiveStat && mm.overrideOffensiveStat !== "atk" && mm.overrideOffensiveStat !== "spa") {
+    out.overrideOffensiveStat = mm.overrideOffensiveStat as MoveFixture["overrideOffensiveStat"];
+  }
+  if (mm.overrideDefensiveStat === "def" || mm.overrideDefensiveStat === "spd") out.overrideDefensiveStat = mm.overrideDefensiveStat;
+  if (mm.overrideOffensivePokemon === "target") out.useTargetOffense = true;
+  if (mm.multihit) {
+    const h = Array.isArray(mm.multihit) ? Math.round((mm.multihit[0] + mm.multihit[1]) / 2) : mm.multihit;
+    if (h > 1) out.hits = h;
+  }
+  const flags = Object.keys(mm.flags ?? {}).filter((f) => RELEVANT_FLAGS.has(f));
+  if (flags.length > 0) out.flags = flags;
+  const stageOnly = (b?: Record<string, number>) => {
+    if (!b) return undefined;
+    const keep: Record<string, number> = {};
+    for (const k of ["atk", "def", "spa", "spd", "spe"]) if (typeof b[k] === "number") keep[k] = b[k];
+    return Object.keys(keep).length > 0 ? keep : undefined;
+  };
+  const sec = mm.secondary;
+  if (sec && sec.chance) {
+    const secondary: NonNullable<MoveFixture["secondary"]> = { chance: sec.chance };
+    if (sec.status && STATUS_MAP[sec.status]) secondary.status = STATUS_MAP[sec.status];
+    if (sec.volatileStatus === "flinch") secondary.flinch = true;
+    const b = stageOnly(sec.boosts);
+    if (b) secondary.boosts = b as NonNullable<MoveFixture["secondary"]>["boosts"];
+    if (secondary.status || secondary.flinch || secondary.boosts) out.secondary = secondary;
+  }
+  const self = stageOnly(mm.self?.boosts);
+  if (self) out.selfBoosts = self as MoveFixture["selfBoosts"];
+  return out;
 }
 
 let itemsCache: CatalogEntry[] | null = null;
