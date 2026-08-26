@@ -114,11 +114,12 @@ export function TeamAnalysisPanel({ analysis }: { analysis: TeamAnalysis }) {
                       0× immune
                     </span>
                   )}
-                  {/* Fixed-width cells (icon + right-aligned multiplier) so ×0.5
-                      and ×0.25 line up in straight columns across rows. */}
-                  <span className="flex flex-1 flex-wrap items-center gap-1">
+                  {/* Right-aligned, fixed-width cells (icon + multiplier) so the
+                      Pokémon hug the right edge and ×0.5 / ×0.25 line up in
+                      straight columns across rows. */}
+                  <span className="ml-auto flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
                     {r.members.map((m, mi) => (
-                      <span key={`${m.name}-${mi}`} className="flex w-[72px] items-center gap-0.5" title={`${m.name} ${multLabel(m.mult)}`}>
+                      <span key={`${m.name}-${mi}`} className="flex w-[64px] items-center justify-end gap-1" title={`${m.name} ${multLabel(m.mult)}`}>
                         <span className={m.mult === 0 ? "rounded ring-1 ring-pos" : undefined}>
                           <PokeIcon species={m.name} />
                         </span>

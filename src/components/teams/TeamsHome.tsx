@@ -5,14 +5,14 @@
 // per-card edit / copy (Showdown export) / delete with double-confirm + undo.
 
 import Link from "next/link";
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { PokeIcon } from "@/components/PokeIcon";
+import { ExportModal } from "@/components/teams/ExportModal";
 import {
   createBoxAction,
   createCollectionAction,
   createTeamAction,
   deleteTeamSilentAction,
-  recreateTeamAction,
 } from "@/app/teams/actions";
 
 interface Member {
@@ -28,13 +28,6 @@ export interface TeamCard {
 interface Folder {
   id: string;
   name: string;
-}
-
-interface Deleted {
-  name: string;
-  isBox: boolean;
-  collectionId: string | null;
-  members: Member[];
 }
 
 function fd(entries: Record<string, string>): FormData {
@@ -55,16 +48,10 @@ export function TeamsHome({
   const [teams, setTeams] = useState<TeamCard[]>(initialTeams);
   const [folder, setFolder] = useState<string | null>(null); // null=all, "uncat", or id
   const [q, setQ] = useState("");
-  const [deleted, setDeleted] = useState<Deleted | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const flash = (msg: string) => {
-    setToast(msg);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 4000);
-  };
+  // Which team is awaiting a delete confirmation, and which is being exported.
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [exportTeam, setExportTeam] = useState<{ id: string; name: string } | null>(null);
+  const [, startTransition] = useTransition();
 
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -85,47 +72,13 @@ export function TeamsHome({
 
   const currentCollectionId = folder && folder !== "uncat" ? folder : "";
 
+  // Delete only after the user confirms on the card. No undo toast - the
+  // confirm step is the safety net.
   const doDelete = (t: TeamCard) => {
+    setConfirmId(null);
     setTeams((prev) => prev.filter((x) => x.id !== t.id));
-    setDeleted({
-      name: t.name,
-      isBox: t.isBox,
-      collectionId: t.collectionId,
-      members: t.members,
-    });
     startTransition(async () => {
       await deleteTeamSilentAction(fd({ teamId: t.id }));
-    });
-  };
-
-  const undoDelete = () => {
-    if (!deleted) return;
-    const d = deleted;
-    setDeleted(null);
-    setToast(null);
-    startTransition(async () => {
-      const card = await recreateTeamAction(
-        fd({
-          name: d.name,
-          collectionId: d.collectionId ?? "",
-          isBox: String(d.isBox),
-          members: JSON.stringify(d.members),
-        }),
-      );
-      setTeams((prev) => [card, ...prev]);
-    });
-  };
-
-  const copyTeam = (t: TeamCard) => {
-    startTransition(async () => {
-      try {
-        const res = await fetch(`/teams/${t.id}/export`);
-        const text = await res.text();
-        await navigator.clipboard.writeText(text);
-        flash(`Copied “${t.name}” (Showdown format).`);
-      } catch {
-        flash("Copy failed.");
-      }
     });
   };
 
@@ -198,27 +151,6 @@ export function TeamsHome({
           />
         </div>
 
-        {deleted && (
-          <div className="flex items-center justify-between gap-2 rounded border border-rose-700 bg-rose-950/60 px-3 py-2 text-sm text-rose-200">
-            <span>Deleted “{deleted.name}”.</span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={undoDelete}
-                className="rounded bg-rose-700 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-600"
-              >
-                Undo
-              </button>
-              <button
-                onClick={() => setDeleted(null)}
-                aria-label="Dismiss"
-                className="rounded px-1.5 py-1 text-xs text-rose-300 hover:bg-rose-900/60"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-
         {visible.length === 0 ? (
           <p className="text-sm text-slate-500">No teams here yet.</p>
         ) : (
@@ -247,26 +179,44 @@ export function TeamsHome({
                 </Link>
 
                 <div className="flex flex-col items-stretch justify-center gap-1 border-l border-slate-800 p-2 text-xs">
-                  <Link
-                    href={`/teams/${t.id}`}
-                    className="rounded bg-slate-800 px-2 py-1 text-center hover:bg-slate-700"
-                  >
-                    ✎ Edit
-                  </Link>
-                  <button
-                    onClick={() => copyTeam(t)}
-                    className="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700"
-                  >
-                    ⧉ Copy
-                  </button>
-                  {/* Delete is immediate - the undo toast is the safety net. */}
-                  <button
-                    onClick={() => doDelete(t)}
-                    disabled={pending}
-                    className="rounded bg-slate-800 px-2 py-1 text-rose-300 hover:bg-slate-700"
-                  >
-                    🗑 Delete
-                  </button>
+                  {confirmId === t.id ? (
+                    <>
+                      <span className="px-1 text-center text-[11px] font-semibold text-rose-300">Delete “{t.name}”?</span>
+                      <button
+                        onClick={() => doDelete(t)}
+                        className="rounded bg-rose-600 px-2 py-1 font-semibold text-white hover:bg-rose-500"
+                      >
+                        Yes, delete
+                      </button>
+                      <button
+                        onClick={() => setConfirmId(null)}
+                        className="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href={`/teams/${t.id}`}
+                        className="rounded bg-slate-800 px-2 py-1 text-center hover:bg-slate-700"
+                      >
+                        ✎ Edit
+                      </Link>
+                      <button
+                        onClick={() => setExportTeam({ id: t.id, name: t.name })}
+                        className="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700"
+                      >
+                        ⤓ Export
+                      </button>
+                      <button
+                        onClick={() => setConfirmId(t.id)}
+                        className="rounded bg-slate-800 px-2 py-1 text-rose-300 hover:bg-slate-700"
+                      >
+                        🗑 Delete
+                      </button>
+                    </>
+                  )}
                 </div>
               </li>
             ))}
@@ -274,10 +224,8 @@ export function TeamsHome({
         )}
       </div>
 
-      {toast && !deleted && (
-        <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded bg-slate-800 px-4 py-2 text-sm text-slate-100 shadow-lg">
-          {toast}
-        </div>
+      {exportTeam && (
+        <ExportModal teamId={exportTeam.id} teamName={exportTeam.name} onClose={() => setExportTeam(null)} />
       )}
     </div>
   );

@@ -4,6 +4,7 @@
 // toggle-open Notes and Version history sections. Keeps the header uncluttered.
 
 import { useEffect, useRef, useState } from "react";
+import { ExportModal } from "@/components/teams/ExportModal";
 import {
   deleteTeamAction,
   duplicateTeamAction,
@@ -20,17 +21,20 @@ export interface MenuVersion {
 
 export function TeamMenu({
   teamId,
+  teamName,
   notes,
   versions,
   latest,
 }: {
   teamId: string;
+  teamName: string;
   notes: string;
   versions: MenuVersion[];
   latest: number;
 }) {
   const [open, setOpen] = useState(false);
   const [show, setShow] = useState<"notes" | "versions" | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,13 +58,12 @@ export function TeamMenu({
 
       {open && (
         <div className="absolute right-0 z-30 mt-1 w-44 rounded border border-slate-700 bg-slate-950 py-1 text-sm shadow-xl">
-          <a
-            href={`/teams/${teamId}/export`}
-            className="block px-3 py-1.5 hover:bg-slate-800"
-            onClick={() => setOpen(false)}
+          <button
+            onClick={() => { setExportOpen(true); setOpen(false); }}
+            className="block w-full px-3 py-1.5 text-left hover:bg-slate-800"
           >
             Export (Showdown)
-          </a>
+          </button>
           <button
             onClick={() => {
               setShow(show === "notes" ? null : "notes");
@@ -149,6 +152,10 @@ export function TeamMenu({
             Close
           </button>
         </div>
+      )}
+
+      {exportOpen && (
+        <ExportModal teamId={teamId} teamName={teamName} onClose={() => setExportOpen(false)} />
       )}
     </div>
   );

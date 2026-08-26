@@ -125,7 +125,7 @@ export default async function TeamDetailPage({
         )}
         <span className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-t3">v{latest.versionNumber}</span>
         <span className="ml-auto">
-          <TeamMenu teamId={team.id} notes={team.notes} versions={menuVersions} latest={latest.versionNumber} />
+          <TeamMenu teamId={team.id} teamName={team.name} notes={team.notes} versions={menuVersions} latest={latest.versionNumber} />
         </span>
       </div>
 
