@@ -28,6 +28,7 @@
     "postinstall": "prisma generate",
     "refresh:source-icons": "tsx scripts/refreshSourceIcons.ts"
   },
+  "packageManager": "pnpm@9.15.9",
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
