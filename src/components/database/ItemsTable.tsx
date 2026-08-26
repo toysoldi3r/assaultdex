@@ -6,30 +6,70 @@ import { ItemIcon } from "@/components/ItemIcon";
 import { type DbItem } from "@/data/dexDatabase";
 import { useInfinite } from "./useInfinite";
 
+type SortKey = "name" | "category" | "fling";
+type Dir = "asc" | "desc";
+
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: "name", label: "Name" },
+  { key: "category", label: "Category" },
+  { key: "fling", label: "Fling power" },
+];
+
+const nkey = (v: number | null, dir: Dir) => (v == null ? (dir === "asc" ? Infinity : -Infinity) : v);
+
 export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
   const [q, setQ] = useState("");
   const [champsOnly, setChampsOnly] = useState(true);
+  const [advanced, setAdvanced] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [dir, setDir] = useState<Dir>("asc");
+  const [category, setCategory] = useState("all");
+  const [berriesOnly, setBerriesOnly] = useState(false);
+  const [modeledOnly, setModeledOnly] = useState(false);
 
   // No legal-item flags present → show the full list rather than nothing.
   const champsAvailable = useMemo(() => items.some((i) => i.competitive), [items]);
+  const categories = useMemo(
+    () => [...new Set(items.map((i) => i.category).filter(Boolean))].sort(),
+    [items],
+  );
+
+  const inScope = (i: DbItem) =>
+    (!champsOnly || !champsAvailable || i.competitive) &&
+    (category === "all" || i.category === category) &&
+    (!berriesOnly || i.berry) &&
+    (!modeledOnly || i.calc != null);
 
   const scopeCount = useMemo(
-    () => items.filter((i) => !champsOnly || !champsAvailable || i.competitive).length,
-    [items, champsOnly, champsAvailable],
+    () => items.filter(inScope).length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, champsOnly, champsAvailable, category, berriesOnly, modeledOnly],
   );
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return items.filter(
+    const out = items.filter(
       (i) =>
-        (!champsOnly || !champsAvailable || i.competitive) &&
+        inScope(i) &&
         (!needle ||
           i.name.toLowerCase().includes(needle) ||
           i.desc.toLowerCase().includes(needle)),
     );
-  }, [items, q, champsOnly, champsAvailable]);
+    const s = dir === "asc" ? 1 : -1;
+    out.sort((a, b) => {
+      let d = 0;
+      switch (sortKey) {
+        case "name": d = a.name.localeCompare(b.name); break;
+        case "category": d = a.category.localeCompare(b.category) || a.name.localeCompare(b.name); break;
+        case "fling": d = nkey(a.fling, dir) - nkey(b.fling, dir); break;
+      }
+      return d * s;
+    });
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, q, champsOnly, champsAvailable, category, berriesOnly, modeledOnly, sortKey, dir]);
 
-  const sig = `${q}|${champsOnly}`;
+  const sig = `${q}|${champsOnly}|${sortKey}|${dir}|${category}|${berriesOnly}|${modeledOnly}`;
   const { visible, sentinel, shown } = useInfinite(filtered, sig, 50);
 
   return (
@@ -45,8 +85,42 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
           <button onClick={() => setChampsOnly(true)} className={`px-3 py-1.5 ${champsOnly ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>Champions</button>
           <button onClick={() => setChampsOnly(false)} className={`px-3 py-1.5 ${!champsOnly ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>Full list</button>
         </div>
+        <button
+          onClick={() => setAdvanced((a) => !a)}
+          className={`rounded border px-3 py-1.5 text-xs ${advanced ? "border-amber-500 text-amber-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}
+        >
+          Advanced filters {advanced ? "▲" : "▼"}
+        </button>
         <span className="text-xs text-slate-500">{shown} / {filtered.length} shown</span>
       </div>
+
+      {advanced && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs">
+          <span className="flex items-center gap-2">
+            <span className="text-slate-500">Sort by</span>
+            <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-200">
+              {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            </select>
+          </span>
+          <div className="flex overflow-hidden rounded border border-slate-700">
+            <button onClick={() => setDir("asc")} className={`px-3 py-1.5 ${dir === "asc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>Ascending</button>
+            <button onClick={() => setDir("desc")} className={`px-3 py-1.5 ${dir === "desc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>Descending</button>
+          </div>
+          <span className="flex items-center gap-2">
+            <span className="text-slate-500">Category</span>
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-200">
+              <option value="all">All</option>
+              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </span>
+          <label className="flex items-center gap-1.5 text-slate-300">
+            <input type="checkbox" checked={berriesOnly} onChange={(e) => setBerriesOnly(e.target.checked)} /> Berries only
+          </label>
+          <label className="flex items-center gap-1.5 text-slate-300">
+            <input type="checkbox" checked={modeledOnly} onChange={(e) => setModeledOnly(e.target.checked)} /> Modeled by engine
+          </label>
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-lg border border-slate-800">
         <table className="w-full text-left text-sm">
@@ -54,6 +128,7 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
             <tr>
               <th className="px-3 py-2 font-normal">Item</th>
               <th className="px-3 py-2 font-normal">Category</th>
+              <th className="px-3 py-2 text-right font-normal">Fling</th>
               <th className="px-3 py-2 font-normal">Effect</th>
             </tr>
           </thead>
@@ -71,9 +146,13 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
                   </Link>
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 text-xs text-slate-400">{i.category}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-slate-400">{i.fling ?? "-"}</td>
                 <td className="px-3 py-2 text-slate-300">{i.desc || "-"}</td>
               </tr>
             ))}
+            {visible.length === 0 && (
+              <tr><td colSpan={4} className="px-3 py-6 text-center text-slate-500">No items match.</td></tr>
+            )}
           </tbody>
         </table>
         <span ref={sentinel as React.RefObject<HTMLSpanElement>} className="block h-px" />
