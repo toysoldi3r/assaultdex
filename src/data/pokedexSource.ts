@@ -188,12 +188,15 @@ function statRanges(bs: ReturnType<typeof statsOf>): Record<StatKey, StatRange> 
   return out;
 }
 
-/** Parse Gen 9 learnset source codes (e.g. "9L15", "9M", "9E") into methods. */
-function parseLearn(codes: string[]): { methods: LearnMethod[]; level: number | null } {
+/** Parse learnset source codes (e.g. "9L15", "9M", "8E") into methods. `gen`
+ *  selects which generation's codes to read; when omitted, the newest
+ *  generation present is used (for pre-Gen-9 species not in Scarlet/Violet). */
+function parseLearn(codes: string[], gen?: string): { methods: LearnMethod[]; level: number | null } {
+  const g = gen ?? String(Math.max(0, ...codes.map((c) => parseInt(c, 10) || 0)));
   const methods = new Set<LearnMethod>();
   let level: number | null = null;
   for (const c of codes) {
-    if (!c.startsWith("9")) continue;
+    if (c[0] !== g) continue;
     switch (c[1]) {
       case "L": {
         methods.add("level");
@@ -321,8 +324,10 @@ async function buildLearnerIndex(): Promise<Map<string, MoveLearner[]>> {
     const types = mapTypes(s.types);
     const champions = CHAMPIONS_BASE.has(s.id);
     for (const [mid, codes] of Object.entries(learn)) {
+      // Newest generation the species learns the move in (Gen 9 where present,
+      // else the latest available — so pre-SV Champions still list as learners).
       const { methods } = parseLearn(codes);
-      if (methods.length === 0) continue; // Gen 9-legal only
+      if (methods.length === 0) continue;
       const arr = map.get(mid) ?? [];
       arr.push({ slug: s.id, name: s.name, num: s.num, types, methods, champions });
       map.set(mid, arr);
@@ -361,9 +366,14 @@ async function computeDexSpecies(slug: string): Promise<DexSpecies | null> {
     ls = await Dex.learnsets.get(Dex.species.get(s.baseSpecies).id);
   }
 
-  const moves: DexMoveRow[] = Object.entries(ls?.learnset ?? {})
-    .filter(([, src]) => src.some((x) => x.startsWith("9")))
-    .map(([id, src]) => ({ move: Dex.moves.get(id), learn: parseLearn(src) }))
+  // Prefer the Gen 9 movepool; but many pre-Gen-9 Champions (Watchog, Absol,
+  // Machamp, …) are absent from Scarlet/Violet and carry no "9" learnset codes.
+  // For those, fall back to the full learnset so the moves table isn't empty.
+  const entries = Object.entries(ls?.learnset ?? {});
+  const hasGen9 = entries.some(([, src]) => src.some((x) => x.startsWith("9")));
+  const moves: DexMoveRow[] = entries
+    .filter(([, src]) => (hasGen9 ? src.some((x) => x.startsWith("9")) : true))
+    .map(([id, src]) => ({ move: Dex.moves.get(id), learn: parseLearn(src, hasGen9 ? "9" : undefined) }))
     .filter(({ move }) => move.exists)
     .map(({ move: m, learn }) => ({
       name: m.name,
