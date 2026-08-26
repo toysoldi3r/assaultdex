@@ -18,18 +18,28 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "terms", label: "Knowledgebase" },
 ];
 
+export interface PokemonMovepool {
+  name: string;
+  slug: string;
+  moves: string[];
+}
+
 export function DatabaseApp({
   items,
   abilities,
   moves,
   championsAbilities,
   championsMoves,
+  pokemonMovepools = [],
+  moveUsage = {},
 }: {
   items: DbItem[];
   abilities: DbAbility[];
   moves: DbMove[];
   championsAbilities: string[];
   championsMoves: string[];
+  pokemonMovepools?: PokemonMovepool[];
+  moveUsage?: Record<string, number>;
 }) {
   // The active tab is deep-linkable via ?tab= so the nav sub-tabs can jump
   // straight to Items/Abilities/Moves/Calculator/Terminology.
@@ -60,7 +70,14 @@ export function DatabaseApp({
       </div>
       {tab === "items" && <ItemsTable items={items} />}
       {tab === "abilities" && <AbilitiesTable abilities={abilities} championsAbilities={championsAbilities} />}
-      {tab === "moves" && <MovesTable moves={moves} championsMoves={championsMoves} />}
+      {tab === "moves" && (
+        <MovesTable
+          moves={moves}
+          championsMoves={championsMoves}
+          pokemonMovepools={pokemonMovepools}
+          moveUsage={moveUsage}
+        />
+      )}
       {tab === "terms" && <Terminology />}
     </div>
   );
