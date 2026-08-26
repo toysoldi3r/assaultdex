@@ -58,6 +58,10 @@ export function GuideApp() {
   const open = useCallback((id: string) => {
     setCurrent(id);
     markVisited(id);
+    // Make sure the lesson's section is expanded in the sidebar (a deep-link
+    // into a collapsed section would otherwise hide the active lesson).
+    const sec = FLAT_LESSONS.find((l) => l.id === id)?.sectionId;
+    if (sec) setOpenSecs((prev) => (prev.has(sec) ? prev : new Set(prev).add(sec)));
     // Keep the URL in sync so ?lesson deep-links and the browser Back button
     // agree with the on-screen lesson (and cross-links never go stale).
     router.replace(id ? `${pathname}?lesson=${id}` : pathname, { scroll: false });
@@ -78,6 +82,21 @@ export function GuideApp() {
   const lesson = idx >= 0 ? FLAT_LESSONS[idx] : null;
   const prev = idx > 0 ? FLAT_LESSONS[idx - 1] : null;
   const next = idx >= 0 && idx < TOTAL_LESSONS - 1 ? FLAT_LESSONS[idx + 1] : null;
+
+  // ← / → step through lessons while one is open (ignored inside form fields
+  // and when a modifier is held, so it never fights browser shortcuts).
+  useEffect(() => {
+    if (!lesson) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key === "ArrowLeft" && prev) open(prev.id);
+      else if (e.key === "ArrowRight" && next) open(next.id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lesson, prev, next, open]);
 
   const pct = useMemo(() => Math.round((visited.size / TOTAL_LESSONS) * 100), [visited]);
 

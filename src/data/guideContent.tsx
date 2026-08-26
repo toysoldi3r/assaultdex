@@ -69,6 +69,48 @@ function KTable({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
   );
 }
 
+// Visual scale of damage multipliers (type effectiveness), red→green.
+function MultScale() {
+  const steps: { label: string; cls: string; note: string }[] = [
+    { label: "0×", cls: "bg-slate-700 text-slate-300", note: "immune" },
+    { label: "¼×", cls: "bg-emerald-800 text-emerald-200", note: "double resist" },
+    { label: "½×", cls: "bg-emerald-700/70 text-emerald-100", note: "resist" },
+    { label: "1×", cls: "bg-slate-600 text-slate-100", note: "neutral" },
+    { label: "2×", cls: "bg-rose-700/70 text-rose-100", note: "weak" },
+    { label: "4×", cls: "bg-rose-600 text-white", note: "double weak" },
+  ];
+  return (
+    <div className="mt-3 flex flex-wrap gap-1.5">
+      {steps.map((s) => (
+        <div key={s.label} className={`flex flex-col items-center rounded px-2.5 py-1 ${s.cls}`}>
+          <span className="text-sm font-bold tabular-nums">{s.label}</span>
+          <span className="text-[10px] opacity-80">{s.note}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Visual of how a turn resolves: priority brackets top→bottom, speed inside.
+function PriorityStack() {
+  const rows: { tag: string; text: string; cls: string }[] = [
+    { tag: "+1…+5", text: "Positive priority (Fake Out, Quick Attack) — first", cls: "border-rose-600/60 bg-rose-950/40" },
+    { tag: "0", text: "Normal moves — sorted by Speed (Trick Room inverts this)", cls: "border-slate-600/60 bg-slate-800/40" },
+    { tag: "−1…−7", text: "Negative priority (Trick Room set, Teleport) — last", cls: "border-sky-700/60 bg-sky-950/40" },
+  ];
+  return (
+    <div className="mt-3 space-y-1">
+      <div className="text-[10px] uppercase tracking-wide text-slate-500">Resolves top → bottom</div>
+      {rows.map((r) => (
+        <div key={r.tag} className={`flex items-center gap-3 rounded border-l-2 px-3 py-1.5 text-sm ${r.cls}`}>
+          <span className="w-14 shrink-0 text-center font-mono text-xs text-slate-300">{r.tag}</span>
+          <span className="text-slate-300">{r.text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const P = ({ children }: { children: ReactNode }) => <p className="text-slate-300">{children}</p>;
 const UL = ({ children }: { children: ReactNode }) => <ul className="list-disc space-y-1 pl-5 text-slate-300">{children}</ul>;
 const A = ({ href, children }: { href: string; children: ReactNode }) => <Link href={href} className="text-amber-400 hover:underline">{children}</Link>;
@@ -111,7 +153,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
             <P>The Guide works like a course. Pick a lesson from the left (sections collapse to stay tidy). The bar at the top shows how far through you are — visited lessons are remembered in your browser.</P>
             <UL>
               <li><Term>Open a lesson</Term> by clicking it in the sidebar or the overview grid.</li>
-              <li><Term>Previous / Next</Term> buttons at the bottom move through lessons in order.</li>
+              <li><Term>Previous / Next</Term> buttons at the bottom move through lessons in order (or use the <Term>← →</Term> arrow keys).</li>
               <li><Term>Guide overview</Term> (top-left) returns to the section grid.</li>
               <li><Term>Advanced</Term> notes are collapsed boxes — click to expand.</li>
             </UL>
@@ -174,6 +216,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
               <li><Term>Immunity</Term> — 0× (no effect), e.g. Ground vs Flying.</li>
             </UL>
             <P><Term>Dual typing</Term> multiplies the two: a Pokémon with two types takes the product. That creates <Term>4× weaknesses</Term> (weak on both) and <Term>¼× resistances</Term> (resists on both).</P>
+            <MultScale />
             <Ex>Charizard is Fire/Flying. Rock is super effective on both → <Term>4×</Term> from Stealth Rock and Rock moves.</Ex>
             <P><Term>STAB</Term> (Same-Type Attack Bonus): a move matching one of the user's types deals 1.5×. It is why Pokémon usually carry moves of their own type.</P>
             <P>Some types carry built-in <Term>properties</Term> beyond damage:</P>
@@ -258,6 +301,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
           <div className="space-y-3">
             <P>Within a turn, moves resolve by <Term>priority bracket</Term> first, then by <Term>Speed</Term> inside the bracket.</P>
             <P><Term>Priority</Term> is a move property from −7 to +5. Higher goes first regardless of Speed:</P>
+            <PriorityStack />
             <UL>
               <li><Term>Positive priority</Term> — Fake Out (+3), Extreme Speed (+2), Quick Attack (+1) strike early.</li>
               <li><Term>Negative priority</Term> — Trick Room (−7), Teleport (−6) resolve last.</li>
