@@ -7,13 +7,12 @@ import { PokemonArt } from "@/components/PokemonArt";
 import { PokeIcon } from "@/components/PokeIcon";
 import { ItemIcon } from "@/components/ItemIcon";
 import { PokemonTypeMatchups } from "@/components/PokemonTypeMatchups";
+import { MovesCard } from "@/components/MovesCard";
 import {
   getDexSpecies,
   getSpeciesForms,
   getSpeciesTypes,
   moveTypeByName,
-  type DexMoveRow,
-  type LearnMethod,
 } from "@/data/pokedexSource";
 import {
   getPokedexFlavor,
@@ -36,60 +35,6 @@ export const dynamic = "force-dynamic";
 /** Link an ability to its reference page when one exists in the database. */
 function abilityHref(name: string): string | null {
   return getDbAbility(name) ? `/database/ability/${encodeURIComponent(name)}` : null;
-}
-
-const METHOD_SECTIONS: { method: LearnMethod; label: string }[] = [
-  { method: "level", label: "By level up" },
-  { method: "tm", label: "By TM" },
-  { method: "egg", label: "By breeding" },
-  { method: "tutor", label: "By tutor" },
-  { method: "event", label: "By event" },
-];
-
-/** A move table for one learn method (adds a Level column for level-up). */
-function MoveTable({ rows, showLevel }: { rows: DexMoveRow[]; showLevel?: boolean }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        <thead className="text-xs uppercase text-slate-500">
-          <tr>
-            {showLevel && <th className="py-1 pr-2 text-right">Lv</th>}
-            <th className="py-1">Name</th>
-            <th>Type</th>
-            <th>Cat.</th>
-            <th className="text-right">Power</th>
-            <th className="text-right">Acc.</th>
-            <th className="text-right">PP</th>
-            <th>Effect</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((m) => (
-            <tr key={m.name} className="border-t border-slate-800">
-              {showLevel && (
-                <td className="py-1 pr-2 text-right tabular-nums text-slate-400">
-                  {m.level === null ? "-" : m.level === 0 ? "Evo" : m.level}
-                </td>
-              )}
-              <td className="py-1">{m.name}</td>
-              <td>{m.type ? <TypeBadge type={m.type} /> : "-"}</td>
-              <td className="capitalize text-slate-400">{m.category}</td>
-              <td className="text-right tabular-nums">{m.power ?? "-"}</td>
-              <td className="text-right tabular-nums">{m.accuracy === null ? "-" : m.accuracy}</td>
-              <td className="text-right tabular-nums">{m.pp ?? "-"}</td>
-              <td>
-                {m.effect ? (
-                  <span className="text-xs text-slate-300">{m.effect}</span>
-                ) : (
-                  <span className="text-slate-600">-</span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
 }
 
 /** A ranked percentage bar list (abilities / items / natures / moves usage). */
@@ -187,6 +132,9 @@ export default async function PokemonPage({
   const rank = getUsageRank(p.name);
   const rankedCount = getRankedCount();
   const tourn = getMonTournament(p.name);
+  // Competitive usage % by move name, for the Moves card's popularity sort.
+  const moveUsage: Record<string, number> = {};
+  for (const r of tourn?.moves ?? []) moveUsage[r.name] = r.pct;
   const sets = suggestSets(p.types, p.baseStats, p.abilities, p.moves);
   const flavor = getPokedexFlavor(target) ?? getPokedexFlavor(baseSlug);
   const moveType = new Map<string, PokemonType>(
@@ -266,23 +214,34 @@ export default async function PokemonPage({
 
       <div className="grid gap-6 md:grid-cols-2">
         <Panel title="Base stats">
-          <ul className="space-y-1 text-sm">
-            {STAT_KEYS.map((k) => (
-              <li key={k} className="flex items-center gap-3">
-                <span className="w-10 text-slate-400">{STAT_LABELS[k]}</span>
-                <span className="w-10 tabular-nums">{p.baseStats[k]}</span>
-                <span className="h-2 flex-1 overflow-hidden rounded bg-slate-800">
-                  <span
-                    className="block h-full"
-                    style={{
-                      width: `${Math.min(100, (p.baseStats[k] / 255) * 100)}%`,
-                      backgroundColor: statColor(p.baseStats[k]),
-                    }}
-                  />
-                </span>
-              </li>
-            ))}
-          </ul>
+          <table className="w-full text-sm">
+            <tbody>
+              {STAT_KEYS.map((k) => (
+                <tr key={k}>
+                  <td className="py-1 pr-2 text-slate-400">{STAT_LABELS[k]}</td>
+                  <td className="py-1 pr-3 text-right tabular-nums">{p.baseStats[k]}</td>
+                  <td className="w-full py-1">
+                    <span className="block h-2 overflow-hidden rounded bg-slate-800">
+                      <span className="block h-full" style={{ width: `${Math.min(100, (p.baseStats[k] / 255) * 100)}%`, backgroundColor: statColor(p.baseStats[k]) }} />
+                    </span>
+                  </td>
+                  <td className="py-1 pl-3 text-right tabular-nums text-slate-400">{p.statRanges[k].min}</td>
+                  <td className="py-1 pl-3 text-right tabular-nums text-slate-400">{p.statRanges[k].max}</td>
+                </tr>
+              ))}
+              <tr className="border-t border-slate-800">
+                <td className="py-1 pr-2 font-semibold text-slate-300">Total</td>
+                <td className="py-1 pr-3 text-right font-bold tabular-nums">{STAT_KEYS.reduce((s, k) => s + p.baseStats[k], 0)}</td>
+                <td />
+                <td className="py-1 pl-3 text-right text-[10px] uppercase text-slate-500">Min</td>
+                <td className="py-1 pl-3 text-right text-[10px] uppercase text-slate-500">Max</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="mt-2 text-[10px] leading-snug text-slate-500">
+            The ranges on the right are for a level 100 Pokémon. Max = beneficial nature,
+            252 EVs, 31 IVs; Min = hindering nature, 0 EVs, 0 IVs.
+          </p>
         </Panel>
 
         <PokemonTypeMatchups types={p.types} abilities={p.abilities} />
@@ -293,27 +252,29 @@ export default async function PokemonPage({
           <ul className="space-y-2">
             {meta.abilities.map((a) => {
               const href = abilityHref(a.name);
-              return (
-                <li key={a.name} className="rounded bg-slate-800/50 px-3 py-2">
+              const inner = (
+                <>
                   <div className="flex items-center gap-2">
-                    {href ? (
-                      <Link
-                        href={href}
-                        className="text-sm font-semibold text-amber-300 hover:underline"
-                      >
-                        {a.name}
-                      </Link>
-                    ) : (
-                      <span className="text-sm font-semibold text-slate-100">{a.name}</span>
-                    )}
+                    <span className={`text-sm font-semibold ${href ? "text-amber-300" : "text-slate-100"}`}>{a.name}</span>
                     {a.hidden && (
                       <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-300">
                         Hidden
                       </span>
                     )}
+                    {href && <span className="ml-auto text-xs text-slate-500">→</span>}
                   </div>
                   {a.effect && <p className="mt-0.5 text-xs text-slate-400">{a.effect}</p>}
+                </>
+              );
+              // The whole sub-card links to the ability page when one exists.
+              return href ? (
+                <li key={a.name}>
+                  <Link href={href} className="block rounded bg-slate-800/50 px-3 py-2 hover:bg-slate-800 hover:ring-1 hover:ring-amber-500/40">
+                    {inner}
+                  </Link>
                 </li>
+              ) : (
+                <li key={a.name} className="rounded bg-slate-800/50 px-3 py-2">{inner}</li>
               );
             })}
           </ul>
@@ -354,8 +315,8 @@ export default async function PokemonPage({
         </p>
       </Panel>
 
-      <Panel title="Height, weight & stat range">
-        <div className="mb-3 flex flex-wrap gap-6 text-sm">
+      <Panel title="Height & weight">
+        <div className="flex flex-wrap gap-6 text-sm">
           <span>
             <span className="text-slate-500">Height </span>
             {flavor?.heightM ? `${flavor.heightM.toFixed(1)} m` : "—"}
@@ -365,32 +326,6 @@ export default async function PokemonPage({
             {p.weightKg ? `${p.weightKg.toFixed(1)} kg` : "—"}
           </span>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="text-xs uppercase text-slate-500">
-              <tr>
-                <th className="py-1">Stat</th>
-                <th className="text-right">Base</th>
-                <th className="text-right">Min</th>
-                <th className="text-right">Max</th>
-              </tr>
-            </thead>
-            <tbody>
-              {STAT_KEYS.map((k) => (
-                <tr key={k} className="border-t border-slate-800">
-                  <td className="py-1 text-slate-400">{STAT_LABELS[k]}</td>
-                  <td className="text-right tabular-nums">{p.statRanges[k].base}</td>
-                  <td className="text-right tabular-nums text-slate-400">{p.statRanges[k].min}</td>
-                  <td className="text-right tabular-nums text-slate-400">{p.statRanges[k].max}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
-          Min = 0 IV / 0 EV / hindering nature; Max = 31 IV / 252 EV / boosting
-          nature, at level {100}. Height needs a Pokédex refresh.
-        </p>
       </Panel>
 
       {flavor?.names && flavor.names.length > 0 && (
@@ -488,31 +423,7 @@ export default async function PokemonPage({
       )}
 
       <Panel title="Moves">
-        <p className="mb-3 text-xs text-slate-500">
-          {p.moves.length} Gen 9-legal moves, grouped by how {p.name} learns them.
-        </p>
-        <div className="space-y-4">
-          {METHOD_SECTIONS.map(({ method, label }) => {
-            let rows = p.moves.filter((m) => m.methods.includes(method));
-            if (rows.length === 0) return null;
-            if (method === "level") {
-              rows = [...rows].sort(
-                (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name),
-              );
-            }
-            return (
-              <div key={method}>
-                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-300">
-                  {label} ({rows.length})
-                </h3>
-                <MoveTable rows={rows} showLevel={method === "level"} />
-              </div>
-            );
-          })}
-        </div>
-        <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-600">
-          Move data + learn methods from @pkmn/dex (Gen 9 learnset).
-        </p>
+        <MovesCard rows={p.moves} usage={moveUsage} count={p.moves.length} />
       </Panel>
 
       {meta && (

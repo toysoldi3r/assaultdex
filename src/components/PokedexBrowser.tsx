@@ -46,6 +46,7 @@ export function PokedexBrowser({
 }) {
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("num");
+  const [dir, setDir] = useState<"asc" | "desc">("asc");
   const [showAll, setShowAll] = useState(false);
   const [full, setFull] = useState<PokedexEntry[] | null>(null);
   const [loadingFull, setLoadingFull] = useState(false);
@@ -111,17 +112,19 @@ export function PokedexBrowser({
       return true;
     });
 
-    adv.sort((a, b) =>
-      sort === "name"
-        ? a.name.localeCompare(b.name)
-        : sort === "num"
-          ? a.num - b.num
-          : sort === "bst"
-            ? bst(b) - bst(a)
-            : b.baseStats[sort] - a.baseStats[sort],
-    );
+    adv.sort((a, b) => {
+      const base =
+        sort === "name"
+          ? a.name.localeCompare(b.name)
+          : sort === "num"
+            ? a.num - b.num
+            : sort === "bst"
+              ? bst(a) - bst(b)
+              : a.baseStats[sort] - b.baseStats[sort];
+      return dir === "desc" ? -base : base;
+    });
     return adv;
-  }, [q, sort, champions, full, showAll, fTypes, fAbility, fMoves, fMinBst]);
+  }, [q, sort, dir, champions, full, showAll, fTypes, fAbility, fMoves, fMinBst]);
 
   return (
     <div className="space-y-6">
@@ -158,18 +161,6 @@ export function PokedexBrowser({
           className="min-w-[16rem] flex-1 rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
           autoFocus
         />
-        <label className="flex items-center gap-1 text-xs text-slate-400">
-          Sort
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="rounded border border-slate-700 bg-slate-900 px-2 py-2 text-sm text-slate-100"
-          >
-            {SORTS.map((s) => (
-              <option key={s.key} value={s.key}>{s.label}</option>
-            ))}
-          </select>
-        </label>
         <button
           onClick={() => setAdvOpen((o) => !o)}
           className={`rounded border px-3 py-2 text-xs ${advActive ? "border-amber-500 text-amber-300" : "border-slate-700 text-slate-300"}`}
@@ -180,6 +171,24 @@ export function PokedexBrowser({
 
       {advOpen && (
         <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-slate-500">Sort by</span>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
+            >
+              {SORTS.map((s) => (
+                <option key={s.key} value={s.key}>{s.label}</option>
+              ))}
+            </select>
+            <span className="flex overflow-hidden rounded border border-slate-700">
+              <button onClick={() => setDir("asc")}
+                className={`px-2 py-1 ${dir === "asc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>↑ Ascending</button>
+              <button onClick={() => setDir("desc")}
+                className={`px-2 py-1 ${dir === "desc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>↓ Descending</button>
+            </span>
+          </div>
           <div>
             <span className="mb-1 block text-slate-500">Types (must have all selected)</span>
             <div className="flex flex-wrap gap-1">

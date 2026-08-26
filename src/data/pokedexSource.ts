@@ -137,6 +137,8 @@ export interface DexMoveRow {
   power: number | null;
   accuracy: number | null;
   pp: number | null;
+  /** Turn-order bracket; 0 = normal, positive = moves first (Fake Out, …). */
+  priority: number;
   effect: string | null;
   /** Ways this species can learn the move (a move can have several). */
   methods: LearnMethod[];
@@ -370,6 +372,7 @@ async function computeDexSpecies(slug: string): Promise<DexSpecies | null> {
       power: m.category === "Status" ? null : m.basePower || null,
       accuracy: m.accuracy === true ? null : m.accuracy,
       pp: m.pp ?? null,
+      priority: m.priority ?? 0,
       effect: m.shortDesc || m.desc || null,
       methods: learn.methods,
       level: learn.level,
