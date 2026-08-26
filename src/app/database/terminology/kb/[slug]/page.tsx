@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { KB_ENTRIES, getKbEntry, kbTitle } from "@/data/knowledgebase";
+import { guideHrefForTerm } from "@/data/guideGlossary";
 
 export function generateStaticParams() {
   return KB_ENTRIES.map((e) => ({ slug: e.slug }));
@@ -29,6 +30,9 @@ export default async function KbExplainerPage({
         </Link>
         <h1 className="mt-2 text-2xl font-bold">{entry.title}</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-400">{entry.summary}</p>
+        <Link href={guideHrefForTerm(entry.slug)} className="mt-2 inline-block text-xs text-amber-400 hover:underline">
+          Learn this in context in the Guide →
+        </Link>
       </div>
 
       <div className="space-y-5">

@@ -4,14 +4,9 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { DbAbility } from "@/data/dexDatabase";
 import { useInfinite } from "./useInfinite";
+import { pill } from "./ItemsTable";
 
-type SortKey = "name" | "rating";
 type Dir = "asc" | "desc";
-
-const SORTS: { key: SortKey; label: string }[] = [
-  { key: "name", label: "Name" },
-  { key: "rating", label: "Rating" },
-];
 
 export function AbilitiesTable({
   abilities = [],
@@ -23,9 +18,7 @@ export function AbilitiesTable({
   const [q, setQ] = useState("");
   const [champsOnly, setChampsOnly] = useState(true);
   const [advanced, setAdvanced] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("name");
   const [dir, setDir] = useState<Dir>("asc");
-  const [modeledOnly, setModeledOnly] = useState(false);
   const [notesOnly, setNotesOnly] = useState(false);
   const champs = useMemo(() => new Set(championsAbilities), [championsAbilities]);
   // No roster loaded (unseeded DB) → show the full list instead of nothing.
@@ -33,13 +26,12 @@ export function AbilitiesTable({
 
   const inScope = (a: DbAbility) =>
     (!champsOnly || !champsAvailable || champs.has(a.name)) &&
-    (!modeledOnly || a.calc != null) &&
     (!notesOnly || a.interaction != null);
 
   const scopeCount = useMemo(
     () => abilities.filter(inScope).length,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [abilities, champsOnly, champsAvailable, champs, modeledOnly, notesOnly],
+    [abilities, champsOnly, champsAvailable, champs, notesOnly],
   );
 
   const filtered = useMemo(() => {
@@ -52,17 +44,14 @@ export function AbilitiesTable({
           a.desc.toLowerCase().includes(needle)),
     );
     const s = dir === "asc" ? 1 : -1;
-    out.sort((a, b) => {
-      const d = sortKey === "rating" ? a.rating - b.rating || a.name.localeCompare(b.name) : a.name.localeCompare(b.name);
-      return d * s;
-    });
+    out.sort((a, b) => a.name.localeCompare(b.name) * s);
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [abilities, q, champsOnly, champsAvailable, champs, modeledOnly, notesOnly, sortKey, dir]);
+  }, [abilities, q, champsOnly, champsAvailable, champs, notesOnly, dir]);
 
   const { visible, sentinel, shown } = useInfinite(
     filtered,
-    `${q}|${champsOnly}|${sortKey}|${dir}|${modeledOnly}|${notesOnly}`,
+    `${q}|${champsOnly}|${dir}|${notesOnly}`,
     50,
   );
 
@@ -102,20 +91,16 @@ export function AbilitiesTable({
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs">
           <span className="flex items-center gap-2">
             <span className="text-slate-500">Sort by</span>
-            <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-200">
-              {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-            </select>
+            <button className={pill(true)}>Name</button>
+            <span className="ml-1 flex overflow-hidden rounded border border-slate-700">
+              <button onClick={() => setDir("asc")} className={`px-3 py-1.5 font-medium ${dir === "asc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-200 hover:bg-slate-800"}`}>↑ Ascending</button>
+              <button onClick={() => setDir("desc")} className={`border-l border-slate-700 px-3 py-1.5 font-medium ${dir === "desc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-200 hover:bg-slate-800"}`}>↓ Descending</button>
+            </span>
           </span>
-          <div className="flex overflow-hidden rounded border border-slate-700">
-            <button onClick={() => setDir("asc")} className={`px-3 py-1.5 ${dir === "asc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>Ascending</button>
-            <button onClick={() => setDir("desc")} className={`px-3 py-1.5 ${dir === "desc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>Descending</button>
-          </div>
-          <label className="flex items-center gap-1.5 text-slate-300">
-            <input type="checkbox" checked={modeledOnly} onChange={(e) => setModeledOnly(e.target.checked)} /> Modeled by engine
-          </label>
-          <label className="flex items-center gap-1.5 text-slate-300">
-            <input type="checkbox" checked={notesOnly} onChange={(e) => setNotesOnly(e.target.checked)} /> Has interaction notes
-          </label>
+          <span className="flex items-center gap-2">
+            <span className="text-slate-500">Filter</span>
+            <button onClick={() => setNotesOnly((v) => !v)} className={pill(notesOnly)}>Has interaction notes</button>
+          </span>
         </div>
       )}
 

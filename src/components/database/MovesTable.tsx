@@ -10,6 +10,7 @@ import { POKEMON_TYPES, type PokemonType } from "@/domain/types/pokemon";
 import type { DbMove } from "@/data/dexDatabase";
 import type { MoveCategory } from "@/components/teams/moveTypes";
 import type { PokemonMovepool } from "./DatabaseApp";
+import { pill } from "./ItemsTable";
 import { useInfinite } from "./useInfinite";
 
 const classLabel = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
@@ -54,27 +55,31 @@ export function MovesTable({
   const [advanced, setAdvanced] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [dir, setDir] = useState<Dir>("asc");
-  const [monQuery, setMonQuery] = useState("");
+  // Up to 5 separate Pokémon-name boxes; the + button adds another.
+  const [monInputs, setMonInputs] = useState<string[]>([""]);
   const [learnMode, setLearnMode] = useState<LearnMode>("union");
 
-  // Resolve the typed Pokémon names against the pool. Each entered mon carries
-  // its learnable-move set so we can union / intersect them below.
+  const setMon = (i: number, val: string) => setMonInputs((prev) => prev.map((v, j) => (j === i ? val : v)));
+  const addMon = () => setMonInputs((prev) => (prev.length >= 5 ? prev : [...prev, ""]));
+  const removeMon = (i: number) => setMonInputs((prev) => (prev.length === 1 ? [""] : prev.filter((_, j) => j !== i)));
+
+  // Resolve each box against the pool. Each matched mon carries its
+  // learnable-move set so we can union / intersect them below.
   const { matched, unknown } = useMemo(() => {
     const byId = new Map(pokemonMovepools.map((p) => [toId(p.name), p]));
-    const tokens = monQuery.split(",").map((t) => t.trim()).filter(Boolean);
     const matched: { name: string; slug: string; set: Set<string> }[] = [];
     const unknown: string[] = [];
     const seen = new Set<string>();
-    for (const t of tokens) {
-      const id = toId(t);
+    for (const t of monInputs) {
+      const id = toId(t.trim());
       if (!id || seen.has(id)) continue;
       seen.add(id);
       const p = byId.get(id);
       if (p) matched.push({ name: p.name, slug: p.slug, set: new Set(p.moves) });
-      else unknown.push(t);
+      else unknown.push(t.trim());
     }
     return { matched, unknown };
-  }, [monQuery, pokemonMovepools]);
+  }, [monInputs, pokemonMovepools]);
 
   const monFilterActive = matched.length > 0;
 
@@ -123,7 +128,7 @@ export function MovesTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moves, q, champsOnly, champsAvailable, champs, learnSet, sortKey, dir, moveUsage]);
 
-  const sig = `${q}|${champsOnly}|${sortKey}|${dir}|${monQuery}|${learnMode}`;
+  const sig = `${q}|${champsOnly}|${sortKey}|${dir}|${monInputs.join(",")}|${learnMode}`;
   const { visible, sentinel, shown } = useInfinite(filtered, sig, 50);
 
   const cols = monFilterActive ? 9 : 8;
@@ -155,33 +160,34 @@ export function MovesTable({
           {/* Sort controls */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-slate-500">Sort by</span>
-            <select
-              value={sortKey}
-              onChange={(e) => setSortKey(e.target.value as SortKey)}
-              className="rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-200"
-            >
-              {SORTS.map((s) => (
-                <option key={s.key} value={s.key}>{s.label}</option>
-              ))}
-            </select>
-            <div className="flex overflow-hidden rounded border border-slate-700">
-              <button onClick={() => setDir("asc")} className={`px-3 py-1.5 ${dir === "asc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>Ascending</button>
-              <button onClick={() => setDir("desc")} className={`px-3 py-1.5 ${dir === "desc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>Descending</button>
-            </div>
+            {SORTS.map((s) => (
+              <button key={s.key} onClick={() => setSortKey(s.key)} className={pill(sortKey === s.key)}>{s.label}</button>
+            ))}
+            <span className="ml-1 flex overflow-hidden rounded border border-slate-700">
+              <button onClick={() => setDir("asc")} className={`px-3 py-1.5 font-medium ${dir === "asc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-200 hover:bg-slate-800"}`}>↑ Ascending</button>
+              <button onClick={() => setDir("desc")} className={`border-l border-slate-700 px-3 py-1.5 font-medium ${dir === "desc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-200 hover:bg-slate-800"}`}>↓ Descending</button>
+            </span>
           </div>
 
-          {/* Learnable-by-Pokémon filter */}
+          {/* Learnable-by-Pokémon filter: up to 5 name boxes */}
           <div className="space-y-2 border-t border-slate-800 pt-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-slate-500">Learnable by</span>
-              <input
-                value={monQuery}
-                onChange={(e) => setMonQuery(e.target.value)}
-                placeholder="Pokémon names, comma-separated (e.g. Pikachu, Charizard)"
-                className="min-w-[16rem] flex-1 rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm"
-              />
-              {monQuery && (
-                <button onClick={() => setMonQuery("")} className="rounded border border-slate-700 px-2 py-1.5 text-slate-400 hover:border-slate-500">Clear</button>
+              {monInputs.map((val, i) => (
+                <span key={i} className="flex items-center">
+                  <input
+                    value={val}
+                    onChange={(e) => setMon(i, e.target.value)}
+                    placeholder={`Pokémon ${i + 1}`}
+                    className="w-36 rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm"
+                  />
+                  {monInputs.length > 1 && (
+                    <button onClick={() => removeMon(i)} aria-label="Remove" className="ml-1 rounded border border-slate-700 px-2 py-1.5 text-slate-400 hover:border-rose-500 hover:text-rose-300">×</button>
+                  )}
+                </span>
+              ))}
+              {monInputs.length < 5 && (
+                <button onClick={addMon} className="rounded border border-slate-700 px-2.5 py-1.5 font-semibold text-amber-300 hover:border-amber-500" title="Add another Pokémon">+</button>
               )}
             </div>
             {monFilterActive && (

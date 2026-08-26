@@ -17,6 +17,10 @@ const SORTS: { key: SortKey; label: string }[] = [
 
 const nkey = (v: number | null, dir: Dir) => (v == null ? (dir === "asc" ? Infinity : -Infinity) : v);
 
+// Shared toggle-pill style (active = amber). Keeps the button rows consistent.
+export const pill = (active: boolean) =>
+  `rounded border px-2.5 py-1 ${active ? "border-amber-500 bg-amber-500 font-semibold text-black" : "border-slate-700 bg-slate-900 text-slate-200 hover:border-slate-500"}`;
+
 export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
   const [q, setQ] = useState("");
   const [champsOnly, setChampsOnly] = useState(true);
@@ -25,7 +29,6 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
   const [dir, setDir] = useState<Dir>("asc");
   const [category, setCategory] = useState("all");
   const [berriesOnly, setBerriesOnly] = useState(false);
-  const [modeledOnly, setModeledOnly] = useState(false);
 
   // No legal-item flags present → show the full list rather than nothing.
   const champsAvailable = useMemo(() => items.some((i) => i.competitive), [items]);
@@ -37,13 +40,12 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
   const inScope = (i: DbItem) =>
     (!champsOnly || !champsAvailable || i.competitive) &&
     (category === "all" || i.category === category) &&
-    (!berriesOnly || i.berry) &&
-    (!modeledOnly || i.calc != null);
+    (!berriesOnly || i.berry);
 
   const scopeCount = useMemo(
     () => items.filter(inScope).length,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [items, champsOnly, champsAvailable, category, berriesOnly, modeledOnly],
+    [items, champsOnly, champsAvailable, category, berriesOnly],
   );
 
   const filtered = useMemo(() => {
@@ -67,9 +69,9 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
     });
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, q, champsOnly, champsAvailable, category, berriesOnly, modeledOnly, sortKey, dir]);
+  }, [items, q, champsOnly, champsAvailable, category, berriesOnly, sortKey, dir]);
 
-  const sig = `${q}|${champsOnly}|${sortKey}|${dir}|${category}|${berriesOnly}|${modeledOnly}`;
+  const sig = `${q}|${champsOnly}|${sortKey}|${dir}|${category}|${berriesOnly}`;
   const { visible, sentinel, shown } = useInfinite(filtered, sig, 50);
 
   return (
@@ -95,30 +97,28 @@ export function ItemsTable({ items = [] }: { items?: DbItem[] }) {
       </div>
 
       {advanced && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs">
-          <span className="flex items-center gap-2">
+        <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-slate-500">Sort by</span>
-            <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-200">
-              {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-            </select>
-          </span>
-          <div className="flex overflow-hidden rounded border border-slate-700">
-            <button onClick={() => setDir("asc")} className={`px-3 py-1.5 ${dir === "asc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>Ascending</button>
-            <button onClick={() => setDir("desc")} className={`px-3 py-1.5 ${dir === "desc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-300"}`}>Descending</button>
+            {SORTS.map((s) => (
+              <button key={s.key} onClick={() => setSortKey(s.key)} className={pill(sortKey === s.key)}>{s.label}</button>
+            ))}
+            <span className="ml-2 flex overflow-hidden rounded border border-slate-700">
+              <button onClick={() => setDir("asc")} className={`px-3 py-1.5 font-medium ${dir === "asc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-200 hover:bg-slate-800"}`}>↑ Ascending</button>
+              <button onClick={() => setDir("desc")} className={`border-l border-slate-700 px-3 py-1.5 font-medium ${dir === "desc" ? "bg-amber-500 text-black" : "bg-slate-900 text-slate-200 hover:bg-slate-800"}`}>↓ Descending</button>
+            </span>
           </div>
-          <span className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-slate-500">Category</span>
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-200">
-              <option value="all">All</option>
-              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </span>
-          <label className="flex items-center gap-1.5 text-slate-300">
-            <input type="checkbox" checked={berriesOnly} onChange={(e) => setBerriesOnly(e.target.checked)} /> Berries only
-          </label>
-          <label className="flex items-center gap-1.5 text-slate-300">
-            <input type="checkbox" checked={modeledOnly} onChange={(e) => setModeledOnly(e.target.checked)} /> Modeled by engine
-          </label>
+            <button onClick={() => setCategory("all")} className={pill(category === "all")}>All</button>
+            {categories.map((c) => (
+              <button key={c} onClick={() => setCategory(c)} className={pill(category === c)}>{c}</button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-slate-500">Filter</span>
+            <button onClick={() => setBerriesOnly((v) => !v)} className={pill(berriesOnly)}>Berries only</button>
+          </div>
         </div>
       )}
 

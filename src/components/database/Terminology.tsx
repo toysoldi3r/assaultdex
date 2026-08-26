@@ -10,7 +10,7 @@ export function Terminology() {
           Common competitive terms and abbreviations. Open a term for a fuller
           explanation and a diagram.
         </p>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {TERMS.map((t) => (
             <Link
               key={t.slug}
@@ -33,7 +33,7 @@ export function Terminology() {
           Longer explainers for the core competitive concepts - stats, EVs/IVs,
           natures, speed control, and more.
         </p>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {KB_ENTRIES.map((e) => (
             <Link
               key={e.slug}

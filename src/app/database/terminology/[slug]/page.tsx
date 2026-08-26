@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TERMS, getTerm } from "@/data/terminology";
 import { TermVisual } from "@/components/database/TermVisual";
+import { guideHrefForTerm } from "@/data/guideGlossary";
 
 export function generateStaticParams() {
   return TERMS.map((t) => ({ slug: t.slug }));
@@ -28,6 +29,9 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
         </Link>
         <h1 className="mt-2 text-2xl font-bold">{t.term}</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-400">{t.short}</p>
+        <Link href={guideHrefForTerm(t.slug)} className="mt-2 inline-block text-xs text-amber-400 hover:underline">
+          Learn this in context in the Guide →
+        </Link>
       </div>
 
       <div className="max-w-3xl">

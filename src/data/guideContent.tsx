@@ -2,6 +2,7 @@
 // Prose content file: straight apostrophes/quotes in lesson text are fine.
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { glossaryHref } from "@/data/guideGlossary";
 
 // Guide content lives here as data so the Guide UI (sidebar, lesson pane,
 // prev/next, progress) stays generic. Each lesson is one focused card; a
@@ -25,7 +26,17 @@ export interface GuideSection {
 
 // --- Small presentational helpers (match the slate/amber design system) -----
 
+// A key term. When its text matches a Knowledgebase entry, it links there
+// (dotted underline); otherwise it's just emphasised.
 function Term({ children }: { children: ReactNode }) {
+  const href = typeof children === "string" ? glossaryHref(children) : null;
+  if (href) {
+    return (
+      <Link href={href} className="font-semibold text-slate-100 underline decoration-dotted decoration-slate-600 underline-offset-2 hover:text-amber-300 hover:decoration-amber-400">
+        {children}
+      </Link>
+    );
+  }
   return <strong className="text-slate-100">{children}</strong>;
 }
 
