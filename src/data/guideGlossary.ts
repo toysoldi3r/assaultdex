@@ -51,6 +51,8 @@ export function glossaryHref(word: string): string | null {
 const SLUG_LESSON: Record<string, string> = {
   // Building-block (kb) slugs
   "base-stats": "stats", evs: "stats", ivs: "stats", nature: "stats",
+  // Short term slugs that alias the same stat concepts
+  ev: "stats", iv: "stats",
   stab: "typing", "speed-control": "turn-order", "weather-terrain": "field-hazards",
   "team-roles": "roles-synergy",
   // Short term slugs
