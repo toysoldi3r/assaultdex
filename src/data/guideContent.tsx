@@ -200,6 +200,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
               <li><Term>Reactive</Term> — triggers on an event (Static: may paralyse on contact).</li>
               <li><Term>Immunity</Term> — cancels a type or effect (Flash Fire, Water Absorb, Magic Guard).</li>
             </UL>
+            <P><Term>Common interactions</Term> matter: <Term>Mold Breaker</Term> ignores the target's ability (Earthquake hits a Levitator); <Term>Clear Body</Term> blocks Intimidate's Attack drop; <Term>Mirror Armor</Term> reflects it back. Always check the foe's ability before committing.</P>
             <P>A <Term>held item</Term> gives one Pokémon an extra effect. Common kinds:</P>
             <UL>
               <li><Term>Consumable</Term> — used once then gone (Sitrus Berry heals; Focus Sash survives one KO hit).</li>

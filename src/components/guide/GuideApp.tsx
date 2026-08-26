@@ -5,7 +5,7 @@
 // Lesson content is data (src/data/guideContent) so this shell stays generic.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   GUIDE_SECTIONS,
   FLAT_LESSONS,
@@ -20,6 +20,8 @@ function AdvBadge() {
 
 export function GuideApp() {
   const params = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   // null = overview; otherwise a lesson id. Deep-linkable via ?lesson=.
   const [current, setCurrent] = useState<string | null>(null);
   const [visited, setVisited] = useState<Set<string>>(new Set());
@@ -34,12 +36,6 @@ export function GuideApp() {
     } catch { /* storage blocked; progress just won't persist */ }
   }, []);
 
-  // Honour ?lesson= on load / change (used by in-lesson cross-links).
-  const urlLesson = params.get("lesson");
-  useEffect(() => {
-    if (urlLesson && FLAT_LESSONS.some((l) => l.id === urlLesson)) setCurrent(urlLesson);
-  }, [urlLesson]);
-
   const markVisited = useCallback((id: string) => {
     setVisited((prev) => {
       if (prev.has(id)) return prev;
@@ -49,11 +45,34 @@ export function GuideApp() {
     });
   }, []);
 
+  // Honour ?lesson= on load / change (used by in-lesson cross-links). A
+  // deep-linked lesson is opened and counted just like a clicked one.
+  const urlLesson = params.get("lesson");
+  useEffect(() => {
+    if (urlLesson && FLAT_LESSONS.some((l) => l.id === urlLesson)) {
+      setCurrent(urlLesson);
+      markVisited(urlLesson);
+    }
+  }, [urlLesson, markVisited]);
+
   const open = useCallback((id: string) => {
     setCurrent(id);
     markVisited(id);
+    // Keep the URL in sync so ?lesson deep-links and the browser Back button
+    // agree with the on-screen lesson (and cross-links never go stale).
+    router.replace(id ? `${pathname}?lesson=${id}` : pathname, { scroll: false });
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [markVisited]);
+  }, [markVisited, router, pathname]);
+
+  const toOverview = useCallback(() => {
+    setCurrent(null);
+    router.replace(pathname, { scroll: false });
+  }, [router, pathname]);
+
+  const resetProgress = useCallback(() => {
+    setVisited(new Set());
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  }, []);
 
   const idx = current ? FLAT_LESSONS.findIndex((l) => l.id === current) : -1;
   const lesson = idx >= 0 ? FLAT_LESSONS[idx] : null;
@@ -67,7 +86,7 @@ export function GuideApp() {
       {/* Header: overview link + progress */}
       <div className="flex flex-wrap items-center gap-3">
         <button
-          onClick={() => setCurrent(null)}
+          onClick={toOverview}
           className={`text-sm ${current === null ? "font-semibold text-slate-100" : "text-amber-400 hover:underline"}`}
         >
           {current === null ? "Guide overview" : "← Guide overview"}
@@ -77,6 +96,9 @@ export function GuideApp() {
           <span className="h-1.5 w-28 overflow-hidden rounded bg-slate-800">
             <span className="block h-full rounded bg-amber-500" style={{ width: `${pct}%` }} />
           </span>
+          {visited.size > 0 && (
+            <button onClick={resetProgress} className="text-slate-500 hover:text-amber-400" title="Reset progress">Reset</button>
+          )}
         </div>
       </div>
 
