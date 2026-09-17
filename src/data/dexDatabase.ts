@@ -66,7 +66,7 @@ function classifyItem(
 // that never shipped in the mainline games); those are still legal here and are
 // kept in the item lists via `isLegalItem` below.
 const CHAMPIONS_LEGAL_ITEMS = new Set<string>([
-  "Abomasite", "Absolite", "Aerodactylite", "Aggronite", "Alakazite",
+  "Abomasite", "Aerodactylite", "Aggronite", "Alakazite",
   "Altarianite", "Ampharosite", "Aspear Berry", "Audinite", "Babiri Berry",
   "Banettite", "Barbaracite", "Beedrillite", "Big Root", "Black Belt",
   "Black Glasses", "Blastoisinite", "Blazikenite", "Bright Powder", "Cameruptite",
@@ -76,13 +76,13 @@ const CHAMPIONS_LEGAL_ITEMS = new Set<string>([
   "Crabominite", "Damp Rock", "Delphoxite", "Dragalgite", "Dragon Fang",
   "Dragoninite", "Drampanite", "Eelektrossite", "Emboarite", "Excadrite",
   "Expert Belt", "Fairy Feather", "Falinksite", "Feraligite", "Floettite",
-  "Focus Band", "Focus Sash", "Froslassite", "Galladite", "Garchompite",
+  "Focus Band", "Focus Sash", "Froslassite", "Galladite",
   "Gardevoirite", "Gengarite", "Glalitite", "Glimmoranite", "Golurkite",
   "Greninjite", "Gyaradosite", "Haban Berry", "Hard Stone", "Hawluchanite",
   "Heat Rock", "Heracronite", "Houndoominite", "Icy Rock", "Iron Ball",
   "Kangaskhanite", "Kasib Berry", "Kebia Berry", "King's Rock", "Leftovers",
   "Leppa Berry", "Life Orb", "Light Ball", "Light Clay", "Lopunnite",
-  "Lucarionite", "Lum Berry", "Magnet", "Malamarite", "Manectite",
+  "Lum Berry", "Magnet", "Malamarite", "Manectite",
   "Mawilite", "Medichamite", "Meganiumite", "Mental Herb", "Meowsticite",
   "Metagrossite", "Metal Coat", "Metronome", "Miracle Seed", "Muscle Band",
   "Mystic Water", "Never-Melt Ice", "Occa Berry", "Oran Berry", "Passho Berry",
@@ -96,7 +96,15 @@ const CHAMPIONS_LEGAL_ITEMS = new Set<string>([
   "Steelixite", "Swampertite", "Tanga Berry", "Twisted Spoon", "Tyranitarite",
   "Venusaurite", "Victreebelite", "Wacan Berry", "White Herb", "Wide Lens",
   "Wise Glasses", "Yache Berry", "Zoom Lens",
+  // Season M-6 / update 1.2.0 additions.
+  // New held items:
+  "Electric Seed", "Psychic Seed", "Misty Seed", "Grassy Seed", "Normal Gem",
+  "Terrain Extender", "Rocky Helmet", "Air Balloon", "Red Card", "Eject Button", "Leek",
+  // New Mega stones (Salamence, Golisopod, Baxcalibur, and the Champions "-Z"
+  // megas for Absol / Garchomp / Lucario, which replace their classic stones):
+  "Salamencite", "Golisopite", "Baxcalibrite", "Absolite Z", "Garchompite Z", "Lucarionite Z",
 ]);
+export { CHAMPIONS_LEGAL_ITEMS };
 
 // Mega Stones and the primal orbs - held items that trigger a Mega/Primal forme.
 // Drives the `mega` flag (used by the "Hide mega stones" filter). Note this is
@@ -245,6 +253,13 @@ export interface DbMove {
 // The item/ability/move lists derive from the static @pkmn/dex dataset, which
 // never changes at runtime, so each list is computed once and memoized rather
 // than rebuilt on every Database-page request.
+// Season M-6 / update 1.2.0 PP adjustments (Champions-specific; the @pkmn/dex
+// dataset still carries the mainline PP, so override here).
+export const MOVE_PP_OVERRIDE: Record<string, number> = {
+  Wish: 8,
+  "Strength Sap": 8,
+};
+
 let cachedMoves: DbMove[] | undefined;
 export function listDbMoves(): DbMove[] {
   return (cachedMoves ??= gen.moves
@@ -256,7 +271,7 @@ export function listDbMoves(): DbMove[] {
       category: m.category,
       power: m.basePower || null,
       accuracy: m.accuracy === true ? null : (m.accuracy ?? null),
-      pp: m.pp ?? null,
+      pp: MOVE_PP_OVERRIDE[m.name] ?? m.pp ?? null,
       priority: m.priority ?? 0,
       desc: m.shortDesc || m.desc || "",
     }))

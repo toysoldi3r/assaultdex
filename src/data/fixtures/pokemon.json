@@ -1,5 +1,5 @@
 {
-  "data_version": "champions-2026.1",
+  "data_version": "champions-2026.M6",
   "note": "Full Pokémon Champions pool. Membership from the authoritative roster (championsRoster.json). Base stats, types, abilities, movepools, and move data generated from @pkmn/dex (Pokémon Showdown dataset). Move mechanics remain provisional for Champions; the `moves` list is a curated playable subset of the full `movepool`.",
   "pokemon": [
     {
@@ -3361,7 +3361,6 @@
         "Iron Head",
         "Leer",
         "Light Screen",
-        "Metal Burst",
         "Metal Claw",
         "Metal Sound",
         "Meteor Beam",
@@ -33138,7 +33137,6 @@
         "Natural Gift",
         "Payback",
         "Perish Song",
-        "Pound",
         "Power-Up Punch",
         "Protect",
         "Psych Up",
@@ -50179,6 +50177,6057 @@
           "accuracy": null,
           "priority": 0,
           "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "wigglytuff",
+      "name": "Wigglytuff",
+      "types": [
+        "normal",
+        "fairy"
+      ],
+      "base_stats": {
+        "hp": 140,
+        "attack": 70,
+        "defense": 45,
+        "special_attack": 85,
+        "special_defense": 50,
+        "speed": 45
+      },
+      "abilities": [
+        "Cute Charm",
+        "Competitive",
+        "Frisk"
+      ],
+      "movepool": [
+        "Alluring Voice",
+        "Ally Switch",
+        "Amnesia",
+        "Attract",
+        "Baton Pass",
+        "Bide",
+        "Blizzard",
+        "Body Press",
+        "Body Slam",
+        "Bounce",
+        "Brick Break",
+        "Bubble Beam",
+        "Calm Mind",
+        "Captivate",
+        "Charge Beam",
+        "Charm",
+        "Chilling Water",
+        "Confide",
+        "Copycat",
+        "Counter",
+        "Covet",
+        "Curse",
+        "Dark Pulse",
+        "Dazzling Gleam",
+        "Defense Curl",
+        "Detect",
+        "Dig",
+        "Disable",
+        "Disarming Voice",
+        "Double Slap",
+        "Double Team",
+        "Double-Edge",
+        "Drain Punch",
+        "Draining Kiss",
+        "Dream Eater",
+        "Dynamic Punch",
+        "Echoed Voice",
+        "Encore",
+        "Endeavor",
+        "Endure",
+        "Energy Ball",
+        "Expanding Force",
+        "Facade",
+        "Fake Tears",
+        "Fire Blast",
+        "Fire Punch",
+        "Flamethrower",
+        "Flash",
+        "Fling",
+        "Focus Blast",
+        "Focus Punch",
+        "Frustration",
+        "Giga Impact",
+        "Grass Knot",
+        "Gravity",
+        "Gyro Ball",
+        "Headbutt",
+        "Heal Bell",
+        "Helping Hand",
+        "Hidden Power",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Ice Beam",
+        "Ice Punch",
+        "Ice Spinner",
+        "Icy Wind",
+        "Incinerate",
+        "Knock Off",
+        "Laser Focus",
+        "Last Resort",
+        "Light Screen",
+        "Magic Coat",
+        "Magic Room",
+        "Magical Leaf",
+        "Mega Kick",
+        "Mega Punch",
+        "Metronome",
+        "Mimic",
+        "Minimize",
+        "Misty Explosion",
+        "Misty Terrain",
+        "Mud-Slap",
+        "Nasty Plot",
+        "Natural Gift",
+        "Nightmare",
+        "Pain Split",
+        "Play Rough",
+        "Pound",
+        "Power-Up Punch",
+        "Protect",
+        "Psych Up",
+        "Psychic",
+        "Psychic Noise",
+        "Psyshock",
+        "Psywave",
+        "Rage",
+        "Rain Dance",
+        "Recycle",
+        "Reflect",
+        "Rest",
+        "Retaliate",
+        "Return",
+        "Role Play",
+        "Rollout",
+        "Round",
+        "Safeguard",
+        "Sandstorm",
+        "Screech",
+        "Secret Power",
+        "Seismic Toss",
+        "Self-Destruct",
+        "Shadow Ball",
+        "Shock Wave",
+        "Sing",
+        "Skill Swap",
+        "Skull Bash",
+        "Sleep Talk",
+        "Snatch",
+        "Snore",
+        "Solar Beam",
+        "Spit Up",
+        "Stealth Rock",
+        "Steel Roller",
+        "Stockpile",
+        "Stored Power",
+        "Strength",
+        "Submission",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Swallow",
+        "Sweet Kiss",
+        "Swift",
+        "Take Down",
+        "Taunt",
+        "Telekinesis",
+        "Teleport",
+        "Tera Blast",
+        "Thief",
+        "Thunder",
+        "Thunder Punch",
+        "Thunder Wave",
+        "Thunderbolt",
+        "Toxic",
+        "Trailblaze",
+        "Tri Attack",
+        "Uproar",
+        "Water Gun",
+        "Water Pulse",
+        "Wild Charge",
+        "Work Up",
+        "Zap Cannon",
+        "Zen Headbutt"
+      ],
+      "moves": [
+        {
+          "name": "Self-Destruct",
+          "type": "normal",
+          "category": "physical",
+          "power": 200,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "all-adjacent"
+        },
+        {
+          "name": "Giga Impact",
+          "type": "normal",
+          "category": "physical",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hyper Beam",
+          "type": "normal",
+          "category": "special",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Last Resort",
+          "type": "normal",
+          "category": "physical",
+          "power": 140,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Skull Bash",
+          "type": "normal",
+          "category": "physical",
+          "power": 130,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Double-Edge",
+          "type": "normal",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Nasty Plot",
+          "type": "dark",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Calm Mind",
+          "type": "psychic",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Thunder Wave",
+          "type": "electric",
+          "category": "status",
+          "power": null,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        }
+      ]
+    },
+    {
+      "external_id": "persian",
+      "name": "Persian",
+      "types": [
+        "normal"
+      ],
+      "base_stats": {
+        "hp": 65,
+        "attack": 70,
+        "defense": 60,
+        "special_attack": 65,
+        "special_defense": 65,
+        "speed": 115
+      },
+      "abilities": [
+        "Limber",
+        "Technician",
+        "Unnerve"
+      ],
+      "movepool": [
+        "Aerial Ace",
+        "Agility",
+        "Amnesia",
+        "Assurance",
+        "Attract",
+        "Bide",
+        "Bite",
+        "Body Slam",
+        "Bubble Beam",
+        "Captivate",
+        "Charm",
+        "Chilling Water",
+        "Confide",
+        "Covet",
+        "Curse",
+        "Cut",
+        "Dark Pulse",
+        "Defense Curl",
+        "Detect",
+        "Dig",
+        "Double Team",
+        "Double-Edge",
+        "Dream Eater",
+        "Echoed Voice",
+        "Embargo",
+        "Endeavor",
+        "Endure",
+        "Facade",
+        "Fake Out",
+        "Fake Tears",
+        "False Swipe",
+        "Feint",
+        "Feint Attack",
+        "Flash",
+        "Foul Play",
+        "Frustration",
+        "Fury Swipes",
+        "Giga Impact",
+        "Growl",
+        "Gunk Shot",
+        "Headbutt",
+        "Helping Hand",
+        "Hidden Power",
+        "Hone Claws",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Hypnosis",
+        "Icy Wind",
+        "Iron Tail",
+        "Knock Off",
+        "Lash Out",
+        "Last Resort",
+        "Metal Claw",
+        "Mimic",
+        "Mud-Slap",
+        "Nasty Plot",
+        "Natural Gift",
+        "Night Slash",
+        "Nightmare",
+        "Pain Split",
+        "Pay Day",
+        "Payback",
+        "Play Rough",
+        "Power Gem",
+        "Protect",
+        "Psych Up",
+        "Rage",
+        "Rain Dance",
+        "Rest",
+        "Retaliate",
+        "Return",
+        "Roar",
+        "Round",
+        "Scratch",
+        "Screech",
+        "Secret Power",
+        "Seed Bomb",
+        "Shadow Ball",
+        "Shadow Claw",
+        "Shock Wave",
+        "Skitter Smack",
+        "Skull Bash",
+        "Slash",
+        "Sleep Talk",
+        "Snarl",
+        "Snatch",
+        "Snore",
+        "Spite",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Swift",
+        "Switcheroo",
+        "Take Down",
+        "Taunt",
+        "Tera Blast",
+        "Thief",
+        "Throat Chop",
+        "Thunder",
+        "Thunder Wave",
+        "Thunderbolt",
+        "Torment",
+        "Toxic",
+        "Trailblaze",
+        "U-turn",
+        "Uproar",
+        "Water Gun",
+        "Water Pulse",
+        "Work Up",
+        "Zap Cannon"
+      ],
+      "moves": [
+        {
+          "name": "Giga Impact",
+          "type": "normal",
+          "category": "physical",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hyper Beam",
+          "type": "normal",
+          "category": "special",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Last Resort",
+          "type": "normal",
+          "category": "physical",
+          "power": 140,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Skull Bash",
+          "type": "normal",
+          "category": "physical",
+          "power": 130,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Double-Edge",
+          "type": "normal",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hyper Voice",
+          "type": "normal",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "all-adjacent-foes",
+          "flags": [
+            "sound"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Fake Out",
+          "type": "normal",
+          "category": "physical",
+          "power": 40,
+          "accuracy": 100,
+          "priority": 3,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 100,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Nasty Plot",
+          "type": "dark",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Thunder Wave",
+          "type": "electric",
+          "category": "status",
+          "power": null,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        }
+      ]
+    },
+    {
+      "external_id": "persianalola",
+      "name": "Persian-Alola",
+      "types": [
+        "dark"
+      ],
+      "base_stats": {
+        "hp": 65,
+        "attack": 60,
+        "defense": 60,
+        "special_attack": 75,
+        "special_defense": 65,
+        "speed": 115
+      },
+      "abilities": [
+        "Fur Coat",
+        "Technician",
+        "Rattled"
+      ],
+      "movepool": [
+        "Aerial Ace",
+        "Agility",
+        "Amnesia",
+        "Assurance",
+        "Attract",
+        "Beat Up",
+        "Bite",
+        "Body Slam",
+        "Burning Jealousy",
+        "Captivate",
+        "Charm",
+        "Chilling Water",
+        "Confide",
+        "Confuse Ray",
+        "Covet",
+        "Curse",
+        "Dark Pulse",
+        "Dig",
+        "Double Team",
+        "Double-Edge",
+        "Dream Eater",
+        "Echoed Voice",
+        "Embargo",
+        "Endeavor",
+        "Endure",
+        "Facade",
+        "Fake Out",
+        "Fake Tears",
+        "Feint",
+        "Feint Attack",
+        "Foul Play",
+        "Frustration",
+        "Fury Swipes",
+        "Giga Impact",
+        "Growl",
+        "Gunk Shot",
+        "Headbutt",
+        "Helping Hand",
+        "Hidden Power",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Hypnosis",
+        "Icy Wind",
+        "Iron Tail",
+        "Knock Off",
+        "Lash Out",
+        "Last Resort",
+        "Metal Claw",
+        "Nasty Plot",
+        "Night Slash",
+        "Pay Day",
+        "Payback",
+        "Play Rough",
+        "Power Gem",
+        "Protect",
+        "Psych Up",
+        "Quash",
+        "Rain Dance",
+        "Rest",
+        "Retaliate",
+        "Return",
+        "Roar",
+        "Round",
+        "Scratch",
+        "Screech",
+        "Seed Bomb",
+        "Shadow Ball",
+        "Shadow Claw",
+        "Shock Wave",
+        "Skitter Smack",
+        "Slash",
+        "Sleep Talk",
+        "Smack Down",
+        "Snarl",
+        "Snatch",
+        "Snore",
+        "Spite",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Swift",
+        "Switcheroo",
+        "Take Down",
+        "Taunt",
+        "Tera Blast",
+        "Thief",
+        "Throat Chop",
+        "Thunder",
+        "Thunder Wave",
+        "Thunderbolt",
+        "Torment",
+        "Toxic",
+        "Trailblaze",
+        "U-turn",
+        "Uproar",
+        "Water Pulse",
+        "Work Up"
+      ],
+      "moves": [
+        {
+          "name": "Foul Play",
+          "type": "dark",
+          "category": "physical",
+          "power": 95,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "useTargetOffense": true,
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Dark Pulse",
+          "type": "dark",
+          "category": "special",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "pulse"
+          ],
+          "secondary": {
+            "chance": 20,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Throat Chop",
+          "type": "dark",
+          "category": "physical",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Lash Out",
+          "type": "dark",
+          "category": "physical",
+          "power": 75,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Night Slash",
+          "type": "dark",
+          "category": "physical",
+          "power": 70,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact",
+            "slicing"
+          ]
+        },
+        {
+          "name": "Knock Off",
+          "type": "dark",
+          "category": "physical",
+          "power": 65,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Fake Out",
+          "type": "normal",
+          "category": "physical",
+          "power": 40,
+          "accuracy": 100,
+          "priority": 3,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 100,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Nasty Plot",
+          "type": "dark",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Thunder Wave",
+          "type": "electric",
+          "category": "status",
+          "power": null,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        }
+      ]
+    },
+    {
+      "external_id": "farfetchd",
+      "name": "Farfetch’d",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "base_stats": {
+        "hp": 52,
+        "attack": 90,
+        "defense": 55,
+        "special_attack": 58,
+        "special_defense": 62,
+        "speed": 60
+      },
+      "abilities": [
+        "Keen Eye",
+        "Inner Focus",
+        "Defiant"
+      ],
+      "movepool": [
+        "Acrobatics",
+        "Aerial Ace",
+        "Agility",
+        "Air Cutter",
+        "Air Slash",
+        "Attract",
+        "Baton Pass",
+        "Bide",
+        "Body Slam",
+        "Brave Bird",
+        "Brutal Swing",
+        "Captivate",
+        "Close Combat",
+        "Confide",
+        "Covet",
+        "Curse",
+        "Cut",
+        "Defog",
+        "Detect",
+        "Double Team",
+        "Double-Edge",
+        "Dual Wingbeat",
+        "Endure",
+        "Facade",
+        "False Swipe",
+        "Feather Dance",
+        "Feint",
+        "Final Gambit",
+        "First Impression",
+        "Flail",
+        "Fly",
+        "Focus Energy",
+        "Foresight",
+        "Frustration",
+        "Fury Attack",
+        "Fury Cutter",
+        "Gust",
+        "Headbutt",
+        "Heat Wave",
+        "Helping Hand",
+        "Hidden Power",
+        "Iron Tail",
+        "Knock Off",
+        "Laser Focus",
+        "Last Resort",
+        "Leaf Blade",
+        "Leer",
+        "Mimic",
+        "Mirror Move",
+        "Mud-Slap",
+        "Natural Gift",
+        "Night Slash",
+        "Ominous Wind",
+        "Peck",
+        "Pluck",
+        "Poison Jab",
+        "Protect",
+        "Psych Up",
+        "Quick Attack",
+        "Rage",
+        "Razor Leaf",
+        "Razor Wind",
+        "Reflect",
+        "Rest",
+        "Retaliate",
+        "Return",
+        "Revenge",
+        "Roost",
+        "Round",
+        "Sand Attack",
+        "Secret Power",
+        "Simple Beam",
+        "Skull Bash",
+        "Sky Attack",
+        "Slash",
+        "Sleep Talk",
+        "Snore",
+        "Solar Blade",
+        "Steel Wing",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Swift",
+        "Swords Dance",
+        "Tailwind",
+        "Take Down",
+        "Thief",
+        "Throat Chop",
+        "Toxic",
+        "Trump Card",
+        "Twister",
+        "U-turn",
+        "Uproar",
+        "Whirlwind",
+        "Wish",
+        "Work Up",
+        "Yawn"
+      ],
+      "moves": [
+        {
+          "name": "Last Resort",
+          "type": "normal",
+          "category": "physical",
+          "power": 140,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Sky Attack",
+          "type": "flying",
+          "category": "physical",
+          "power": 140,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 30,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Skull Bash",
+          "type": "normal",
+          "category": "physical",
+          "power": 130,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Brave Bird",
+          "type": "flying",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Double-Edge",
+          "type": "normal",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Fly",
+          "type": "flying",
+          "category": "physical",
+          "power": 90,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Tailwind",
+          "type": "flying",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Swords Dance",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Roost",
+          "type": "flying",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "mrmime",
+      "name": "Mr. Mime",
+      "types": [
+        "psychic",
+        "fairy"
+      ],
+      "base_stats": {
+        "hp": 40,
+        "attack": 45,
+        "defense": 65,
+        "special_attack": 100,
+        "special_defense": 120,
+        "speed": 90
+      },
+      "abilities": [
+        "Soundproof",
+        "Filter",
+        "Technician"
+      ],
+      "movepool": [
+        "Aerial Ace",
+        "Ally Switch",
+        "Attract",
+        "Barrier",
+        "Baton Pass",
+        "Bide",
+        "Body Slam",
+        "Brick Break",
+        "Calm Mind",
+        "Captivate",
+        "Charge Beam",
+        "Charm",
+        "Confide",
+        "Confuse Ray",
+        "Confusion",
+        "Copycat",
+        "Counter",
+        "Covet",
+        "Curse",
+        "Dazzling Gleam",
+        "Double Slap",
+        "Double Team",
+        "Double-Edge",
+        "Drain Punch",
+        "Dream Eater",
+        "Dynamic Punch",
+        "Encore",
+        "Endure",
+        "Energy Ball",
+        "Expanding Force",
+        "Facade",
+        "Fake Out",
+        "Fire Punch",
+        "Flash",
+        "Fling",
+        "Focus Blast",
+        "Focus Punch",
+        "Follow Me",
+        "Foul Play",
+        "Frustration",
+        "Future Sight",
+        "Giga Impact",
+        "Grass Knot",
+        "Guard Swap",
+        "Headbutt",
+        "Helping Hand",
+        "Hidden Power",
+        "Hyper Beam",
+        "Hypnosis",
+        "Ice Punch",
+        "Icy Wind",
+        "Infestation",
+        "Iron Defense",
+        "Light Screen",
+        "Magic Coat",
+        "Magic Room",
+        "Magical Leaf",
+        "Meditate",
+        "Mega Kick",
+        "Mega Punch",
+        "Metronome",
+        "Mimic",
+        "Misty Terrain",
+        "Mud-Slap",
+        "Mystical Fire",
+        "Nasty Plot",
+        "Natural Gift",
+        "Nightmare",
+        "Payback",
+        "Pound",
+        "Power Split",
+        "Power Swap",
+        "Power-Up Punch",
+        "Protect",
+        "Psybeam",
+        "Psych Up",
+        "Psychic",
+        "Psychic Terrain",
+        "Psyshock",
+        "Psywave",
+        "Quick Guard",
+        "Rage",
+        "Rain Dance",
+        "Recycle",
+        "Reflect",
+        "Rest",
+        "Return",
+        "Role Play",
+        "Round",
+        "Safeguard",
+        "Secret Power",
+        "Seismic Toss",
+        "Shadow Ball",
+        "Shock Wave",
+        "Signal Beam",
+        "Skill Swap",
+        "Skull Bash",
+        "Sleep Talk",
+        "Snatch",
+        "Snore",
+        "Solar Beam",
+        "Stored Power",
+        "Submission",
+        "Substitute",
+        "Sucker Punch",
+        "Sunny Day",
+        "Swagger",
+        "Take Down",
+        "Taunt",
+        "Teeter Dance",
+        "Telekinesis",
+        "Teleport",
+        "Thief",
+        "Thunder",
+        "Thunder Punch",
+        "Thunder Wave",
+        "Thunderbolt",
+        "Tickle",
+        "Torment",
+        "Toxic",
+        "Trick",
+        "Trick Room",
+        "Uproar",
+        "Wake-Up Slap",
+        "Wide Guard",
+        "Wonder Room",
+        "Zap Cannon",
+        "Zen Headbutt"
+      ],
+      "moves": [
+        {
+          "name": "Future Sight",
+          "type": "psychic",
+          "category": "special",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Dream Eater",
+          "type": "psychic",
+          "category": "special",
+          "power": 100,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Psychic",
+          "type": "psychic",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 10,
+            "boosts": {
+              "spd": -1
+            }
+          }
+        },
+        {
+          "name": "Dazzling Gleam",
+          "type": "fairy",
+          "category": "special",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "all-adjacent-foes"
+        },
+        {
+          "name": "Expanding Force",
+          "type": "psychic",
+          "category": "special",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Psyshock",
+          "type": "psychic",
+          "category": "special",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "overrideDefensiveStat": "def"
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Fake Out",
+          "type": "normal",
+          "category": "physical",
+          "power": 40,
+          "accuracy": 100,
+          "priority": 3,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 100,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Trick Room",
+          "type": "psychic",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": -7,
+          "target": "self"
+        },
+        {
+          "name": "Nasty Plot",
+          "type": "dark",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "swalot",
+      "name": "Swalot",
+      "types": [
+        "poison"
+      ],
+      "base_stats": {
+        "hp": 100,
+        "attack": 73,
+        "defense": 83,
+        "special_attack": 73,
+        "special_defense": 83,
+        "speed": 55
+      },
+      "abilities": [
+        "Liquid Ooze",
+        "Sticky Hold",
+        "Gluttony"
+      ],
+      "movepool": [
+        "Acid Spray",
+        "Amnesia",
+        "Attract",
+        "Belch",
+        "Block",
+        "Body Press",
+        "Body Slam",
+        "Brick Break",
+        "Bulldoze",
+        "Bullet Seed",
+        "Captivate",
+        "Confide",
+        "Counter",
+        "Curse",
+        "Defense Curl",
+        "Double Team",
+        "Double-Edge",
+        "Dream Eater",
+        "Dynamic Punch",
+        "Earthquake",
+        "Encore",
+        "Endure",
+        "Explosion",
+        "Facade",
+        "Fire Punch",
+        "Fling",
+        "Frustration",
+        "Gastro Acid",
+        "Giga Drain",
+        "Giga Impact",
+        "Gunk Shot",
+        "Headbutt",
+        "Helping Hand",
+        "Hidden Power",
+        "Hyper Beam",
+        "Ice Beam",
+        "Ice Punch",
+        "Infestation",
+        "Knock Off",
+        "Metronome",
+        "Mimic",
+        "Mud Shot",
+        "Mud-Slap",
+        "Natural Gift",
+        "Nightmare",
+        "Pain Split",
+        "Poison Gas",
+        "Poison Jab",
+        "Pound",
+        "Power-Up Punch",
+        "Protect",
+        "Rain Dance",
+        "Rest",
+        "Return",
+        "Rock Smash",
+        "Rollout",
+        "Round",
+        "Secret Power",
+        "Seed Bomb",
+        "Self-Destruct",
+        "Shadow Ball",
+        "Shock Wave",
+        "Sleep Talk",
+        "Sludge",
+        "Sludge Bomb",
+        "Sludge Wave",
+        "Snatch",
+        "Snore",
+        "Solar Beam",
+        "Spit Up",
+        "Stockpile",
+        "Strength",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Swallow",
+        "Swords Dance",
+        "Take Down",
+        "Tera Blast",
+        "Thief",
+        "Thunder Punch",
+        "Thunder Wave",
+        "Toxic",
+        "Toxic Spikes",
+        "Venom Drench",
+        "Venoshock",
+        "Water Pulse",
+        "Wring Out",
+        "Yawn",
+        "Zen Headbutt"
+      ],
+      "moves": [
+        {
+          "name": "Belch",
+          "type": "poison",
+          "category": "special",
+          "power": 120,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Gunk Shot",
+          "type": "poison",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 80,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 30,
+            "status": "poison"
+          }
+        },
+        {
+          "name": "Sludge Wave",
+          "type": "poison",
+          "category": "special",
+          "power": 95,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "all-adjacent",
+          "secondary": {
+            "chance": 10,
+            "status": "poison"
+          }
+        },
+        {
+          "name": "Sludge Bomb",
+          "type": "poison",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "bullet"
+          ],
+          "secondary": {
+            "chance": 30,
+            "status": "poison"
+          }
+        },
+        {
+          "name": "Poison Jab",
+          "type": "poison",
+          "category": "physical",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 30,
+            "status": "poison"
+          }
+        },
+        {
+          "name": "Sludge",
+          "type": "poison",
+          "category": "special",
+          "power": 65,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 30,
+            "status": "poison"
+          }
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Swords Dance",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Thunder Wave",
+          "type": "electric",
+          "category": "status",
+          "power": null,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
+        }
+      ]
+    },
+    {
+      "external_id": "salamence",
+      "name": "Salamence",
+      "types": [
+        "dragon",
+        "flying"
+      ],
+      "base_stats": {
+        "hp": 95,
+        "attack": 135,
+        "defense": 80,
+        "special_attack": 110,
+        "special_defense": 80,
+        "speed": 100
+      },
+      "abilities": [
+        "Intimidate",
+        "Moxie"
+      ],
+      "movepool": [
+        "Aerial Ace",
+        "Air Cutter",
+        "Air Slash",
+        "Aqua Tail",
+        "Attract",
+        "Bite",
+        "Body Slam",
+        "Breaking Swipe",
+        "Brick Break",
+        "Brutal Swing",
+        "Bulldoze",
+        "Captivate",
+        "Confide",
+        "Crunch",
+        "Cut",
+        "Defense Curl",
+        "Defog",
+        "Double Team",
+        "Double-Edge",
+        "Draco Meteor",
+        "Dragon Breath",
+        "Dragon Cheer",
+        "Dragon Claw",
+        "Dragon Dance",
+        "Dragon Pulse",
+        "Dragon Tail",
+        "Dual Wingbeat",
+        "Earthquake",
+        "Ember",
+        "Endure",
+        "Facade",
+        "Fire Blast",
+        "Fire Fang",
+        "Fire Spin",
+        "Flamethrower",
+        "Fly",
+        "Focus Energy",
+        "Frustration",
+        "Fury Cutter",
+        "Giga Impact",
+        "Headbutt",
+        "Heat Wave",
+        "Helping Hand",
+        "Hidden Power",
+        "Hone Claws",
+        "Hurricane",
+        "Hydro Pump",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Incinerate",
+        "Iron Defense",
+        "Iron Head",
+        "Iron Tail",
+        "Laser Focus",
+        "Leer",
+        "Mimic",
+        "Mud-Slap",
+        "Natural Gift",
+        "Ominous Wind",
+        "Outrage",
+        "Protect",
+        "Psychic Fangs",
+        "Rage",
+        "Rain Dance",
+        "Refresh",
+        "Rest",
+        "Return",
+        "Roar",
+        "Rock Slide",
+        "Rock Smash",
+        "Rock Tomb",
+        "Rollout",
+        "Roost",
+        "Round",
+        "Scary Face",
+        "Secret Power",
+        "Shadow Claw",
+        "Sleep Talk",
+        "Snore",
+        "Steel Wing",
+        "Stone Edge",
+        "Strength",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Swift",
+        "Tailwind",
+        "Take Down",
+        "Temper Flare",
+        "Tera Blast",
+        "Thunder Fang",
+        "Toxic",
+        "Twister",
+        "Zen Headbutt"
+      ],
+      "moves": [
+        {
+          "name": "Draco Meteor",
+          "type": "dragon",
+          "category": "special",
+          "power": 130,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "selfBoosts": {
+            "spa": -2
+          }
+        },
+        {
+          "name": "Outrage",
+          "type": "dragon",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hurricane",
+          "type": "flying",
+          "category": "special",
+          "power": 110,
+          "accuracy": 70,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Fly",
+          "type": "flying",
+          "category": "physical",
+          "power": 90,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Dragon Pulse",
+          "type": "dragon",
+          "category": "special",
+          "power": 85,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "pulse"
+          ]
+        },
+        {
+          "name": "Dragon Claw",
+          "type": "dragon",
+          "category": "physical",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Tailwind",
+          "type": "flying",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Dragon Dance",
+          "type": "dragon",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Roost",
+          "type": "flying",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "gogoat",
+      "name": "Gogoat",
+      "types": [
+        "grass"
+      ],
+      "base_stats": {
+        "hp": 123,
+        "attack": 100,
+        "defense": 62,
+        "special_attack": 97,
+        "special_defense": 81,
+        "speed": 68
+      },
+      "abilities": [
+        "Sap Sipper",
+        "Grass Pelt"
+      ],
+      "movepool": [
+        "Aerial Ace",
+        "Attract",
+        "Body Slam",
+        "Bounce",
+        "Brick Break",
+        "Bulk Up",
+        "Bulldoze",
+        "Bullet Seed",
+        "Confide",
+        "Dig",
+        "Double Team",
+        "Double-Edge",
+        "Earthquake",
+        "Endeavor",
+        "Endure",
+        "Energy Ball",
+        "Facade",
+        "Frustration",
+        "Giga Drain",
+        "Giga Impact",
+        "Grass Knot",
+        "Grassy Glide",
+        "Grassy Terrain",
+        "Growth",
+        "Helping Hand",
+        "Hidden Power",
+        "High Horsepower",
+        "Horn Leech",
+        "Hyper Beam",
+        "Iron Tail",
+        "Leaf Blade",
+        "Leaf Storm",
+        "Leech Seed",
+        "Magical Leaf",
+        "Milk Drink",
+        "Mud Shot",
+        "Mud-Slap",
+        "Nature Power",
+        "Payback",
+        "Play Rough",
+        "Protect",
+        "Rain Dance",
+        "Razor Leaf",
+        "Rest",
+        "Retaliate",
+        "Return",
+        "Roar",
+        "Rock Slide",
+        "Rock Smash",
+        "Round",
+        "Secret Power",
+        "Seed Bomb",
+        "Sleep Talk",
+        "Snore",
+        "Solar Beam",
+        "Stomping Tantrum",
+        "Strength",
+        "Substitute",
+        "Sunny Day",
+        "Superpower",
+        "Surf",
+        "Swagger",
+        "Synthesis",
+        "Tackle",
+        "Tail Whip",
+        "Take Down",
+        "Tera Blast",
+        "Throat Chop",
+        "Toxic",
+        "Trailblaze",
+        "Vine Whip",
+        "Wild Charge",
+        "Work Up",
+        "Worry Seed",
+        "Zen Headbutt"
+      ],
+      "moves": [
+        {
+          "name": "Leaf Storm",
+          "type": "grass",
+          "category": "special",
+          "power": 130,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "selfBoosts": {
+            "spa": -2
+          }
+        },
+        {
+          "name": "Solar Beam",
+          "type": "grass",
+          "category": "special",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4,
+          "flags": [
+            "bullet"
+          ]
+        },
+        {
+          "name": "Energy Ball",
+          "type": "grass",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "bullet"
+          ],
+          "secondary": {
+            "chance": 10,
+            "boosts": {
+              "spd": -1
+            }
+          }
+        },
+        {
+          "name": "Leaf Blade",
+          "type": "grass",
+          "category": "physical",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact",
+            "slicing"
+          ]
+        },
+        {
+          "name": "Seed Bomb",
+          "type": "grass",
+          "category": "physical",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "bullet"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Bulk Up",
+          "type": "fighting",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
+        },
+        {
+          "name": "Substitute",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "golisopod",
+      "name": "Golisopod",
+      "types": [
+        "bug",
+        "water"
+      ],
+      "base_stats": {
+        "hp": 75,
+        "attack": 125,
+        "defense": 140,
+        "special_attack": 60,
+        "special_defense": 90,
+        "speed": 40
+      },
+      "abilities": [
+        "Emergency Exit"
+      ],
+      "movepool": [
+        "Aerial Ace",
+        "Assurance",
+        "Attract",
+        "Blizzard",
+        "Brick Break",
+        "Bug Bite",
+        "Bug Buzz",
+        "Bulk Up",
+        "Close Combat",
+        "Confide",
+        "Dark Pulse",
+        "Defense Curl",
+        "Dive",
+        "Double Team",
+        "Drill Run",
+        "Dual Chop",
+        "Endeavor",
+        "Endure",
+        "Facade",
+        "False Swipe",
+        "First Impression",
+        "Fling",
+        "Focus Blast",
+        "Frost Breath",
+        "Frustration",
+        "Fury Cutter",
+        "Giga Impact",
+        "Hail",
+        "Hidden Power",
+        "Hyper Beam",
+        "Ice Beam",
+        "Icy Wind",
+        "Iron Defense",
+        "Iron Head",
+        "Knock Off",
+        "Laser Focus",
+        "Leech Life",
+        "Liquidation",
+        "Mud Shot",
+        "Muddy Water",
+        "Pain Split",
+        "Payback",
+        "Pin Missile",
+        "Poison Jab",
+        "Protect",
+        "Psych Up",
+        "Rain Dance",
+        "Razor Shell",
+        "Rest",
+        "Return",
+        "Rock Slide",
+        "Rock Smash",
+        "Rock Tomb",
+        "Round",
+        "Sand Attack",
+        "Scald",
+        "Screech",
+        "Shadow Claw",
+        "Skitter Smack",
+        "Slash",
+        "Sleep Talk",
+        "Sludge Bomb",
+        "Sludge Wave",
+        "Snarl",
+        "Snore",
+        "Spikes",
+        "Spite",
+        "Struggle Bug",
+        "Substitute",
+        "Sucker Punch",
+        "Surf",
+        "Swagger",
+        "Swift",
+        "Swords Dance",
+        "Taunt",
+        "Throat Chop",
+        "Toxic",
+        "Venoshock",
+        "Water Pulse",
+        "Waterfall",
+        "X-Scissor"
+      ],
+      "moves": [
+        {
+          "name": "Pin Missile",
+          "type": "bug",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
+          "name": "Bug Buzz",
+          "type": "bug",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "sound"
+          ],
+          "secondary": {
+            "chance": 10,
+            "boosts": {
+              "spd": -1
+            }
+          }
+        },
+        {
+          "name": "First Impression",
+          "type": "bug",
+          "category": "physical",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 2,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Muddy Water",
+          "type": "water",
+          "category": "special",
+          "power": 90,
+          "accuracy": 85,
+          "priority": 0,
+          "target": "all-adjacent-foes"
+        },
+        {
+          "name": "Surf",
+          "type": "water",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "all-adjacent"
+        },
+        {
+          "name": "Liquidation",
+          "type": "water",
+          "category": "physical",
+          "power": 85,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 20,
+            "boosts": {
+              "def": -1
+            }
+          }
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Swords Dance",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Bulk Up",
+          "type": "fighting",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Substitute",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "rillaboom",
+      "name": "Rillaboom",
+      "types": [
+        "grass"
+      ],
+      "base_stats": {
+        "hp": 100,
+        "attack": 125,
+        "defense": 90,
+        "special_attack": 60,
+        "special_defense": 70,
+        "speed": 85
+      },
+      "abilities": [
+        "Overgrow",
+        "Grassy Surge"
+      ],
+      "movepool": [
+        "Acrobatics",
+        "Assurance",
+        "Attract",
+        "Body Press",
+        "Body Slam",
+        "Boomburst",
+        "Branch Poke",
+        "Brick Break",
+        "Brutal Swing",
+        "Bulk Up",
+        "Bulldoze",
+        "Bullet Seed",
+        "Darkest Lariat",
+        "Double Hit",
+        "Double-Edge",
+        "Drain Punch",
+        "Drum Beating",
+        "Earth Power",
+        "Earthquake",
+        "Endeavor",
+        "Endure",
+        "Energy Ball",
+        "Facade",
+        "False Swipe",
+        "Fling",
+        "Focus Blast",
+        "Focus Energy",
+        "Focus Punch",
+        "Frenzy Plant",
+        "Giga Drain",
+        "Giga Impact",
+        "Grass Knot",
+        "Grass Pledge",
+        "Grassy Glide",
+        "Grassy Terrain",
+        "Growl",
+        "High Horsepower",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Knock Off",
+        "Leaf Storm",
+        "Low Kick",
+        "Low Sweep",
+        "Magical Leaf",
+        "Mega Kick",
+        "Mega Punch",
+        "Mud Shot",
+        "Noble Roar",
+        "Protect",
+        "Razor Leaf",
+        "Rest",
+        "Round",
+        "Scary Face",
+        "Scratch",
+        "Screech",
+        "Seed Bomb",
+        "Slam",
+        "Sleep Talk",
+        "Snarl",
+        "Snore",
+        "Solar Beam",
+        "Solar Blade",
+        "Stomping Tantrum",
+        "Substitute",
+        "Sunny Day",
+        "Superpower",
+        "Swift",
+        "Swords Dance",
+        "Take Down",
+        "Taunt",
+        "Tera Blast",
+        "Thief",
+        "Trailblaze",
+        "U-turn",
+        "Uproar",
+        "Wood Hammer",
+        "Work Up"
+      ],
+      "moves": [
+        {
+          "name": "Frenzy Plant",
+          "type": "grass",
+          "category": "special",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Leaf Storm",
+          "type": "grass",
+          "category": "special",
+          "power": 130,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "selfBoosts": {
+            "spa": -2
+          }
+        },
+        {
+          "name": "Solar Blade",
+          "type": "grass",
+          "category": "physical",
+          "power": 125,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact",
+            "slicing"
+          ]
+        },
+        {
+          "name": "Solar Beam",
+          "type": "grass",
+          "category": "special",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Wood Hammer",
+          "type": "grass",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Bullet Seed",
+          "type": "grass",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4,
+          "flags": [
+            "bullet"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Swords Dance",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Bulk Up",
+          "type": "fighting",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Substitute",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "cinderace",
+      "name": "Cinderace",
+      "types": [
+        "fire"
+      ],
+      "base_stats": {
+        "hp": 80,
+        "attack": 116,
+        "defense": 75,
+        "special_attack": 65,
+        "special_defense": 75,
+        "speed": 119
+      },
+      "abilities": [
+        "Blaze",
+        "Libero"
+      ],
+      "movepool": [
+        "Acrobatics",
+        "Agility",
+        "Ally Switch",
+        "Assurance",
+        "Attract",
+        "Baton Pass",
+        "Blast Burn",
+        "Blaze Kick",
+        "Bounce",
+        "Bulk Up",
+        "Burning Jealousy",
+        "Coaching",
+        "Counter",
+        "Court Change",
+        "Double Kick",
+        "Double-Edge",
+        "Electro Ball",
+        "Ember",
+        "Endure",
+        "Facade",
+        "Feint",
+        "Fire Blast",
+        "Fire Fang",
+        "Fire Pledge",
+        "Fire Punch",
+        "Fire Spin",
+        "Flame Charge",
+        "Flamethrower",
+        "Flare Blitz",
+        "Fling",
+        "Focus Blast",
+        "Focus Energy",
+        "Giga Impact",
+        "Growl",
+        "Gunk Shot",
+        "Headbutt",
+        "Heat Wave",
+        "Helping Hand",
+        "Hyper Beam",
+        "Iron Head",
+        "Low Kick",
+        "Low Sweep",
+        "Mega Kick",
+        "Mud Shot",
+        "Mud-Slap",
+        "Overheat",
+        "Protect",
+        "Pyro Ball",
+        "Quick Attack",
+        "Rest",
+        "Revenge",
+        "Reversal",
+        "Round",
+        "Scorching Sands",
+        "Shadow Ball",
+        "Sleep Talk",
+        "Smack Down",
+        "Snarl",
+        "Snore",
+        "Substitute",
+        "Sunny Day",
+        "Super Fang",
+        "Swift",
+        "Swords Dance",
+        "Tackle",
+        "Take Down",
+        "Taunt",
+        "Temper Flare",
+        "Tera Blast",
+        "Trailblaze",
+        "U-turn",
+        "Weather Ball",
+        "Will-O-Wisp",
+        "Work Up",
+        "Zen Headbutt"
+      ],
+      "moves": [
+        {
+          "name": "Blast Burn",
+          "type": "fire",
+          "category": "special",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Overheat",
+          "type": "fire",
+          "category": "special",
+          "power": 130,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "selfBoosts": {
+            "spa": -2
+          }
+        },
+        {
+          "name": "Flare Blitz",
+          "type": "fire",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 10,
+            "status": "burn"
+          }
+        },
+        {
+          "name": "Pyro Ball",
+          "type": "fire",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "bullet"
+          ],
+          "secondary": {
+            "chance": 10,
+            "status": "burn"
+          }
+        },
+        {
+          "name": "Fire Blast",
+          "type": "fire",
+          "category": "special",
+          "power": 110,
+          "accuracy": 85,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 10,
+            "status": "burn"
+          }
+        },
+        {
+          "name": "Heat Wave",
+          "type": "fire",
+          "category": "special",
+          "power": 95,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "all-adjacent-foes",
+          "secondary": {
+            "chance": 10,
+            "status": "burn"
+          }
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Swords Dance",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Bulk Up",
+          "type": "fighting",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Will-O-Wisp",
+          "type": "fire",
+          "category": "status",
+          "power": null,
+          "accuracy": 85,
+          "priority": 0,
+          "target": "normal"
+        }
+      ]
+    },
+    {
+      "external_id": "inteleon",
+      "name": "Inteleon",
+      "types": [
+        "water"
+      ],
+      "base_stats": {
+        "hp": 70,
+        "attack": 85,
+        "defense": 65,
+        "special_attack": 125,
+        "special_defense": 65,
+        "speed": 120
+      },
+      "abilities": [
+        "Torrent",
+        "Sniper"
+      ],
+      "movepool": [
+        "Acrobatics",
+        "Agility",
+        "Air Cutter",
+        "Air Slash",
+        "Attract",
+        "Baton Pass",
+        "Bind",
+        "Blizzard",
+        "Bounce",
+        "Breaking Swipe",
+        "Chilling Water",
+        "Dark Pulse",
+        "Dive",
+        "Endure",
+        "Facade",
+        "Fling",
+        "Flip Turn",
+        "Focus Energy",
+        "Giga Impact",
+        "Growl",
+        "Haze",
+        "Hydro Cannon",
+        "Hydro Pump",
+        "Hyper Beam",
+        "Ice Beam",
+        "Icicle Spear",
+        "Icy Wind",
+        "Light Screen",
+        "Liquidation",
+        "Metronome",
+        "Mud Shot",
+        "Muddy Water",
+        "Pound",
+        "Protect",
+        "Psych Up",
+        "Rain Dance",
+        "Reflect",
+        "Rest",
+        "Round",
+        "Safeguard",
+        "Scald",
+        "Scale Shot",
+        "Shadow Ball",
+        "Skitter Smack",
+        "Sleep Talk",
+        "Smack Down",
+        "Snipe Shot",
+        "Snore",
+        "Snowscape",
+        "Soak",
+        "Substitute",
+        "Sucker Punch",
+        "Surf",
+        "Swift",
+        "Swords Dance",
+        "Take Down",
+        "Taunt",
+        "Tearful Look",
+        "Tera Blast",
+        "U-turn",
+        "Vacuum Wave",
+        "Water Gun",
+        "Water Pledge",
+        "Water Pulse",
+        "Waterfall",
+        "Weather Ball",
+        "Whirlpool",
+        "Work Up"
+      ],
+      "moves": [
+        {
+          "name": "Hydro Cannon",
+          "type": "water",
+          "category": "special",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Hydro Pump",
+          "type": "water",
+          "category": "special",
+          "power": 110,
+          "accuracy": 80,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Muddy Water",
+          "type": "water",
+          "category": "special",
+          "power": 90,
+          "accuracy": 85,
+          "priority": 0,
+          "target": "all-adjacent-foes"
+        },
+        {
+          "name": "Surf",
+          "type": "water",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "all-adjacent"
+        },
+        {
+          "name": "Liquidation",
+          "type": "water",
+          "category": "physical",
+          "power": 85,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 20,
+            "boosts": {
+              "def": -1
+            }
+          }
+        },
+        {
+          "name": "Dive",
+          "type": "water",
+          "category": "physical",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Swords Dance",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Reflect",
+          "type": "psychic",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Light Screen",
+          "type": "psychic",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "thievul",
+      "name": "Thievul",
+      "types": [
+        "dark"
+      ],
+      "base_stats": {
+        "hp": 70,
+        "attack": 58,
+        "defense": 58,
+        "special_attack": 87,
+        "special_defense": 92,
+        "speed": 90
+      },
+      "abilities": [
+        "Run Away",
+        "Unburden",
+        "Stakeout"
+      ],
+      "movepool": [
+        "Acrobatics",
+        "Agility",
+        "Assurance",
+        "Attract",
+        "Baton Pass",
+        "Beat Up",
+        "Burning Jealousy",
+        "Crunch",
+        "Dark Pulse",
+        "Dig",
+        "Endure",
+        "Facade",
+        "Fake Tears",
+        "Fire Fang",
+        "Foul Play",
+        "Giga Impact",
+        "Grass Knot",
+        "Hone Claws",
+        "Hyper Beam",
+        "Ice Fang",
+        "Lash Out",
+        "Mud Shot",
+        "Nasty Plot",
+        "Night Slash",
+        "Parting Shot",
+        "Play Rough",
+        "Protect",
+        "Psychic",
+        "Quick Attack",
+        "Rest",
+        "Round",
+        "Screech",
+        "Shadow Ball",
+        "Shadow Claw",
+        "Sleep Talk",
+        "Snarl",
+        "Snore",
+        "Substitute",
+        "Sucker Punch",
+        "Swift",
+        "Tail Slap",
+        "Tail Whip",
+        "Taunt",
+        "Thief",
+        "Thunder Fang",
+        "U-turn"
+      ],
+      "moves": [
+        {
+          "name": "Foul Play",
+          "type": "dark",
+          "category": "physical",
+          "power": 95,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "useTargetOffense": true,
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Crunch",
+          "type": "dark",
+          "category": "physical",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact",
+            "bite"
+          ],
+          "secondary": {
+            "chance": 20,
+            "boosts": {
+              "def": -1
+            }
+          }
+        },
+        {
+          "name": "Dark Pulse",
+          "type": "dark",
+          "category": "special",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "pulse"
+          ],
+          "secondary": {
+            "chance": 20,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Lash Out",
+          "type": "dark",
+          "category": "physical",
+          "power": 75,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Night Slash",
+          "type": "dark",
+          "category": "physical",
+          "power": 70,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact",
+            "slicing"
+          ]
+        },
+        {
+          "name": "Sucker Punch",
+          "type": "dark",
+          "category": "physical",
+          "power": 70,
+          "accuracy": 100,
+          "priority": 1,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Nasty Plot",
+          "type": "dark",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Substitute",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Taunt",
+          "type": "dark",
+          "category": "status",
+          "power": null,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        }
+      ]
+    },
+    {
+      "external_id": "toxtricity",
+      "name": "Toxtricity",
+      "types": [
+        "electric",
+        "poison"
+      ],
+      "base_stats": {
+        "hp": 75,
+        "attack": 98,
+        "defense": 70,
+        "special_attack": 114,
+        "special_defense": 70,
+        "speed": 75
+      },
+      "abilities": [
+        "Punk Rock",
+        "Plus",
+        "Technician"
+      ],
+      "movepool": [
+        "Acid",
+        "Acid Spray",
+        "Attract",
+        "Belch",
+        "Boomburst",
+        "Brick Break",
+        "Charge",
+        "Charge Beam",
+        "Charm",
+        "Discharge",
+        "Drain Punch",
+        "Eerie Impulse",
+        "Electric Terrain",
+        "Electro Ball",
+        "Electroweb",
+        "Encore",
+        "Endeavor",
+        "Endure",
+        "Facade",
+        "Fire Punch",
+        "Flail",
+        "Fling",
+        "Giga Impact",
+        "Growl",
+        "Gunk Shot",
+        "Helping Hand",
+        "Hex",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Leer",
+        "Mega Kick",
+        "Mega Punch",
+        "Metal Sound",
+        "Metronome",
+        "Noble Roar",
+        "Nuzzle",
+        "Overdrive",
+        "Payback",
+        "Poison Jab",
+        "Poison Tail",
+        "Protect",
+        "Psychic Noise",
+        "Rain Dance",
+        "Rest",
+        "Rising Voltage",
+        "Round",
+        "Scary Face",
+        "Screech",
+        "Shift Gear",
+        "Shock Wave",
+        "Sleep Talk",
+        "Sludge Bomb",
+        "Sludge Wave",
+        "Snarl",
+        "Snore",
+        "Spark",
+        "Stored Power",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Swift",
+        "Take Down",
+        "Taunt",
+        "Tearful Look",
+        "Tera Blast",
+        "Thief",
+        "Throat Chop",
+        "Thunder",
+        "Thunder Fang",
+        "Thunder Punch",
+        "Thunder Shock",
+        "Thunder Wave",
+        "Thunderbolt",
+        "Toxic",
+        "Toxic Spikes",
+        "Trailblaze",
+        "Uproar",
+        "Venoshock",
+        "Volt Switch",
+        "Wild Charge"
+      ],
+      "moves": [
+        {
+          "name": "Belch",
+          "type": "poison",
+          "category": "special",
+          "power": 120,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Gunk Shot",
+          "type": "poison",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 80,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 30,
+            "status": "poison"
+          }
+        },
+        {
+          "name": "Thunder",
+          "type": "electric",
+          "category": "special",
+          "power": 110,
+          "accuracy": 70,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 30,
+            "status": "paralysis"
+          }
+        },
+        {
+          "name": "Sludge Wave",
+          "type": "poison",
+          "category": "special",
+          "power": 95,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "all-adjacent",
+          "secondary": {
+            "chance": 10,
+            "status": "poison"
+          }
+        },
+        {
+          "name": "Sludge Bomb",
+          "type": "poison",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "bullet"
+          ],
+          "secondary": {
+            "chance": 30,
+            "status": "poison"
+          }
+        },
+        {
+          "name": "Thunderbolt",
+          "type": "electric",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 10,
+            "status": "paralysis"
+          }
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Thunder Wave",
+          "type": "electric",
+          "category": "status",
+          "power": null,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
+        },
+        {
+          "name": "Substitute",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "toxtricitylowkey",
+      "name": "Toxtricity-Low-Key",
+      "types": [
+        "electric",
+        "poison"
+      ],
+      "base_stats": {
+        "hp": 75,
+        "attack": 98,
+        "defense": 70,
+        "special_attack": 114,
+        "special_defense": 70,
+        "speed": 75
+      },
+      "abilities": [
+        "Punk Rock",
+        "Minus",
+        "Technician"
+      ],
+      "movepool": [
+        "Acid",
+        "Acid Spray",
+        "Attract",
+        "Belch",
+        "Boomburst",
+        "Brick Break",
+        "Charge",
+        "Charge Beam",
+        "Charm",
+        "Discharge",
+        "Drain Punch",
+        "Eerie Impulse",
+        "Electric Terrain",
+        "Electro Ball",
+        "Electroweb",
+        "Encore",
+        "Endeavor",
+        "Endure",
+        "Facade",
+        "Fire Punch",
+        "Flail",
+        "Fling",
+        "Giga Impact",
+        "Growl",
+        "Gunk Shot",
+        "Helping Hand",
+        "Hex",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Leer",
+        "Magnetic Flux",
+        "Mega Kick",
+        "Mega Punch",
+        "Metal Sound",
+        "Metronome",
+        "Noble Roar",
+        "Nuzzle",
+        "Overdrive",
+        "Payback",
+        "Poison Jab",
+        "Poison Tail",
+        "Protect",
+        "Psychic Noise",
+        "Rain Dance",
+        "Rest",
+        "Rising Voltage",
+        "Round",
+        "Scary Face",
+        "Screech",
+        "Shock Wave",
+        "Sleep Talk",
+        "Sludge Bomb",
+        "Sludge Wave",
+        "Snarl",
+        "Snore",
+        "Spark",
+        "Stored Power",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Swift",
+        "Take Down",
+        "Taunt",
+        "Tearful Look",
+        "Tera Blast",
+        "Thief",
+        "Throat Chop",
+        "Thunder",
+        "Thunder Fang",
+        "Thunder Punch",
+        "Thunder Shock",
+        "Thunder Wave",
+        "Thunderbolt",
+        "Toxic",
+        "Toxic Spikes",
+        "Trailblaze",
+        "Uproar",
+        "Venom Drench",
+        "Venoshock",
+        "Volt Switch",
+        "Wild Charge"
+      ],
+      "moves": [
+        {
+          "name": "Belch",
+          "type": "poison",
+          "category": "special",
+          "power": 120,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Gunk Shot",
+          "type": "poison",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 80,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 30,
+            "status": "poison"
+          }
+        },
+        {
+          "name": "Thunder",
+          "type": "electric",
+          "category": "special",
+          "power": 110,
+          "accuracy": 70,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 30,
+            "status": "paralysis"
+          }
+        },
+        {
+          "name": "Sludge Wave",
+          "type": "poison",
+          "category": "special",
+          "power": 95,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "all-adjacent",
+          "secondary": {
+            "chance": 10,
+            "status": "poison"
+          }
+        },
+        {
+          "name": "Sludge Bomb",
+          "type": "poison",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "bullet"
+          ],
+          "secondary": {
+            "chance": 30,
+            "status": "poison"
+          }
+        },
+        {
+          "name": "Thunderbolt",
+          "type": "electric",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 10,
+            "status": "paralysis"
+          }
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Thunder Wave",
+          "type": "electric",
+          "category": "status",
+          "power": null,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
+        },
+        {
+          "name": "Substitute",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "grapploct",
+      "name": "Grapploct",
+      "types": [
+        "fighting"
+      ],
+      "base_stats": {
+        "hp": 80,
+        "attack": 118,
+        "defense": 90,
+        "special_attack": 70,
+        "special_defense": 80,
+        "speed": 42
+      },
+      "abilities": [
+        "Limber",
+        "Technician"
+      ],
+      "movepool": [
+        "Attract",
+        "Bind",
+        "Body Slam",
+        "Brick Break",
+        "Brine",
+        "Brutal Swing",
+        "Bulk Up",
+        "Close Combat",
+        "Coaching",
+        "Detect",
+        "Dig",
+        "Dive",
+        "Drain Punch",
+        "Endure",
+        "Facade",
+        "Feint",
+        "Focus Blast",
+        "Giga Impact",
+        "Hydro Pump",
+        "Hyper Beam",
+        "Ice Punch",
+        "Leer",
+        "Liquidation",
+        "Mega Punch",
+        "Mud Shot",
+        "Muddy Water",
+        "Octazooka",
+        "Octolock",
+        "Payback",
+        "Protect",
+        "Rest",
+        "Retaliate",
+        "Revenge",
+        "Reversal",
+        "Rock Smash",
+        "Round",
+        "Scary Face",
+        "Skitter Smack",
+        "Sleep Talk",
+        "Snore",
+        "Stomping Tantrum",
+        "Submission",
+        "Substitute",
+        "Superpower",
+        "Surf",
+        "Taunt",
+        "Topsy-Turvy",
+        "Waterfall",
+        "Whirlpool",
+        "Work Up"
+      ],
+      "moves": [
+        {
+          "name": "Close Combat",
+          "type": "fighting",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "selfBoosts": {
+            "def": -1,
+            "spd": -1
+          }
+        },
+        {
+          "name": "Focus Blast",
+          "type": "fighting",
+          "category": "special",
+          "power": 120,
+          "accuracy": 70,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "bullet"
+          ],
+          "secondary": {
+            "chance": 10,
+            "boosts": {
+              "spd": -1
+            }
+          }
+        },
+        {
+          "name": "Superpower",
+          "type": "fighting",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "selfBoosts": {
+            "atk": -1,
+            "def": -1
+          }
+        },
+        {
+          "name": "Submission",
+          "type": "fighting",
+          "category": "physical",
+          "power": 80,
+          "accuracy": 80,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Brick Break",
+          "type": "fighting",
+          "category": "physical",
+          "power": 75,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Drain Punch",
+          "type": "fighting",
+          "category": "physical",
+          "power": 75,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact",
+            "punch"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Bulk Up",
+          "type": "fighting",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Substitute",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Taunt",
+          "type": "dark",
+          "category": "status",
+          "power": null,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        }
+      ]
+    },
+    {
+      "external_id": "perrserker",
+      "name": "Perrserker",
+      "types": [
+        "steel"
+      ],
+      "base_stats": {
+        "hp": 70,
+        "attack": 110,
+        "defense": 100,
+        "special_attack": 50,
+        "special_defense": 60,
+        "speed": 50
+      },
+      "abilities": [
+        "Battle Armor",
+        "Tough Claws",
+        "Steely Spirit"
+      ],
+      "movepool": [
+        "Aerial Ace",
+        "Amnesia",
+        "Assurance",
+        "Attract",
+        "Baton Pass",
+        "Body Slam",
+        "Brick Break",
+        "Charm",
+        "Chilling Water",
+        "Close Combat",
+        "Crunch",
+        "Curse",
+        "Dark Pulse",
+        "Dig",
+        "Double-Edge",
+        "Endeavor",
+        "Endure",
+        "Facade",
+        "Fake Out",
+        "Fake Tears",
+        "False Swipe",
+        "Flash Cannon",
+        "Fling",
+        "Foul Play",
+        "Fury Swipes",
+        "Giga Impact",
+        "Growl",
+        "Gunk Shot",
+        "Gyro Ball",
+        "Heavy Slam",
+        "Helping Hand",
+        "Hone Claws",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Iron Defense",
+        "Iron Head",
+        "Iron Tail",
+        "Knock Off",
+        "Lash Out",
+        "Metal Burst",
+        "Metal Claw",
+        "Metal Sound",
+        "Metronome",
+        "Nasty Plot",
+        "Pay Day",
+        "Payback",
+        "Play Rough",
+        "Protect",
+        "Rain Dance",
+        "Rest",
+        "Retaliate",
+        "Round",
+        "Scratch",
+        "Screech",
+        "Seed Bomb",
+        "Shadow Ball",
+        "Shadow Claw",
+        "Slash",
+        "Sleep Talk",
+        "Snore",
+        "Spite",
+        "Stealth Rock",
+        "Steel Beam",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Swords Dance",
+        "Take Down",
+        "Taunt",
+        "Tera Blast",
+        "Thief",
+        "Thrash",
+        "Throat Chop",
+        "Thunder",
+        "Thunderbolt",
+        "Trailblaze",
+        "U-turn",
+        "Uproar",
+        "Work Up",
+        "X-Scissor"
+      ],
+      "moves": [
+        {
+          "name": "Steel Beam",
+          "type": "steel",
+          "category": "special",
+          "power": 140,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Iron Tail",
+          "type": "steel",
+          "category": "physical",
+          "power": 100,
+          "accuracy": 75,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 30,
+            "boosts": {
+              "def": -1
+            }
+          }
+        },
+        {
+          "name": "Flash Cannon",
+          "type": "steel",
+          "category": "special",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 10,
+            "boosts": {
+              "spd": -1
+            }
+          }
+        },
+        {
+          "name": "Iron Head",
+          "type": "steel",
+          "category": "physical",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 30,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Metal Claw",
+          "type": "steel",
+          "category": "physical",
+          "power": 50,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Giga Impact",
+          "type": "normal",
+          "category": "physical",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Fake Out",
+          "type": "normal",
+          "category": "physical",
+          "power": 40,
+          "accuracy": 100,
+          "priority": 3,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 100,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Swords Dance",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Nasty Plot",
+          "type": "dark",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "sirfetchd",
+      "name": "Sirfetch’d",
+      "types": [
+        "fighting"
+      ],
+      "base_stats": {
+        "hp": 62,
+        "attack": 135,
+        "defense": 95,
+        "special_attack": 68,
+        "special_defense": 82,
+        "speed": 65
+      },
+      "abilities": [
+        "Steadfast",
+        "Scrappy"
+      ],
+      "movepool": [
+        "Assurance",
+        "Attract",
+        "Body Slam",
+        "Brave Bird",
+        "Brick Break",
+        "Brutal Swing",
+        "Close Combat",
+        "Coaching",
+        "Defog",
+        "Detect",
+        "Dual Wingbeat",
+        "Endure",
+        "Facade",
+        "Final Gambit",
+        "First Impression",
+        "Focus Energy",
+        "Fury Cutter",
+        "Grassy Glide",
+        "Helping Hand",
+        "Iron Defense",
+        "Knock Off",
+        "Leaf Blade",
+        "Leer",
+        "Meteor Assault",
+        "Peck",
+        "Poison Jab",
+        "Protect",
+        "Rest",
+        "Retaliate",
+        "Revenge",
+        "Rock Smash",
+        "Round",
+        "Sand Attack",
+        "Slam",
+        "Sleep Talk",
+        "Snore",
+        "Solar Blade",
+        "Steel Wing",
+        "Substitute",
+        "Sunny Day",
+        "Superpower",
+        "Swords Dance",
+        "Throat Chop",
+        "Work Up"
+      ],
+      "moves": [
+        {
+          "name": "Meteor Assault",
+          "type": "fighting",
+          "category": "physical",
+          "power": 150,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Close Combat",
+          "type": "fighting",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "selfBoosts": {
+            "def": -1,
+            "spd": -1
+          }
+        },
+        {
+          "name": "Superpower",
+          "type": "fighting",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "selfBoosts": {
+            "atk": -1,
+            "def": -1
+          }
+        },
+        {
+          "name": "Brick Break",
+          "type": "fighting",
+          "category": "physical",
+          "power": 75,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Revenge",
+          "type": "fighting",
+          "category": "physical",
+          "power": 60,
+          "accuracy": 100,
+          "priority": -4,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Rock Smash",
+          "type": "fighting",
+          "category": "physical",
+          "power": 40,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 50,
+            "boosts": {
+              "def": -1
+            }
+          }
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Swords Dance",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
+        },
+        {
+          "name": "Substitute",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "pincurchin",
+      "name": "Pincurchin",
+      "types": [
+        "electric"
+      ],
+      "base_stats": {
+        "hp": 48,
+        "attack": 101,
+        "defense": 95,
+        "special_attack": 91,
+        "special_defense": 85,
+        "speed": 15
+      },
+      "abilities": [
+        "Lightning Rod",
+        "Electric Surge"
+      ],
+      "movepool": [
+        "Acupressure",
+        "Assurance",
+        "Attract",
+        "Body Slam",
+        "Brine",
+        "Bubble Beam",
+        "Charge",
+        "Charge Beam",
+        "Chilling Water",
+        "Curse",
+        "Discharge",
+        "Electric Terrain",
+        "Electro Ball",
+        "Electroweb",
+        "Endure",
+        "Facade",
+        "Fury Attack",
+        "Giga Impact",
+        "Hex",
+        "Hydro Pump",
+        "Hyper Beam",
+        "Liquidation",
+        "Memento",
+        "Muddy Water",
+        "Pain Split",
+        "Payback",
+        "Peck",
+        "Pin Missile",
+        "Poison Jab",
+        "Protect",
+        "Rain Dance",
+        "Recover",
+        "Rest",
+        "Reversal",
+        "Rising Voltage",
+        "Round",
+        "Scald",
+        "Self-Destruct",
+        "Sleep Talk",
+        "Snore",
+        "Spark",
+        "Spikes",
+        "Substitute",
+        "Sucker Punch",
+        "Supercell Slam",
+        "Surf",
+        "Swift",
+        "Take Down",
+        "Tera Blast",
+        "Throat Chop",
+        "Thunder",
+        "Thunder Shock",
+        "Thunder Wave",
+        "Thunderbolt",
+        "Toxic Spikes",
+        "Venom Drench",
+        "Venoshock",
+        "Water Gun",
+        "Wild Charge",
+        "Zing Zap"
+      ],
+      "moves": [
+        {
+          "name": "Thunder",
+          "type": "electric",
+          "category": "special",
+          "power": 110,
+          "accuracy": 70,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 30,
+            "status": "paralysis"
+          }
+        },
+        {
+          "name": "Supercell Slam",
+          "type": "electric",
+          "category": "physical",
+          "power": 100,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Thunderbolt",
+          "type": "electric",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 10,
+            "status": "paralysis"
+          }
+        },
+        {
+          "name": "Wild Charge",
+          "type": "electric",
+          "category": "physical",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Discharge",
+          "type": "electric",
+          "category": "special",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "all-adjacent",
+          "secondary": {
+            "chance": 30,
+            "status": "paralysis"
+          }
+        },
+        {
+          "name": "Zing Zap",
+          "type": "electric",
+          "category": "physical",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 30,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Recover",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Thunder Wave",
+          "type": "electric",
+          "category": "status",
+          "power": null,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Substitute",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "indeedee",
+      "name": "Indeedee",
+      "types": [
+        "psychic",
+        "normal"
+      ],
+      "base_stats": {
+        "hp": 60,
+        "attack": 65,
+        "defense": 55,
+        "special_attack": 105,
+        "special_defense": 95,
+        "speed": 95
+      },
+      "abilities": [
+        "Inner Focus",
+        "Synchronize",
+        "Psychic Surge"
+      ],
+      "movepool": [
+        "After You",
+        "Ally Switch",
+        "Aromatherapy",
+        "Attract",
+        "Body Slam",
+        "Calm Mind",
+        "Dazzling Gleam",
+        "Disarming Voice",
+        "Drain Punch",
+        "Draining Kiss",
+        "Encore",
+        "Endure",
+        "Energy Ball",
+        "Expanding Force",
+        "Extrasensory",
+        "Facade",
+        "Fake Out",
+        "Future Sight",
+        "Gravity",
+        "Healing Wish",
+        "Helping Hand",
+        "Hyper Voice",
+        "Imprison",
+        "Last Resort",
+        "Magic Room",
+        "Magical Leaf",
+        "Metronome",
+        "Mystical Fire",
+        "Pay Day",
+        "Play Nice",
+        "Play Rough",
+        "Power Split",
+        "Power Swap",
+        "Protect",
+        "Psybeam",
+        "Psych Up",
+        "Psychic",
+        "Psychic Noise",
+        "Psychic Terrain",
+        "Psyshock",
+        "Rest",
+        "Round",
+        "Shadow Ball",
+        "Skill Swap",
+        "Sleep Talk",
+        "Snore",
+        "Stored Power",
+        "Substitute",
+        "Swift",
+        "Take Down",
+        "Tera Blast",
+        "Terrain Pulse",
+        "Tri Attack",
+        "Trick",
+        "Trick Room",
+        "Wonder Room",
+        "Zen Headbutt"
+      ],
+      "moves": [
+        {
+          "name": "Last Resort",
+          "type": "normal",
+          "category": "physical",
+          "power": 140,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Future Sight",
+          "type": "psychic",
+          "category": "special",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Hyper Voice",
+          "type": "normal",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "all-adjacent-foes",
+          "flags": [
+            "sound"
+          ]
+        },
+        {
+          "name": "Psychic",
+          "type": "psychic",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 10,
+            "boosts": {
+              "spd": -1
+            }
+          }
+        },
+        {
+          "name": "Take Down",
+          "type": "normal",
+          "category": "physical",
+          "power": 90,
+          "accuracy": 85,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Body Slam",
+          "type": "normal",
+          "category": "physical",
+          "power": 85,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 30,
+            "status": "paralysis"
+          }
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Fake Out",
+          "type": "normal",
+          "category": "physical",
+          "power": 40,
+          "accuracy": 100,
+          "priority": 3,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 100,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Trick Room",
+          "type": "psychic",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": -7,
+          "target": "self"
+        },
+        {
+          "name": "Calm Mind",
+          "type": "psychic",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "indeedeef",
+      "name": "Indeedee-F",
+      "types": [
+        "psychic",
+        "normal"
+      ],
+      "base_stats": {
+        "hp": 70,
+        "attack": 55,
+        "defense": 65,
+        "special_attack": 95,
+        "special_defense": 105,
+        "speed": 85
+      },
+      "abilities": [
+        "Own Tempo",
+        "Synchronize",
+        "Psychic Surge"
+      ],
+      "movepool": [
+        "Alluring Voice",
+        "Ally Switch",
+        "Aromatherapy",
+        "Attract",
+        "Baton Pass",
+        "Body Slam",
+        "Calm Mind",
+        "Charm",
+        "Dazzling Gleam",
+        "Disarming Voice",
+        "Drain Punch",
+        "Draining Kiss",
+        "Endure",
+        "Energy Ball",
+        "Expanding Force",
+        "Facade",
+        "Fake Out",
+        "Follow Me",
+        "Future Sight",
+        "Guard Split",
+        "Guard Swap",
+        "Heal Pulse",
+        "Healing Wish",
+        "Helping Hand",
+        "Hyper Voice",
+        "Imprison",
+        "Light Screen",
+        "Magical Leaf",
+        "Metronome",
+        "Mystical Fire",
+        "Pay Day",
+        "Play Nice",
+        "Play Rough",
+        "Protect",
+        "Psybeam",
+        "Psych Up",
+        "Psychic",
+        "Psychic Terrain",
+        "Psycho Shift",
+        "Psyshock",
+        "Reflect",
+        "Rest",
+        "Round",
+        "Safeguard",
+        "Shadow Ball",
+        "Skill Swap",
+        "Sleep Talk",
+        "Snore",
+        "Stored Power",
+        "Substitute",
+        "Swift",
+        "Take Down",
+        "Tera Blast",
+        "Terrain Pulse",
+        "Trick",
+        "Trick Room",
+        "Zen Headbutt"
+      ],
+      "moves": [
+        {
+          "name": "Future Sight",
+          "type": "psychic",
+          "category": "special",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Hyper Voice",
+          "type": "normal",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "all-adjacent-foes",
+          "flags": [
+            "sound"
+          ]
+        },
+        {
+          "name": "Psychic",
+          "type": "psychic",
+          "category": "special",
+          "power": 90,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 10,
+            "boosts": {
+              "spd": -1
+            }
+          }
+        },
+        {
+          "name": "Take Down",
+          "type": "normal",
+          "category": "physical",
+          "power": 90,
+          "accuracy": 85,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Body Slam",
+          "type": "normal",
+          "category": "physical",
+          "power": 85,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 30,
+            "status": "paralysis"
+          }
+        },
+        {
+          "name": "Expanding Force",
+          "type": "psychic",
+          "category": "special",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Fake Out",
+          "type": "normal",
+          "category": "physical",
+          "power": 40,
+          "accuracy": 100,
+          "priority": 3,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "secondary": {
+            "chance": 100,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Trick Room",
+          "type": "psychic",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": -7,
+          "target": "self"
+        },
+        {
+          "name": "Calm Mind",
+          "type": "psychic",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "pawmot",
+      "name": "Pawmot",
+      "types": [
+        "electric",
+        "fighting"
+      ],
+      "base_stats": {
+        "hp": 70,
+        "attack": 115,
+        "defense": 70,
+        "special_attack": 70,
+        "special_defense": 60,
+        "speed": 105
+      },
+      "abilities": [
+        "Volt Absorb",
+        "Natural Cure",
+        "Iron Fist"
+      ],
+      "movepool": [
+        "Agility",
+        "Arm Thrust",
+        "Baton Pass",
+        "Bite",
+        "Body Press",
+        "Brick Break",
+        "Bulk Up",
+        "Charge",
+        "Charge Beam",
+        "Charm",
+        "Close Combat",
+        "Coaching",
+        "Crunch",
+        "Dig",
+        "Discharge",
+        "Double Shock",
+        "Double-Edge",
+        "Eerie Impulse",
+        "Electric Terrain",
+        "Electro Ball",
+        "Electroweb",
+        "Encore",
+        "Endure",
+        "Entrainment",
+        "Facade",
+        "Fire Punch",
+        "Fling",
+        "Focus Blast",
+        "Focus Punch",
+        "Giga Impact",
+        "Grass Knot",
+        "Growl",
+        "Helping Hand",
+        "Hyper Beam",
+        "Ice Punch",
+        "Knock Off",
+        "Low Kick",
+        "Low Sweep",
+        "Metal Claw",
+        "Metronome",
+        "Nuzzle",
+        "Play Rough",
+        "Protect",
+        "Quick Attack",
+        "Rain Dance",
+        "Rest",
+        "Revival Blessing",
+        "Rock Tomb",
+        "Scratch",
+        "Seed Bomb",
+        "Slam",
+        "Sleep Talk",
+        "Spark",
+        "Substitute",
+        "Sunny Day",
+        "Super Fang",
+        "Supercell Slam",
+        "Swift",
+        "Take Down",
+        "Tera Blast",
+        "Thief",
+        "Throat Chop",
+        "Thunder",
+        "Thunder Fang",
+        "Thunder Punch",
+        "Thunder Shock",
+        "Thunder Wave",
+        "Thunderbolt",
+        "Upper Hand",
+        "Volt Switch",
+        "Wild Charge"
+      ],
+      "moves": [
+        {
+          "name": "Focus Punch",
+          "type": "fighting",
+          "category": "physical",
+          "power": 150,
+          "accuracy": 100,
+          "priority": -3,
+          "target": "normal",
+          "flags": [
+            "contact",
+            "punch"
+          ]
+        },
+        {
+          "name": "Close Combat",
+          "type": "fighting",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ],
+          "selfBoosts": {
+            "def": -1,
+            "spd": -1
+          }
+        },
+        {
+          "name": "Double Shock",
+          "type": "electric",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Focus Blast",
+          "type": "fighting",
+          "category": "special",
+          "power": 120,
+          "accuracy": 70,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "bullet"
+          ],
+          "secondary": {
+            "chance": 10,
+            "boosts": {
+              "spd": -1
+            }
+          }
+        },
+        {
+          "name": "Thunder",
+          "type": "electric",
+          "category": "special",
+          "power": 110,
+          "accuracy": 70,
+          "priority": 0,
+          "target": "normal",
+          "secondary": {
+            "chance": 30,
+            "status": "paralysis"
+          }
+        },
+        {
+          "name": "Supercell Slam",
+          "type": "electric",
+          "category": "physical",
+          "power": 100,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Bulk Up",
+          "type": "fighting",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Thunder Wave",
+          "type": "electric",
+          "category": "status",
+          "power": null,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
+        }
+      ]
+    },
+    {
+      "external_id": "arboliva",
+      "name": "Arboliva",
+      "types": [
+        "grass",
+        "normal"
+      ],
+      "base_stats": {
+        "hp": 78,
+        "attack": 69,
+        "defense": 90,
+        "special_attack": 125,
+        "special_defense": 109,
+        "speed": 39
+      },
+      "abilities": [
+        "Seed Sower",
+        "Harvest"
+      ],
+      "movepool": [
+        "Absorb",
+        "Alluring Voice",
+        "Bullet Seed",
+        "Charm",
+        "Dazzling Gleam",
+        "Earth Power",
+        "Encore",
+        "Endure",
+        "Energy Ball",
+        "Facade",
+        "Flail",
+        "Fling",
+        "Giga Drain",
+        "Giga Impact",
+        "Grass Knot",
+        "Grassy Terrain",
+        "Growth",
+        "Helping Hand",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Leaf Storm",
+        "Leech Seed",
+        "Light Screen",
+        "Magical Leaf",
+        "Mega Drain",
+        "Metronome",
+        "Mirror Coat",
+        "Petal Blizzard",
+        "Petal Dance",
+        "Pollen Puff",
+        "Protect",
+        "Psych Up",
+        "Razor Leaf",
+        "Reflect",
+        "Rest",
+        "Safeguard",
+        "Seed Bomb",
+        "Sleep Talk",
+        "Solar Beam",
+        "Solar Blade",
+        "Substitute",
+        "Sunny Day",
+        "Sweet Scent",
+        "Swift",
+        "Tackle",
+        "Tera Blast",
+        "Terrain Pulse",
+        "Trailblaze",
+        "Weather Ball"
+      ],
+      "moves": [
+        {
+          "name": "Giga Impact",
+          "type": "normal",
+          "category": "physical",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hyper Beam",
+          "type": "normal",
+          "category": "special",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Leaf Storm",
+          "type": "grass",
+          "category": "special",
+          "power": 130,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "selfBoosts": {
+            "spa": -2
+          }
+        },
+        {
+          "name": "Solar Blade",
+          "type": "grass",
+          "category": "physical",
+          "power": 125,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact",
+            "slicing"
+          ]
+        },
+        {
+          "name": "Petal Dance",
+          "type": "grass",
+          "category": "special",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Solar Beam",
+          "type": "grass",
+          "category": "special",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
+        },
+        {
+          "name": "Reflect",
+          "type": "psychic",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Light Screen",
+          "type": "psychic",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "external_id": "squawkabilly",
+      "name": "Squawkabilly",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "base_stats": {
+        "hp": 82,
+        "attack": 96,
+        "defense": 51,
+        "special_attack": 45,
+        "special_defense": 51,
+        "speed": 92
+      },
+      "abilities": [
+        "Intimidate",
+        "Hustle",
+        "Guts"
+      ],
+      "movepool": [
+        "Aerial Ace",
+        "Air Cutter",
+        "Air Slash",
+        "Brave Bird",
+        "Copycat",
+        "Double-Edge",
+        "Dual Wingbeat",
+        "Endeavor",
+        "Endure",
+        "Facade",
+        "Fake Tears",
+        "Feather Dance",
+        "Final Gambit",
+        "Flatter",
+        "Fly",
+        "Foul Play",
+        "Fury Attack",
+        "Giga Impact",
+        "Growl",
+        "Heat Wave",
+        "Helping Hand",
+        "Hurricane",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Lash Out",
+        "Mimic",
+        "Parting Shot",
+        "Peck",
+        "Pounce",
+        "Protect",
+        "Quick Attack",
+        "Rest",
+        "Reversal",
+        "Roost",
+        "Scary Face",
+        "Sleep Talk",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Tailwind",
+        "Take Down",
+        "Taunt",
+        "Tera Blast",
+        "Thief",
+        "Torment",
+        "U-turn",
+        "Uproar"
+      ],
+      "moves": [
+        {
+          "name": "Giga Impact",
+          "type": "normal",
+          "category": "physical",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hyper Beam",
+          "type": "normal",
+          "category": "special",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Brave Bird",
+          "type": "flying",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Double-Edge",
+          "type": "normal",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hurricane",
+          "type": "flying",
+          "category": "special",
+          "power": 110,
+          "accuracy": 70,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Fly",
+          "type": "flying",
+          "category": "physical",
+          "power": 90,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Tailwind",
+          "type": "flying",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Roost",
+          "type": "flying",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
+        }
+      ]
+    },
+    {
+      "external_id": "squawkabillyblue",
+      "name": "Squawkabilly-Blue",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "base_stats": {
+        "hp": 82,
+        "attack": 96,
+        "defense": 51,
+        "special_attack": 45,
+        "special_defense": 51,
+        "speed": 92
+      },
+      "abilities": [
+        "Intimidate",
+        "Hustle",
+        "Guts"
+      ],
+      "movepool": [
+        "Aerial Ace",
+        "Air Cutter",
+        "Air Slash",
+        "Brave Bird",
+        "Copycat",
+        "Double-Edge",
+        "Dual Wingbeat",
+        "Endeavor",
+        "Endure",
+        "Facade",
+        "Fake Tears",
+        "Feather Dance",
+        "Final Gambit",
+        "Flatter",
+        "Fly",
+        "Foul Play",
+        "Fury Attack",
+        "Giga Impact",
+        "Growl",
+        "Heat Wave",
+        "Helping Hand",
+        "Hurricane",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Lash Out",
+        "Mimic",
+        "Parting Shot",
+        "Peck",
+        "Pounce",
+        "Protect",
+        "Quick Attack",
+        "Rest",
+        "Reversal",
+        "Roost",
+        "Scary Face",
+        "Sleep Talk",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Tailwind",
+        "Take Down",
+        "Taunt",
+        "Tera Blast",
+        "Thief",
+        "Torment",
+        "U-turn",
+        "Uproar"
+      ],
+      "moves": [
+        {
+          "name": "Giga Impact",
+          "type": "normal",
+          "category": "physical",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hyper Beam",
+          "type": "normal",
+          "category": "special",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Brave Bird",
+          "type": "flying",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Double-Edge",
+          "type": "normal",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hurricane",
+          "type": "flying",
+          "category": "special",
+          "power": 110,
+          "accuracy": 70,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Fly",
+          "type": "flying",
+          "category": "physical",
+          "power": 90,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Tailwind",
+          "type": "flying",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Roost",
+          "type": "flying",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
+        }
+      ]
+    },
+    {
+      "external_id": "squawkabillyyellow",
+      "name": "Squawkabilly-Yellow",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "base_stats": {
+        "hp": 82,
+        "attack": 96,
+        "defense": 51,
+        "special_attack": 45,
+        "special_defense": 51,
+        "speed": 92
+      },
+      "abilities": [
+        "Intimidate",
+        "Hustle",
+        "Sheer Force"
+      ],
+      "movepool": [
+        "Aerial Ace",
+        "Air Cutter",
+        "Air Slash",
+        "Brave Bird",
+        "Copycat",
+        "Double-Edge",
+        "Dual Wingbeat",
+        "Endeavor",
+        "Endure",
+        "Facade",
+        "Fake Tears",
+        "Feather Dance",
+        "Final Gambit",
+        "Flatter",
+        "Fly",
+        "Foul Play",
+        "Fury Attack",
+        "Giga Impact",
+        "Growl",
+        "Heat Wave",
+        "Helping Hand",
+        "Hurricane",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Lash Out",
+        "Mimic",
+        "Parting Shot",
+        "Peck",
+        "Pounce",
+        "Protect",
+        "Quick Attack",
+        "Rest",
+        "Reversal",
+        "Roost",
+        "Scary Face",
+        "Sleep Talk",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Tailwind",
+        "Take Down",
+        "Taunt",
+        "Tera Blast",
+        "Thief",
+        "Torment",
+        "U-turn",
+        "Uproar"
+      ],
+      "moves": [
+        {
+          "name": "Giga Impact",
+          "type": "normal",
+          "category": "physical",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hyper Beam",
+          "type": "normal",
+          "category": "special",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Brave Bird",
+          "type": "flying",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Double-Edge",
+          "type": "normal",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hurricane",
+          "type": "flying",
+          "category": "special",
+          "power": 110,
+          "accuracy": 70,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Fly",
+          "type": "flying",
+          "category": "physical",
+          "power": 90,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Tailwind",
+          "type": "flying",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Roost",
+          "type": "flying",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
+        }
+      ]
+    },
+    {
+      "external_id": "squawkabillywhite",
+      "name": "Squawkabilly-White",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "base_stats": {
+        "hp": 82,
+        "attack": 96,
+        "defense": 51,
+        "special_attack": 45,
+        "special_defense": 51,
+        "speed": 92
+      },
+      "abilities": [
+        "Intimidate",
+        "Hustle",
+        "Sheer Force"
+      ],
+      "movepool": [
+        "Aerial Ace",
+        "Air Cutter",
+        "Air Slash",
+        "Brave Bird",
+        "Copycat",
+        "Double-Edge",
+        "Dual Wingbeat",
+        "Endeavor",
+        "Endure",
+        "Facade",
+        "Fake Tears",
+        "Feather Dance",
+        "Final Gambit",
+        "Flatter",
+        "Fly",
+        "Foul Play",
+        "Fury Attack",
+        "Giga Impact",
+        "Growl",
+        "Heat Wave",
+        "Helping Hand",
+        "Hurricane",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Lash Out",
+        "Mimic",
+        "Parting Shot",
+        "Peck",
+        "Pounce",
+        "Protect",
+        "Quick Attack",
+        "Rest",
+        "Reversal",
+        "Roost",
+        "Scary Face",
+        "Sleep Talk",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Tailwind",
+        "Take Down",
+        "Taunt",
+        "Tera Blast",
+        "Thief",
+        "Torment",
+        "U-turn",
+        "Uproar"
+      ],
+      "moves": [
+        {
+          "name": "Giga Impact",
+          "type": "normal",
+          "category": "physical",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hyper Beam",
+          "type": "normal",
+          "category": "special",
+          "power": 150,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Brave Bird",
+          "type": "flying",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Double-Edge",
+          "type": "normal",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Hurricane",
+          "type": "flying",
+          "category": "special",
+          "power": 110,
+          "accuracy": 70,
+          "priority": 0,
+          "target": "normal"
+        },
+        {
+          "name": "Fly",
+          "type": "flying",
+          "category": "physical",
+          "power": 90,
+          "accuracy": 95,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Tailwind",
+          "type": "flying",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Roost",
+          "type": "flying",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
+        }
+      ]
+    },
+    {
+      "external_id": "mabosstiff",
+      "name": "Mabosstiff",
+      "types": [
+        "dark"
+      ],
+      "base_stats": {
+        "hp": 80,
+        "attack": 120,
+        "defense": 90,
+        "special_attack": 60,
+        "special_defense": 70,
+        "speed": 85
+      },
+      "abilities": [
+        "Intimidate",
+        "Guard Dog",
+        "Stakeout"
+      ],
+      "movepool": [
+        "Bite",
+        "Body Slam",
+        "Charm",
+        "Comeuppance",
+        "Crunch",
+        "Curse",
+        "Dark Pulse",
+        "Dig",
+        "Double-Edge",
+        "Endeavor",
+        "Endure",
+        "Facade",
+        "Fake Tears",
+        "Fire Fang",
+        "Giga Impact",
+        "Headbutt",
+        "Helping Hand",
+        "Hone Claws",
+        "Hyper Beam",
+        "Hyper Voice",
+        "Ice Fang",
+        "Jaw Lock",
+        "Lash Out",
+        "Leer",
+        "Lick",
+        "Outrage",
+        "Pain Split",
+        "Payback",
+        "Play Rough",
+        "Protect",
+        "Psychic Fangs",
+        "Rain Dance",
+        "Rest",
+        "Reversal",
+        "Roar",
+        "Scary Face",
+        "Sleep Talk",
+        "Snarl",
+        "Spite",
+        "Substitute",
+        "Sunny Day",
+        "Swagger",
+        "Tackle",
+        "Take Down",
+        "Taunt",
+        "Tera Blast",
+        "Thief",
+        "Thunder Fang",
+        "Trailblaze",
+        "Wild Charge"
+      ],
+      "moves": [
+        {
+          "name": "Crunch",
+          "type": "dark",
+          "category": "physical",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact",
+            "bite"
+          ],
+          "secondary": {
+            "chance": 20,
+            "boosts": {
+              "def": -1
+            }
+          }
+        },
+        {
+          "name": "Dark Pulse",
+          "type": "dark",
+          "category": "special",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "pulse"
+          ],
+          "secondary": {
+            "chance": 20,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Jaw Lock",
+          "type": "dark",
+          "category": "physical",
+          "power": 80,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact",
+            "bite"
+          ]
+        },
+        {
+          "name": "Lash Out",
+          "type": "dark",
+          "category": "physical",
+          "power": 75,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Bite",
+          "type": "dark",
+          "category": "physical",
+          "power": 60,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact",
+            "bite"
+          ],
+          "secondary": {
+            "chance": 30,
+            "flinch": true
+          }
+        },
+        {
+          "name": "Thief",
+          "type": "dark",
+          "category": "physical",
+          "power": 60,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
+        },
+        {
+          "name": "Substitute",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Taunt",
+          "type": "dark",
+          "category": "status",
+          "power": null,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal"
+        }
+      ]
+    },
+    {
+      "external_id": "baxcalibur",
+      "name": "Baxcalibur",
+      "types": [
+        "dragon",
+        "ice"
+      ],
+      "base_stats": {
+        "hp": 115,
+        "attack": 145,
+        "defense": 92,
+        "special_attack": 75,
+        "special_defense": 86,
+        "speed": 87
+      },
+      "abilities": [
+        "Thermal Exchange",
+        "Ice Body"
+      ],
+      "movepool": [
+        "Aerial Ace",
+        "Avalanche",
+        "Bite",
+        "Blizzard",
+        "Body Press",
+        "Body Slam",
+        "Breaking Swipe",
+        "Brick Break",
+        "Bulldoze",
+        "Crunch",
+        "Dig",
+        "Double-Edge",
+        "Draco Meteor",
+        "Dragon Breath",
+        "Dragon Cheer",
+        "Dragon Claw",
+        "Dragon Dance",
+        "Dragon Pulse",
+        "Dragon Tail",
+        "Earthquake",
+        "Endure",
+        "Facade",
+        "False Swipe",
+        "Focus Energy",
+        "Giga Impact",
+        "Glaive Rush",
+        "Helping Hand",
+        "High Horsepower",
+        "Hyper Beam",
+        "Ice Beam",
+        "Ice Fang",
+        "Ice Shard",
+        "Icicle Crash",
+        "Icicle Spear",
+        "Icy Wind",
+        "Iron Head",
+        "Leer",
+        "Outrage",
+        "Protect",
+        "Rain Dance",
+        "Rest",
+        "Scale Shot",
+        "Scary Face",
+        "Sleep Talk",
+        "Snowscape",
+        "Stomping Tantrum",
+        "Substitute",
+        "Swords Dance",
+        "Tackle",
+        "Take Down",
+        "Tera Blast",
+        "Thunder Fang",
+        "Zen Headbutt"
+      ],
+      "moves": [
+        {
+          "name": "Draco Meteor",
+          "type": "dragon",
+          "category": "special",
+          "power": 130,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "selfBoosts": {
+            "spa": -2
+          }
+        },
+        {
+          "name": "Glaive Rush",
+          "type": "dragon",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Outrage",
+          "type": "dragon",
+          "category": "physical",
+          "power": 120,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "flags": [
+            "contact"
+          ]
+        },
+        {
+          "name": "Blizzard",
+          "type": "ice",
+          "category": "special",
+          "power": 110,
+          "accuracy": 70,
+          "priority": 0,
+          "target": "all-adjacent-foes",
+          "secondary": {
+            "chance": 10,
+            "status": "freeze"
+          }
+        },
+        {
+          "name": "Icicle Spear",
+          "type": "ice",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 100,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
+          "name": "Scale Shot",
+          "type": "dragon",
+          "category": "physical",
+          "power": 25,
+          "accuracy": 90,
+          "priority": 0,
+          "target": "normal",
+          "hits": 4
+        },
+        {
+          "name": "Protect",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 4,
+          "target": "self"
+        },
+        {
+          "name": "Swords Dance",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Dragon Dance",
+          "type": "dragon",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 0,
+          "target": "self"
+        },
+        {
+          "name": "Helping Hand",
+          "type": "normal",
+          "category": "status",
+          "power": null,
+          "accuracy": null,
+          "priority": 5,
+          "target": "ally"
         }
       ]
     }

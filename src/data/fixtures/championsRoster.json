@@ -1,6 +1,6 @@
 {
   "source": "Pokémon Champions available roster (user-provided authoritative list)",
-  "count": 235,
+  "count": 264,
   "roster": [
     {
       "ndex": "#0460",
@@ -1411,6 +1411,180 @@
       "name": "Zoroark Hisuian Form",
       "type1": "Normal",
       "type2": "Ghost"
+    },
+    {
+      "ndex": "#0040",
+      "name": "Wigglytuff",
+      "type1": "Normal",
+      "type2": "Fairy"
+    },
+    {
+      "ndex": "#0053",
+      "name": "Persian",
+      "type1": "Normal",
+      "type2": "Normal"
+    },
+    {
+      "ndex": "#0053",
+      "name": "Persian-Alola",
+      "type1": "Dark",
+      "type2": "Dark"
+    },
+    {
+      "ndex": "#0083",
+      "name": "Farfetch’d",
+      "type1": "Normal",
+      "type2": "Flying"
+    },
+    {
+      "ndex": "#0122",
+      "name": "Mr. Mime",
+      "type1": "Psychic",
+      "type2": "Fairy"
+    },
+    {
+      "ndex": "#0317",
+      "name": "Swalot",
+      "type1": "Poison",
+      "type2": "Poison"
+    },
+    {
+      "ndex": "#0373",
+      "name": "Salamence",
+      "type1": "Dragon",
+      "type2": "Flying"
+    },
+    {
+      "ndex": "#0673",
+      "name": "Gogoat",
+      "type1": "Grass",
+      "type2": "Grass"
+    },
+    {
+      "ndex": "#0768",
+      "name": "Golisopod",
+      "type1": "Bug",
+      "type2": "Water"
+    },
+    {
+      "ndex": "#0812",
+      "name": "Rillaboom",
+      "type1": "Grass",
+      "type2": "Grass"
+    },
+    {
+      "ndex": "#0815",
+      "name": "Cinderace",
+      "type1": "Fire",
+      "type2": "Fire"
+    },
+    {
+      "ndex": "#0818",
+      "name": "Inteleon",
+      "type1": "Water",
+      "type2": "Water"
+    },
+    {
+      "ndex": "#0828",
+      "name": "Thievul",
+      "type1": "Dark",
+      "type2": "Dark"
+    },
+    {
+      "ndex": "#0849",
+      "name": "Toxtricity",
+      "type1": "Electric",
+      "type2": "Poison"
+    },
+    {
+      "ndex": "#0849",
+      "name": "Toxtricity-Low-Key",
+      "type1": "Electric",
+      "type2": "Poison"
+    },
+    {
+      "ndex": "#0853",
+      "name": "Grapploct",
+      "type1": "Fighting",
+      "type2": "Fighting"
+    },
+    {
+      "ndex": "#0863",
+      "name": "Perrserker",
+      "type1": "Steel",
+      "type2": "Steel"
+    },
+    {
+      "ndex": "#0865",
+      "name": "Sirfetch’d",
+      "type1": "Fighting",
+      "type2": "Fighting"
+    },
+    {
+      "ndex": "#0871",
+      "name": "Pincurchin",
+      "type1": "Electric",
+      "type2": "Electric"
+    },
+    {
+      "ndex": "#0876",
+      "name": "Indeedee",
+      "type1": "Psychic",
+      "type2": "Normal"
+    },
+    {
+      "ndex": "#0876",
+      "name": "Indeedee-F",
+      "type1": "Psychic",
+      "type2": "Normal"
+    },
+    {
+      "ndex": "#0923",
+      "name": "Pawmot",
+      "type1": "Electric",
+      "type2": "Fighting"
+    },
+    {
+      "ndex": "#0930",
+      "name": "Arboliva",
+      "type1": "Grass",
+      "type2": "Normal"
+    },
+    {
+      "ndex": "#0931",
+      "name": "Squawkabilly",
+      "type1": "Normal",
+      "type2": "Flying"
+    },
+    {
+      "ndex": "#0931",
+      "name": "Squawkabilly-Blue",
+      "type1": "Normal",
+      "type2": "Flying"
+    },
+    {
+      "ndex": "#0931",
+      "name": "Squawkabilly-Yellow",
+      "type1": "Normal",
+      "type2": "Flying"
+    },
+    {
+      "ndex": "#0931",
+      "name": "Squawkabilly-White",
+      "type1": "Normal",
+      "type2": "Flying"
+    },
+    {
+      "ndex": "#0943",
+      "name": "Mabosstiff",
+      "type1": "Dark",
+      "type2": "Dark"
+    },
+    {
+      "ndex": "#0998",
+      "name": "Baxcalibur",
+      "type1": "Dragon",
+      "type2": "Ice"
     }
   ]
 }

@@ -5,7 +5,7 @@ import { listDbItems, getDbItem } from "../dexDatabase";
 // this list and the `competitive` flag in dexDatabase means the "Champions"
 // item view no longer matches the format's item legality.
 const CHAMPIONS_LEGAL_ITEMS = [
-  "Abomasite", "Absolite", "Aerodactylite", "Aggronite", "Alakazite",
+  "Abomasite", "Aerodactylite", "Aggronite", "Alakazite",
   "Altarianite", "Ampharosite", "Aspear Berry", "Audinite", "Babiri Berry",
   "Banettite", "Barbaracite", "Beedrillite", "Big Root", "Black Belt",
   "Black Glasses", "Blastoisinite", "Blazikenite", "Bright Powder", "Cameruptite",
@@ -15,13 +15,13 @@ const CHAMPIONS_LEGAL_ITEMS = [
   "Crabominite", "Damp Rock", "Delphoxite", "Dragalgite", "Dragon Fang",
   "Dragoninite", "Drampanite", "Eelektrossite", "Emboarite", "Excadrite",
   "Expert Belt", "Fairy Feather", "Falinksite", "Feraligite", "Floettite",
-  "Focus Band", "Focus Sash", "Froslassite", "Galladite", "Garchompite",
+  "Focus Band", "Focus Sash", "Froslassite", "Galladite",
   "Gardevoirite", "Gengarite", "Glalitite", "Glimmoranite", "Golurkite",
   "Greninjite", "Gyaradosite", "Haban Berry", "Hard Stone", "Hawluchanite",
   "Heat Rock", "Heracronite", "Houndoominite", "Icy Rock", "Iron Ball",
   "Kangaskhanite", "Kasib Berry", "Kebia Berry", "King's Rock", "Leftovers",
   "Leppa Berry", "Life Orb", "Light Ball", "Light Clay", "Lopunnite",
-  "Lucarionite", "Lum Berry", "Magnet", "Malamarite", "Manectite",
+  "Lum Berry", "Magnet", "Malamarite", "Manectite",
   "Mawilite", "Medichamite", "Meganiumite", "Mental Herb", "Meowsticite",
   "Metagrossite", "Metal Coat", "Metronome", "Miracle Seed", "Muscle Band",
   "Mystic Water", "Never-Melt Ice", "Occa Berry", "Oran Berry", "Passho Berry",
@@ -35,6 +35,10 @@ const CHAMPIONS_LEGAL_ITEMS = [
   "Steelixite", "Swampertite", "Tanga Berry", "Twisted Spoon", "Tyranitarite",
   "Venusaurite", "Victreebelite", "Wacan Berry", "White Herb", "Wide Lens",
   "Wise Glasses", "Yache Berry", "Zoom Lens",
+  // Season M-6 / update 1.2.0 additions.
+  "Electric Seed", "Psychic Seed", "Misty Seed", "Grassy Seed", "Normal Gem",
+  "Terrain Extender", "Rocky Helmet", "Air Balloon", "Red Card", "Eject Button", "Leek",
+  "Salamencite", "Golisopite", "Baxcalibrite", "Absolite Z", "Garchompite Z", "Lucarionite Z",
 ];
 
 describe("Champions legal items", () => {

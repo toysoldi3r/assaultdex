@@ -19,6 +19,13 @@ interface RosterEntry {
   type2: string;
 }
 
+// Season M-6 / update 1.2.0 movepool restrictions: these species can no longer
+// learn the listed moves. Keyed by @pkmn/dex species name.
+const MOVEPOOL_REMOVE: Record<string, string[]> = {
+  Politoed: ["Pound"],
+  Archaludon: ["Mirror Coat", "Metal Burst"],
+};
+
 /** Map an upload display name to a Showdown species name. */
 function toShowdown(name: string): string {
   if (/ Rotom$/.test(name) || name === "Rotom Rotom") {
@@ -223,7 +230,9 @@ async function main() {
     }
     const learnMoves = Object.keys(learnset?.learnset ?? {})
       .map((id) => Dex.moves.get(id))
-      .filter((m) => m.exists);
+      .filter((m) => m.exists)
+      // Season M-6 / update 1.2.0: some species lost access to specific moves.
+      .filter((m) => !(MOVEPOOL_REMOVE[species.name] ?? []).includes(m.name));
     const movepool = [...new Set(learnMoves.map((m) => m.name))].sort();
 
     // Effective power accounts for multi-hit moves (Dragon Darts 50×2, etc.).
@@ -287,7 +296,7 @@ async function main() {
   }
 
   const dataset = {
-    data_version: "champions-2026.1",
+    data_version: "champions-2026.M6",
     note: "Full Pokémon Champions pool. Membership from the authoritative roster (championsRoster.json). Base stats, types, abilities, movepools, and move data generated from @pkmn/dex (Pokémon Showdown dataset). Move mechanics remain provisional for Champions; the `moves` list is a curated playable subset of the full `movepool`.",
     pokemon: out,
   };

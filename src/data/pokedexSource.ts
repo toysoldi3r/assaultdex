@@ -5,6 +5,7 @@
 // legal set. Server-only (imports @pkmn/dex).
 
 import { Dex } from "@pkmn/dex";
+import { MOVE_PP_OVERRIDE } from "@/data/dexDatabase";
 import type { PokedexEntry } from "@/components/PokedexBrowser";
 import fixtureData from "./fixtures/pokemon.json";
 
@@ -381,7 +382,7 @@ async function computeDexSpecies(slug: string): Promise<DexSpecies | null> {
       category: m.category.toLowerCase() as MoveCategory,
       power: m.category === "Status" ? null : m.basePower || null,
       accuracy: m.accuracy === true ? null : m.accuracy,
-      pp: m.pp ?? null,
+      pp: MOVE_PP_OVERRIDE[m.name] ?? m.pp ?? null,
       priority: m.priority ?? 0,
       effect: m.shortDesc || m.desc || null,
       methods: learn.methods,

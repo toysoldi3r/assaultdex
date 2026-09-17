@@ -5,6 +5,7 @@
 
 import { Dex } from "@pkmn/dex";
 import { POKEMON_TYPES, type PokemonType, type StatKey } from "@/domain/types/pokemon";
+import { CHAMPIONS_LEGAL_ITEMS } from "@/data/dexDatabase";
 import type { MegaForme, PokemonRef, Variant } from "@/lib/choicedexBuild";
 
 const STAT_KEYS_ORDER: StatKey[] = ["hp", "atk", "def", "spa", "spd", "spe"];
@@ -21,6 +22,13 @@ function orderStats(b: Record<StatKey, number>): Record<StatKey, number> {
   return Object.fromEntries(STAT_KEYS_ORDER.map((k) => [k, b[k]])) as Record<StatKey, number>;
 }
 
+/** True for a Mega/Primal forme whose trigger stone is Champions-legal (or that
+ *  needs no stone, e.g. a battle-only forme). Lets us prefer the Champions
+ *  variant when a species has several (Absol-Mega vs the legal Absol-Mega-Z). */
+function stoneLegal(f: { requiredItem?: string }): boolean {
+  return !f.requiredItem || CHAMPIONS_LEGAL_ITEMS.has(f.requiredItem);
+}
+
 /** Battle formes (Mega / Primal / Aegislash-Blade …) per pool species. */
 export function buildVariants(refs: PokemonRef[]): Record<string, Variant[]> {
   const out: Record<string, Variant[]> = {};
@@ -31,7 +39,10 @@ export function buildVariants(refs: PokemonRef[]): Record<string, Variant[]> {
     for (const fn of s.otherFormes ?? []) {
       const f = Dex.species.get(fn);
       if (!f.exists) continue;
-      if (/Mega|Primal/.test(f.forme) || f.battleOnly) {
+      const isMega = /Mega|Primal/.test(f.forme);
+      // Mega/Primal formes only count when their stone is Champions-legal;
+      // other battle-only formes (Aegislash-Blade, …) always count.
+      if ((isMega && stoneLegal(f)) || (!isMega && f.battleOnly)) {
         extra.push({ label: f.forme, baseStats: orderStats(f.baseStats), types: mapTypes(f.types) });
       }
     }
@@ -40,24 +51,30 @@ export function buildVariants(refs: PokemonRef[]): Record<string, Variant[]> {
   return out;
 }
 
-/** Mega / Primal forme per pool species, for the in-battle Mega button. */
+/** Mega / Primal forme per pool species, for the in-battle Mega button. Prefers
+ *  the forme whose stone is Champions-legal (e.g. Absol-Mega-Z over Absol-Mega). */
 export function buildMegaForms(refs: PokemonRef[]): Record<string, MegaForme> {
   const out: Record<string, MegaForme> = {};
   for (const p of refs) {
     const s = Dex.species.get(p.slug);
     if (!s.exists) continue;
+    let fallback: ReturnType<typeof Dex.species.get> | undefined;
+    let chosen: ReturnType<typeof Dex.species.get> | undefined;
     for (const fn of s.otherFormes ?? []) {
       const f = Dex.species.get(fn);
       if (!f.exists || !/Mega|Primal/.test(f.forme)) continue;
-      out[p.slug] = {
-        name: f.name,
-        baseStats: orderStats(f.baseStats),
-        types: mapTypes(f.types),
-        ability: (Object.values(f.abilities)[0] as string) ?? p.abilities[0] ?? "",
-        item: f.requiredItem ?? "",
-      };
-      break; // first Mega/Primal forme (e.g. Charizard-Mega-X)
+      fallback ??= f;
+      if (stoneLegal(f) && f.requiredItem) { chosen = f; break; }
     }
+    const f = chosen ?? fallback;
+    if (!f) continue;
+    out[p.slug] = {
+      name: f.name,
+      baseStats: orderStats(f.baseStats),
+      types: mapTypes(f.types),
+      ability: (Object.values(f.abilities)[0] as string) ?? p.abilities[0] ?? "",
+      item: f.requiredItem ?? "",
+    };
   }
   return out;
 }
