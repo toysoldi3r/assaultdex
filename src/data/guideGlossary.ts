@@ -56,16 +56,16 @@ const SLUG_LESSON: Record<string, string> = {
   stab: "typing", "speed-control": "turn-order", "weather-terrain": "field-hazards",
   "team-roles": "roles-synergy",
   // Short term slugs
-  ohko: "moves-damage", "2hko": "moves-damage", bulk: "moves-damage",
+  ohko: "damage", "2hko": "damage", bulk: "damage",
   "spread-move": "protection-targeting", redirection: "protection-targeting",
   "speed-tier": "turn-order", priority: "turn-order",
   pivot: "switching", hazards: "field-hazards",
   sweeper: "roles-synergy", wallbreaker: "roles-synergy", setup: "roles-synergy",
-  lead: "info-win-conditions", "team-preview": "info-win-conditions", wincon: "info-win-conditions",
+  lead: "win-conditions", "team-preview": "win-conditions", wincon: "win-conditions",
 };
 
 /** Deep-link into the Guide lesson that covers a term/kb slug (else the overview). */
 export function guideHrefForTerm(slug: string): string {
   const lesson = SLUG_LESSON[slug];
-  return lesson ? `/guide?lesson=${lesson}` : "/guide";
+  return lesson ? `/guide/${lesson}` : "/guide";
 }

@@ -138,3 +138,65 @@ a:hover {
 .border-amber-500,
 .border-amber-500\/40,
 .hover\:border-amber-500:hover { border-color: var(--accln); }
+
+/* --------------------------------------------------------------------------
+   Guide (/guide and /guide/<lesson>). Extra tokens the lesson pages use on top
+   of the shared palette: a gold highlight, a blue selection colour, and three
+   text greys (body copy / muted / dim). Keyframes drive the lesson demos.
+--------------------------------------------------------------------------- */
+:root,
+html[data-theme="dark"] {
+  --g-gold: oklch(71% 0.13 78);
+  --g-gold-bg: oklch(71% 0.13 78 / 0.15);
+  --g-on-gold: #241a00;
+  --g-blue: oklch(71% 0.13 258);
+  --g-blue-bg: oklch(71% 0.13 258 / 0.15);
+  --g-good: oklch(71% 0.13 145);
+  --g-bad: oklch(71% 0.16 25);
+  --g-body: #c7ccd1;
+  --g-muted: #9aa2ac;
+  --g-dim: #6b7480;
+  --g-faint: #525960;
+  --g-overlay: rgba(14, 16, 19, 0.8);
+}
+html[data-theme="light"] {
+  --g-gold: oklch(56% 0.13 78);
+  --g-gold-bg: oklch(71% 0.13 78 / 0.18);
+  --g-on-gold: #ffffff;
+  --g-blue: oklch(50% 0.15 258);
+  --g-blue-bg: oklch(71% 0.13 258 / 0.15);
+  --g-good: oklch(52% 0.13 145);
+  --g-bad: oklch(55% 0.18 25);
+  --g-body: #2c3239;
+  --g-muted: #5a626c;
+  --g-dim: #858d97;
+  --g-faint: #9aa2ac;
+  --g-overlay: rgba(255, 255, 255, 0.85);
+}
+
+@keyframes g-fadeInUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes g-popIn { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
+@keyframes g-dropIn { 0% { opacity: 0; transform: translateY(-6px); } 60% { opacity: 1; transform: translateY(2px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes g-flashPulse { 0% { opacity: 0; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes g-healPulse { 0% { opacity: .35; } 50% { opacity: 1; } 100% { opacity: .35; } }
+@keyframes g-shakeX { 0%, 100% { transform: translateX(50%); } 25% { transform: translateX(46%); } 75% { transform: translateX(54%); } }
+@keyframes g-lunge { 0%, 100% { transform: translateX(50%); } 50% { transform: translateX(-40%); } }
+@keyframes g-travelRight { from { transform: translate(-50%, 0) translateX(-120px); opacity: 1; } to { transform: translate(-50%, 0) translateX(120px); opacity: 0; } }
+@keyframes g-travelLeft { from { transform: translate(-50%, 0) translateX(120px); opacity: 1; } to { transform: translate(-50%, 0) translateX(-120px); opacity: 0; } }
+@keyframes g-riseFade { 0% { opacity: 0; transform: translate(-50%, 6px); } 30% { opacity: 1; transform: translate(-50%, -4px); } 100% { opacity: 0; transform: translate(-50%, -22px); } }
+@keyframes g-healFade { 0%, 100% { opacity: 1; } 45% { opacity: .3; } 70% { opacity: .3; } }
+@keyframes g-popInL { from { opacity: 0; transform: translateX(-50%) scale(.85); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+@keyframes g-popInR { from { opacity: 0; transform: translateX(50%) scale(.85); } to { opacity: 1; transform: translateX(50%) scale(1); } }
+@keyframes g-dropInL { 0% { opacity: 0; transform: translateX(-50%) translateY(-6px); } 60% { opacity: 1; transform: translateX(-50%) translateY(2px); } 100% { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@keyframes g-dropInR { 0% { opacity: 0; transform: translateX(50%) translateY(-6px); } 60% { opacity: 1; transform: translateX(50%) translateY(2px); } 100% { opacity: 1; transform: translateX(50%) translateY(0); } }
+@keyframes g-flashPulseL { 0% { opacity: 0; transform: translateX(-50%) scale(.7); } 50% { opacity: 1; transform: translateX(-50%) scale(1.08); } 100% { opacity: 1; transform: translateX(-50%) scale(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .guide-page *,
+  .guide-page *::before,
+  .guide-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
